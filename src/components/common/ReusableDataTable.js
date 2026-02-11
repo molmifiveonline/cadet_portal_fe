@@ -10,7 +10,6 @@ import {
 } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import {
   ArrowUpDown,
   ArrowUp,

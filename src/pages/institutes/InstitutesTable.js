@@ -1,18 +1,17 @@
 import React from 'react';
 import {
-  School,
   Mail,
   Phone,
   MapPin,
   Edit,
   Trash2,
   Search,
-  Filter,
   RotateCcw,
 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import { Button } from 'components/ui/button';
+import Permission from '../../components/common/Permission';
 
 const InstitutesTable = ({
   institutes,
@@ -159,20 +158,24 @@ const InstitutesTable = ({
               headerClassName: 'bg-white',
               renderCell: ({ row }) => (
                 <div className='flex items-center justify-end gap-2'>
-                  <button
-                    onClick={() => handleEdit(row)}
-                    className='p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors'
-                    title='Edit'
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    onClick={() => setDeleteId(row.id)}
-                    className='p-2 rounded-lg text-red-600 hover:bg-red-100 transition-colors'
-                    title='Delete'
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <Permission module='institutes' action='edit'>
+                    <button
+                      onClick={() => handleEdit(row)}
+                      className='p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors'
+                      title='Edit'
+                    >
+                      <Edit size={16} />
+                    </button>
+                  </Permission>
+                  <Permission module='institutes' action='delete'>
+                    <button
+                      onClick={() => setDeleteId(row.id)}
+                      className='p-2 rounded-lg text-red-600 hover:bg-red-100 transition-colors'
+                      title='Delete'
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </Permission>
                 </div>
               ),
             },

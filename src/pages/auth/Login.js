@@ -3,7 +3,6 @@ import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import axios from 'axios';
 import api from '../../lib/utils/apiConfig';
 import ForgotPasswordModal from './ForgotPasswordModal';
 

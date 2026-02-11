@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
-import { Plus, Search, Filter, RotateCcw } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import InstitutesTable from './InstitutesTable';
 import { Button } from 'components/ui/button';
+import Permission from 'components/common/Permission';
 
 const InstitutesManagement = () => {
   const [institutes, setInstitutes] = useState([]);
@@ -151,13 +152,15 @@ const InstitutesManagement = () => {
             Manage maritime training institutes and their details
           </p>
         </div>
-        <Button
-          variant='default'
-          onClick={() => navigate('/institutes/addNewInstitue')}
-        >
-          <Plus size={20} />
-          Add Institute
-        </Button>
+        <Permission module='institutes' action='create'>
+          <Button
+            variant='default'
+            onClick={() => navigate('/institutes/addNewInstitue')}
+          >
+            <Plus size={20} />
+            Add Institute
+          </Button>
+        </Permission>
       </div>
 
       {/* Table Component */}

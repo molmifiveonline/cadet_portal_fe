@@ -6,137 +6,152 @@ import {
   Navigate,
 } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { PermissionProvider } from './context/PermissionContext';
 import Login from './pages/auth/Login';
 import Dashboard from './pages/Dashboard';
 import CadetManagement from './pages/CadetManagement';
 import MainLayout from './components/layout/MainLayout';
 import ResetPassword from './pages/auth/ResetPassword';
-import InstitutesManagement from 'pages/institutes/InstitutesManagement';
+import ActivityLogs from './pages/ActivityLogs/ActivityLogs';
+import UserManagement from './pages/Users';
+import InstitutesManagement from 'pages/institutes';
 import InstituteForm from 'pages/institutes/InstituteForm';
+import RolePermissions from './pages/RolePermissions';
 
-// Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className='flex items-center justify-center h-screen bg-gradient-to-br from-blue-100 to-indigo-100'>
-        <div className='text-center'>
-          <div className='w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto'></div>
-          <p className='mt-4 text-gray-600 font-medium'>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to='/login' replace />;
-  }
-
-  return children;
-};
-
-// Public Route Component (redirects to dashboard if already logged in)
-const PublicRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className='flex items-center justify-center h-screen bg-gradient-to-br from-blue-100 to-indigo-100'>
-        <div className='text-center'>
-          <div className='w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto'></div>
-          <p className='mt-4 text-gray-600 font-medium'>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (user) {
-    return <Navigate to='/dashboard' replace />;
-  }
-
-  return children;
-};
+import ProtectedRoute from './components/common/ProtectedRoute';
+import PermissionRoute from './components/common/PermissionRoute';
+import { PublicRoute } from 'components/common/PublicRoute';
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Toaster position='top-center' richColors expand={false} />
-        <Routes>
-          <Route path='/reset-password' element={<ResetPassword />} />
-          {/* Public Routes */}
-          <Route
-            path='/login'
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route path='/' element={<Navigate to='/login' replace />} />
+      <PermissionProvider>
+        <Router>
+          <Toaster position='top-center' richColors expand={false} />
+          <Routes>
+            <Route path='/reset-password' element={<ResetPassword />} />
+            {/* Public Routes */}
+            <Route
+              path='/login'
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route path='/' element={<Navigate to='/login' replace />} />
 
-          {/* Protected Routes with Layout */}
-          <Route
-            path='/dashboard'
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <Dashboard />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected Routes with Layout */}
+            <Route
+              path='/dashboard'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='dashboard' action='view'>
+                      <Dashboard />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path='/institutes'
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <InstitutesManagement />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path='/institutes'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='institutes' action='view'>
+                      <InstitutesManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path='/institutes/addNewInstitue'
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <InstituteForm />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path='/institutes/addNewInstitue'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='institutes' action='create'>
+                      <InstituteForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path='/institutes/edit/:id'
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <InstituteForm />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path='/institutes/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='institutes' action='edit'>
+                      <InstituteForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path='/cadets'
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <CadetManagement />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path='/cadets'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='view'>
+                      <CadetManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Catch all - redirect to login */}
-          <Route path='*' element={<Navigate to='/login' replace />} />
-        </Routes>
-      </Router>
+            <Route
+              path='/activity-logs'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='activity-logs' action='view'>
+                      <ActivityLogs />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/users'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='users' action='view'>
+                      <UserManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/role-permissions'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='role-permissions' action='manage'>
+                      <RolePermissions />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Catch all - redirect to login */}
+            <Route path='*' element={<Navigate to='/login' replace />} />
+          </Routes>
+        </Router>
+      </PermissionProvider>
     </AuthProvider>
   );
 }

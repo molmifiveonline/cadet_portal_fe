@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, ChevronDown, ChevronRight, Dot } from 'lucide-react';
+import { LogOut, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../../lib/utils/utils';
 import { MenuItems } from '../../lib/utils/menu';
 import { useAuth } from '../../context/AuthContext';
 import { useLayout } from '../../context/LayoutContext';
+import { useUserPermissions } from '../../hooks/usePermission';
 
 const Sidebar = () => {
   const { isOpen, setIsOpen } = useLayout();
@@ -14,6 +15,9 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
 
+  // Get user permissions from database
+  const { hasPermission, loading } = useUserPermissions();
+
   const toggleMenu = (title) => {
     setExpandedMenus((prev) => ({
       ...prev,
@@ -21,8 +25,14 @@ const Sidebar = () => {
     }));
   };
 
-  // Filter menu items based on user role
+  // Filter menu items based on dynamic permissions
   const visibleItems = MenuItems.filter((item) => {
+    // If item has module and action, check database permission
+    if (item.module && item.action) {
+      return hasPermission(item.module, item.action);
+    }
+
+    // Fallback to role-based check if no module/action defined
     if (!item.allowedRoles) {
       return true;
     }
