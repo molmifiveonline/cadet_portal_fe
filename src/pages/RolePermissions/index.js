@@ -174,7 +174,7 @@ const RolePermissions = () => {
             <button
               onClick={handleSaveChanges}
               disabled={!selectedRole || saving || loading}
-              className='px-6 py-2.5 text-[14px] font-semibold text-white bg-[#2563EB] rounded-xl hover:bg-[#1D4ED8] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] active:scale-95 disabled:opacity-50 flex items-center gap-2'
+              className='px-6 py-2.5 text-[14px] font-semibold text-white bg-[#3a5f9e] rounded-xl hover:bg-[#325186] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] active:scale-95 disabled:opacity-50 flex items-center gap-2'
             >
               {saving && <Loader2 className='w-4 h-4 animate-spin' />}
               Save Changes

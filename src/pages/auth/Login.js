@@ -65,16 +65,16 @@ const Login = () => {
         {/* Left Side - Branding */}
         <div className='hidden lg:flex lg:w-1/2 relative justify-center items-center p-12 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-700'>
           <div className='absolute inset-0 overflow-hidden'>
-            <div className='absolute -top-24 -left-24 w-64 h-64 rounded-full bg-blue-400 opacity-20 blur-3xl'></div>
-            <div className='absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-purple-400 opacity-20 blur-3xl'></div>
+            <div className='absolute -top-24 -left-24 w-64 h-64 rounded-full bg-[#3a5f9e] opacity-20 blur-3xl'></div>
+            <div className='absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-[#3a5f9e] opacity-20 blur-3xl'></div>
           </div>
 
           <div className='relative z-10 flex flex-col justify-center items-center text-center'>
             <div className='bg-white/20 backdrop-blur-sm p-4 rounded-3xl mb-6 shadow-inner border border-white/30'>
-              <img src='mol-logo.png' alt='mol.logo' width={100} height={100} />
+              <img src='mol-logo.png' alt='mol.logo' width={150} height={150} />
             </div>
             <p className='text-white/90 mt-6 text-lg font-medium px-4'>
-              Admin Portal
+              MOLMI NAVIS Software
             </p>
             <p className='text-blue-100 mt-2 text-sm'>
               Secure access to your dashboard
@@ -86,9 +86,7 @@ const Login = () => {
         <div className='w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white/60 backdrop-blur-md'>
           <div className='w-full max-w-md space-y-8'>
             <div className='text-center'>
-              <h2 className='text-3xl font-bold text-gray-900 mb-2'>
-                Admin Sign In
-              </h2>
+              <h2 className='text-3xl font-bold text-gray-900 mb-2'>Sign In</h2>
               <p className='text-gray-600'>
                 Enter your credentials to access the portal
               </p>

@@ -26,6 +26,8 @@ const InstitutesTable = ({
   handleSortChange,
   handleSearch, // Added search handler
   handleRefresh, // Added refresh handler
+  selectedInstitutes, // Added selected institutes prop
+  onSelectionChange, // Added selection change handler
 }) => {
   const [deleteId, setDeleteId] = React.useState(null);
 
@@ -186,6 +188,9 @@ const InstitutesTable = ({
           handlePageChange={handlePageChange}
           handlePerPageChange={handlePerPageChange}
           handleSortChange={handleSortChange}
+          checkboxSelection={true}
+          rowSelectionModel={selectedInstitutes}
+          onRowSelectionModelChange={onSelectionChange}
           emptyMessage={
             searchTerm
               ? `No matches for "${searchTerm}"`

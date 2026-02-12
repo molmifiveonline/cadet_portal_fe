@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
-import { Plus } from 'lucide-react';
+import { Plus, Mail, FileText } from 'lucide-react';
 import InstitutesTable from './InstitutesTable';
+import SendEmailModal from './SendEmailModal';
 import { Button } from 'components/ui/button';
 import Permission from 'components/common/Permission';
 
@@ -23,6 +24,8 @@ const InstitutesManagement = () => {
     sortOrder: '',
   });
   const searchTimeoutRef = React.useRef(null);
+  const [selectedInstitutes, setSelectedInstitutes] = useState([]);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   const fetchInstitutes = async (
     page = pagination.current_page,
@@ -152,16 +155,56 @@ const InstitutesManagement = () => {
             Manage maritime training institutes and their details
           </p>
         </div>
-        <Permission module='institutes' action='create'>
-          <Button
-            variant='default'
-            onClick={() => navigate('/institutes/addNewInstitue')}
-          >
-            <Plus size={20} />
-            Add Institute
-          </Button>
-        </Permission>
+        <div className='flex gap-2'>
+          <Permission module='institutes' action='view'>
+            <Button
+              variant='outline'
+              onClick={() => navigate('/institutes/submissions')}
+              className='gap-2'
+            >
+              <FileText size={20} />
+              View Submissions
+            </Button>
+          </Permission>
+
+          <Permission module='institutes' action='create'>
+            <Button
+              variant='default'
+              onClick={() => navigate('/institutes/addNewInstitue')}
+            >
+              <Plus size={20} />
+              Add Institute
+            </Button>
+          </Permission>
+        </div>
       </div>
+
+      {selectedInstitutes.length > 0 && (
+        <div className='mb-4 flex items-center gap-4 bg-blue-50 p-3 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-2'>
+          <span className='text-sm text-blue-700 font-medium'>
+            {selectedInstitutes.length} institute
+            {selectedInstitutes.length !== 1 ? 's' : ''} selected
+          </span>
+          <div className='flex gap-2 ml-auto'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => setSelectedInstitutes([])}
+              className='text-blue-600 border-blue-200 hover:bg-blue-100'
+            >
+              Clear Selection
+            </Button>
+            <Button
+              size='sm'
+              onClick={() => setIsEmailModalOpen(true)}
+              className='bg-blue-600 hover:bg-blue-700 text-white gap-2'
+            >
+              <Mail size={16} />
+              Send Email
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Table Component */}
       <InstitutesTable
@@ -177,6 +220,15 @@ const InstitutesManagement = () => {
         handleSortChange={handleSortChange}
         handleSearch={handleSearch}
         handleRefresh={handleRefresh}
+        selectedInstitutes={selectedInstitutes}
+        onSelectionChange={setSelectedInstitutes}
+      />
+
+      <SendEmailModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        selectedInstitutes={selectedInstitutes}
+        onSuccess={() => setSelectedInstitutes([])}
       />
     </div>
   );

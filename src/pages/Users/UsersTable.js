@@ -10,12 +10,16 @@ const UsersTable = ({
   loading,
   searchTerm,
   pagination,
+  sortConfig,
   handleEdit,
   handleDelete,
   handlePageChange,
   handlePerPageChange,
+  handleSortChange,
   handleSearch,
   handleRefresh,
+  selectedUsers,
+  onSelectionChange,
 }) => {
   const [deleteUser, setDeleteUser] = useState(null);
 
@@ -127,7 +131,7 @@ const UsersTable = ({
   return (
     <>
       <div className='bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6'>
-        <div className='flex justify-between items-center gap-4'>
+        <div className='flex justify-between items-center'>
           <div className='flex items-center bg-gray-50 rounded-lg px-3 border border-gray-400 w-full max-w-md'>
             <Search className='text-gray-400' size={18} />
             <input
@@ -155,12 +159,17 @@ const UsersTable = ({
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden'>
         <ReusableDataTable
+          sortConfig={sortConfig}
           columns={columns}
           rows={users}
           loading={loading}
           pagination={pagination}
           handlePageChange={handlePageChange}
           handlePerPageChange={handlePerPageChange}
+          handleSortChange={handleSortChange}
+          checkboxSelection={true}
+          rowSelectionModel={selectedUsers}
+          onRowSelectionModelChange={onSelectionChange}
           emptyMessage={
             searchTerm
               ? `No users found matching "${searchTerm}"`

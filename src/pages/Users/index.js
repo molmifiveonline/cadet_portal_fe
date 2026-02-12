@@ -1,29 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { Plus } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import UsersTable from './UsersTable';
-import UserFormModal from './UserFormModal';
+import { useNavigate } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
 import Permission from 'components/common/Permission';
 
 const UserManagement = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Form State
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    password: '',
-    role: '',
-  });
-  const [submitLoading, setSubmitLoading] = useState(false);
 
   // Pagination State
   const [pagination, setPagination] = useState({
@@ -32,29 +20,52 @@ const UserManagement = () => {
     total: 0,
     last_page: 1,
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const fetchUsers = useCallback(async (page = 1, limit = 10, search = '') => {
+  const [sortConfig, setSortConfig] = useState({
+    sortBy: '',
+    sortOrder: '',
+  });
+
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const searchTimeoutRef = useRef(null);
+
+  const fetchUsers = async (
+    page = pagination.current_page,
+    limit = pagination.per_page,
+    sortBy = sortConfig.sortBy,
+    sortOrder = sortConfig.sortOrder,
+    search = searchTerm,
+  ) => {
     setLoading(true);
     try {
       const response = await api.get('/users', {
         params: {
           page,
           limit,
-          search,
+          sortBy: sortBy || undefined,
+          sortOrder: sortOrder || undefined,
+          search: search || undefined,
         },
       });
 
-      const data = response.data;
-      const userList = data.data || (Array.isArray(data) ? data : []);
+      const {
+        data,
+        total,
+        page: currentPage,
+        limit: perPage,
+        last_page,
+      } = response.data;
+      // Handle different response structures if necessary, similar to original code
+      const userList = Array.isArray(data) ? data : data?.data || [];
 
       setUsers(userList);
       setPagination({
-        current_page: data.current_page || page,
-        per_page: data.per_page || limit,
-        total: data.total || userList.length,
-        last_page: data.last_page || 1,
+        current_page: currentPage || page,
+        per_page: perPage || limit,
+        total: total || userList.length,
+        last_page:
+          last_page ||
+          Math.ceil((total || userList.length) / (perPage || limit)),
       });
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -66,211 +77,150 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      fetchUsers(currentPage, rowsPerPage, searchTerm);
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [currentPage, rowsPerPage, searchTerm, fetchUsers]);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleRoleChange = (val) => {
-    setFormData((prev) => ({ ...prev, role: val }));
+  useEffect(() => {
+    fetchUsers(1);
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handlePageChange = (newPage) => {
+    fetchUsers(
+      newPage,
+      pagination.per_page,
+      sortConfig.sortBy,
+      sortConfig.sortOrder,
+      searchTerm,
+    );
+  };
+
+  const handleLimitChange = (newLimit) => {
+    fetchUsers(
+      1,
+      newLimit,
+      sortConfig.sortBy,
+      sortConfig.sortOrder,
+      searchTerm,
+    );
+  };
+
+  const handleSortChange = (field, order) => {
+    const newSortOrder = order.toUpperCase();
+    setSortConfig({ sortBy: field, sortOrder: newSortOrder });
+    fetchUsers(1, pagination.per_page, field, newSortOrder, searchTerm);
+  };
+
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchUsers(
+        1,
+        pagination.per_page,
+        sortConfig.sortBy,
+        sortConfig.sortOrder,
+        value,
+      );
+    }, 300);
+  };
+
+  const handleRefresh = () => {
+    setSearchTerm('');
+    setSortConfig({ sortBy: '', sortOrder: '' });
+    fetchUsers(1, pagination.per_page, '', '', '');
+    toast.success('Data refreshed');
   };
 
   const handleEditClick = (user) => {
-    setSelectedUser(user);
-    setFormData({
-      first_name: user.first_name || '',
-      last_name: user.last_name || '',
-      email: user.email || '',
-      password: '', // Leave password empty for editing
-      role: user.role || '',
-    });
-    setIsEditUserOpen(true);
+    navigate(`/users/edit/${user.id}`);
   };
 
   const handleDelete = async (userId) => {
-    setSubmitLoading(true);
-    try {
-      await api.delete(`/users/${userId}`);
-      toast.success('User deleted successfully');
-      fetchUsers(currentPage, rowsPerPage, searchTerm);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to delete user',
-      );
-    } finally {
-      setSubmitLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (
-      !formData.first_name ||
-      !formData.last_name ||
-      !formData.email ||
-      !formData.password ||
-      !formData.role
-    ) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    setSubmitLoading(true);
-    try {
-      await api.post('/users', formData);
-      toast.success('User created successfully');
-      setIsAddUserOpen(false);
-      setFormData({
-        first_name: '',
-        last_name: '',
-        email: '',
-        password: '',
-        role: '',
-      });
-      fetchUsers(currentPage, rowsPerPage, searchTerm);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to create user',
-      );
-    } finally {
-      setSubmitLoading(false);
-    }
-  };
-
-  const handleUpdateSubmit = async (e) => {
-    e.preventDefault();
-
-    if (
-      !formData.first_name ||
-      !formData.last_name ||
-      !formData.email ||
-      !formData.role
-    ) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    setSubmitLoading(true);
-    try {
-      const updateData = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email,
-        role: formData.role,
-      };
-
-      if (formData.password && formData.password.trim() !== '') {
-        updateData.password = formData.password;
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        await api.delete(`/users/${userId}`);
+        toast.success('User deleted successfully');
+        fetchUsers(
+          pagination.current_page,
+          pagination.per_page,
+          sortConfig.sortBy,
+          sortConfig.sortOrder,
+          searchTerm,
+        );
+      } catch (error) {
+        toast.error(
+          error.response?.data?.message ||
+            error.message ||
+            'Failed to delete user',
+        );
       }
-
-      await api.put(`/users/${selectedUser.id}`, updateData);
-
-      toast.success('User updated successfully');
-      setIsEditUserOpen(false);
-      setSelectedUser(null);
-      setFormData({
-        first_name: '',
-        last_name: '',
-        email: '',
-        password: '',
-        role: '',
-      });
-      fetchUsers(currentPage, rowsPerPage, searchTerm);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          'Failed to update user',
-      );
-    } finally {
-      setSubmitLoading(false);
     }
   };
 
   return (
-    <div className='py-6 space-y-6'>
-      <div className='flex justify-between items-center'>
+    <div className='py-6'>
+      {/* Header */}
+      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 ml-2'>
         <div>
-          <h1 className='text-2xl font-bold text-slate-800'>User Management</h1>
-          <p className='text-slate-500 mt-1'>
-            Manage system users and their roles.
+          <h1 className='text-2xl font-bold text-gray-800'>User Management</h1>
+          <p className='text-gray-500 text-sm mt-1'>
+            Manage system users and their roles
           </p>
         </div>
-        <Permission module='users' action='create'>
-          <Button
-            onClick={() => {
-              setFormData({
-                first_name: '',
-                last_name: '',
-                email: '',
-                password: '',
-                role: '',
-              });
-              setIsAddUserOpen(true);
-            }}
-            className='bg-[#3a5f9e] hover:bg-[#325186] text-white'
-          >
-            <Plus className='w-4 h-4 mr-2' /> Add User
-          </Button>
-        </Permission>
+        <div className='flex gap-2'>
+          <Permission module='users' action='create'>
+            <Button
+              variant='default'
+              onClick={() => navigate('/users/addUser')}
+            >
+              <Plus size={20} className='mr-2' />
+              Add User
+            </Button>
+          </Permission>
+        </div>
       </div>
+
+      {selectedUsers.length > 0 && (
+        <div className='mb-4 flex items-center gap-4 bg-blue-50 p-3 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-2'>
+          <span className='text-sm text-blue-700 font-medium'>
+            {selectedUsers.length} user
+            {selectedUsers.length !== 1 ? 's' : ''} selected
+          </span>
+          <div className='flex gap-2 ml-auto'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={() => setSelectedUsers([])}
+              className='text-blue-600 border-blue-200 hover:bg-blue-100'
+            >
+              Clear Selection
+            </Button>
+          </div>
+        </div>
+      )}
 
       <UsersTable
         users={users}
         loading={loading}
         searchTerm={searchTerm}
         pagination={pagination}
+        sortConfig={sortConfig}
         handleEdit={handleEditClick}
         handleDelete={handleDelete}
-        handlePageChange={setCurrentPage}
-        handlePerPageChange={(val) => {
-          setRowsPerPage(val);
-          setCurrentPage(1);
-        }}
-        handleSearch={setSearchTerm}
-        handleRefresh={() => fetchUsers(currentPage, rowsPerPage, searchTerm)}
-      />
-
-      {/* Add User Modal */}
-      <UserFormModal
-        isOpen={isAddUserOpen}
-        onClose={() => setIsAddUserOpen(false)}
-        title='Add New User'
-        formData={formData}
-        handleInputChange={handleInputChange}
-        handleRoleChange={handleRoleChange}
-        handleSubmit={handleSubmit}
-        submitLoading={submitLoading}
-        submitButtonText='Create User'
-      />
-
-      {/* Edit User Modal */}
-      <UserFormModal
-        isOpen={isEditUserOpen}
-        onClose={() => setIsEditUserOpen(false)}
-        title='Edit User'
-        formData={formData}
-        handleInputChange={handleInputChange}
-        handleRoleChange={handleRoleChange}
-        handleSubmit={handleUpdateSubmit}
-        submitLoading={submitLoading}
-        submitButtonText='Update User'
-        isEdit={true}
+        handlePageChange={handlePageChange}
+        handlePerPageChange={handleLimitChange}
+        handleSortChange={handleSortChange}
+        handleSearch={handleSearch}
+        handleRefresh={handleRefresh}
+        selectedUsers={selectedUsers}
+        onSelectionChange={setSelectedUsers}
       />
     </div>
   );

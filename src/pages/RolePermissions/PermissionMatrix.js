@@ -42,7 +42,7 @@ const PermissionMatrix = ({
     return (
       <div className='bg-white rounded-[24px] border border-[#E2E8F0] p-24 shadow-sm flex items-center justify-center'>
         <div className='text-center'>
-          <Loader2 className='w-10 h-10 text-[#2563EB] animate-spin mx-auto mb-4' />
+          <Loader2 className='w-10 h-10 text-[#3a5f9e] animate-spin mx-auto mb-4' />
           <p className='text-[15px] font-medium text-gray-500'>
             Fetching permissions details...
           </p>
@@ -66,7 +66,7 @@ const PermissionMatrix = ({
       {/* Header */}
       <div className='px-8 py-6 border-b border-[#F1F5F9]'>
         <h2 className='text-[14px] font-bold text-[#64748B] uppercase tracking-[0.05em]'>
-          Permissions for <span className='text-[#2563EB]'>{roleName}</span>
+          Permissions for <span className='text-[#3a5f9e]'>{roleName}</span>
         </h2>
       </div>
 

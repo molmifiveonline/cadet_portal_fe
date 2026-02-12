@@ -15,8 +15,11 @@ import MainLayout from './components/layout/MainLayout';
 import ResetPassword from './pages/auth/ResetPassword';
 import ActivityLogs from './pages/ActivityLogs/ActivityLogs';
 import UserManagement from './pages/Users';
+import UserForm from './pages/Users/UserForm';
 import InstitutesManagement from 'pages/institutes';
 import InstituteForm from 'pages/institutes/InstituteForm';
+import SubmitExcel from 'pages/institutes/SubmitExcel';
+import InstituteSubmissions from 'pages/institutes/InstituteSubmissions';
 import RolePermissions from './pages/RolePermissions';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -41,6 +44,7 @@ function App() {
               }
             />
             <Route path='/' element={<Navigate to='/login' replace />} />
+            <Route path='/institute/submit-excel' element={<SubmitExcel />} />
 
             {/* Protected Routes with Layout */}
             <Route
@@ -76,6 +80,19 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='institutes' action='create'>
                       <InstituteForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/institutes/submissions'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='institutes' action='view'>
+                      <InstituteSubmissions />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
@@ -128,6 +145,32 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='users' action='view'>
                       <UserManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/users/addUser'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='users' action='create'>
+                      <UserForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/users/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='users' action='edit'>
+                      <UserForm />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
