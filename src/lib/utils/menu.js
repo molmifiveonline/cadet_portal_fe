@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   UserCog,
   Shield,
+  FileText,
 } from 'lucide-react';
 
 export const MenuItems = [
@@ -30,10 +31,26 @@ export const MenuItems = [
   {
     title: 'Institutes',
     icon: School,
-    url: '/institutes',
     module: 'institutes',
     action: 'view',
     allowedRoles: ['SuperAdmin'],
+    subItems: [
+      {
+        title: 'All Institutes',
+        icon: School,
+        url: '/institutes',
+        module: 'institutes',
+        action: 'view',
+        exact: true,
+      },
+      {
+        title: 'Submissions',
+        icon: FileText,
+        url: '/institutes/submissions',
+        module: 'institutes',
+        action: 'view',
+      },
+    ],
   },
   {
     title: 'Cadet Management',
@@ -67,7 +84,7 @@ export const MenuItems = [
     action: 'view',
     allowedRoles: ['SuperAdmin', 'Trainer'],
   },
-    {
+  {
     title: 'Role Permissions',
     icon: Shield,
     url: '/role-permissions',
@@ -83,5 +100,4 @@ export const MenuItems = [
     action: 'view',
     allowedRoles: ['SuperAdmin'],
   },
-
 ];

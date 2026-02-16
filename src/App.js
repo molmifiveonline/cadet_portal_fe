@@ -11,6 +11,8 @@ import { PermissionProvider } from './context/PermissionContext';
 import Login from './pages/auth/Login';
 import Dashboard from './pages/Dashboard';
 import CadetManagement from './pages/CadetManagement';
+import CadetDetails from './pages/CadetManagement/CadetDetails';
+import ShortlistedCadetsView from './pages/CadetManagement/ShortlistedCadetsView';
 import MainLayout from './components/layout/MainLayout';
 import ResetPassword from './pages/auth/ResetPassword';
 import ActivityLogs from './pages/ActivityLogs/ActivityLogs';
@@ -119,6 +121,32 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='cadets' action='view'>
                       <CadetManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/shortlist'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='view'>
+                      <ShortlistedCadetsView />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/view/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='view'>
+                      <CadetDetails />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import {
@@ -19,8 +20,6 @@ const CadetImportModal = ({ isOpen, onClose, institutes, onSuccess }) => {
   const [importForm, setImportForm] = useState({
     instituteId: '',
     batchName: '',
-    department: 'ENGINE',
-    passingOutDate: '',
   });
 
   // Reset form when modal opens/closes
@@ -31,8 +30,6 @@ const CadetImportModal = ({ isOpen, onClose, institutes, onSuccess }) => {
       setImportForm({
         instituteId: '',
         batchName: '',
-        department: 'ENGINE',
-        passingOutDate: '',
       });
     }
   }, [isOpen]);
@@ -48,7 +45,7 @@ const CadetImportModal = ({ isOpen, onClose, institutes, onSuccess }) => {
     e.preventDefault();
 
     if (!importFile) {
-      alert('Please select an Excel file');
+      toast.error('Please select an Excel file');
       return;
     }
 
@@ -56,8 +53,6 @@ const CadetImportModal = ({ isOpen, onClose, institutes, onSuccess }) => {
     formData.append('excelFile', importFile);
     formData.append('instituteId', importForm.instituteId);
     formData.append('batchName', importForm.batchName);
-    formData.append('department', importForm.department);
-    formData.append('passingOutDate', importForm.passingOutDate);
 
     try {
       setLoading(true);
@@ -70,13 +65,17 @@ const CadetImportModal = ({ isOpen, onClose, institutes, onSuccess }) => {
       });
 
       setImportProgress({ message: 'Import successful!', percent: 100 });
-      alert(`Successfully imported ${response.data.imported} cadets!`);
+
+      const { imported, failed } = response.data;
+      toast.success(
+        `Import Processed: ${imported} successful, ${failed} failed`,
+      );
 
       onSuccess(); // Trigger refresh on success
       onClose(); // Close modal
     } catch (error) {
       console.error('Import error:', error);
-      alert(error.response?.data?.message || 'Error importing cadets');
+      toast.error(error.response?.data?.message || 'Error importing cadets');
       setImportProgress(null);
     } finally {
       setLoading(false);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, ChevronDown, ChevronRight } from 'lucide-react';
+import { LogOut, ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../../lib/utils/utils';
 import { MenuItems } from '../../lib/utils/menu';
@@ -51,9 +51,9 @@ const Sidebar = () => {
     }
   };
 
-  const isLinkActive = (url) => {
-    if (url === '/dashboard') {
-      return location.pathname === '/dashboard';
+  const isLinkActive = (url, exact = false) => {
+    if (url === '/dashboard' || exact) {
+      return location.pathname === url;
     }
     return location.pathname === url || location.pathname.startsWith(`${url}/`);
   };
@@ -86,8 +86,9 @@ const Sidebar = () => {
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const isExpanded = expandedMenus[item.title];
             const isParentActive =
-              hasSubItems && item.subItems.some((sub) => isLinkActive(sub.url));
-            const isActive = !hasSubItems && isLinkActive(item.url);
+              hasSubItems &&
+              item.subItems.some((sub) => isLinkActive(sub.url, sub.exact));
+            const isActive = !hasSubItems && isLinkActive(item.url, item.exact);
 
             const handleNavClick = () => {
               if (window.innerWidth < 768 && !hasSubItems) {
@@ -98,45 +99,98 @@ const Sidebar = () => {
             return (
               <div key={item.title}>
                 {hasSubItems ? (
-                  <div
-                    onClick={() => {
-                      if (!isOpen) setIsOpen(true);
-                      toggleMenu(item.title);
-                    }}
-                    className={cn(
-                      'flex items-center py-3 rounded-lg transition-all duration-200 group relative cursor-pointer select-none',
-                      isOpen ? 'px-4 gap-3 justify-between' : 'justify-center',
-                      isActive || isParentActive
-                        ? 'text-[#3a5f9e] bg-slate-50'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-[#3a5f9e]',
-                    )}
-                  >
+                  <>
                     <div
+                      onClick={() => {
+                        if (!isOpen) setIsOpen(true);
+                        toggleMenu(item.title);
+                      }}
                       className={cn(
-                        'flex items-center gap-3',
-                        !isOpen && 'justify-center',
+                        'flex items-center py-3 rounded-lg transition-all duration-200 group relative cursor-pointer select-none',
+                        isOpen
+                          ? 'px-4 gap-3 justify-between'
+                          : 'justify-center',
+                        isActive || isParentActive
+                          ? 'text-[#3a5f9e] hover:bg-slate-50'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-[#3a5f9e]',
                       )}
                     >
-                      <Icon
-                        className='transition-all duration-200 shrink-0'
-                        size={22}
-                      />
-                      {isOpen && (
-                        <span className='text-sm font-medium transition-all duration-200 whitespace-nowrap'>
-                          {item.title}
-                        </span>
-                      )}
-                    </div>
-                    {isOpen && (
-                      <div className='text-slate-400'>
-                        {isExpanded ? (
-                          <ChevronDown size={16} />
-                        ) : (
-                          <ChevronRight size={16} />
+                      <div
+                        className={cn(
+                          'flex items-center gap-3',
+                          !isOpen && 'justify-center',
+                        )}
+                      >
+                        <Icon
+                          className='transition-all duration-200 shrink-0'
+                          size={22}
+                        />
+                        {isOpen && (
+                          <span className='text-sm font-medium transition-all duration-200 whitespace-nowrap'>
+                            {item.title}
+                          </span>
                         )}
                       </div>
+                      {isOpen && (
+                        <div className='text-slate-900'>
+                          {isExpanded ? (
+                            <ChevronUp size={16} />
+                          ) : (
+                            <ChevronDown size={16} />
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Submenu Items */}
+                    {isOpen && isExpanded && (
+                      <div className='mt-1 space-y-1 mb-2'>
+                        {item.subItems.map((subItem) => {
+                          if (
+                            subItem.module &&
+                            subItem.action &&
+                            !hasPermission(subItem.module, subItem.action)
+                          ) {
+                            return null;
+                          }
+
+                          const isSubActive = isLinkActive(
+                            subItem.url,
+                            subItem.exact,
+                          );
+                          const SubIcon = subItem.icon;
+
+                          return (
+                            <Link
+                              key={subItem.title}
+                              to={subItem.url}
+                              className={cn(
+                                'flex items-center py-2.5 rounded-lg transition-all duration-200 pl-12 text-sm w-full group relative',
+                                isSubActive
+                                  ? 'bg-[#3a5f9e] text-white shadow-md shadow-blue-900/10 font-semibold'
+                                  : 'text-slate-600 hover:text-[#3a5f9e] hover:bg-slate-50 font-medium',
+                              )}
+                            >
+                              {SubIcon && (
+                                <SubIcon
+                                  size={18}
+                                  className={cn(
+                                    'mr-3 shrink-0 -ml-4',
+                                    isSubActive
+                                      ? 'text-white'
+                                      : 'group-hover:text-[#3a5f9e]',
+                                  )}
+                                />
+                              )}
+                              <span className='whitespace-nowrap truncate'>
+                                {subItem.title}
+                              </span>
+                            </Link>
+                          );
+                        })}
+                      </div>
                     )}
-                  </div>
+                  </>
                 ) : (
                   <Link
                     to={item.url}
