@@ -4,7 +4,6 @@ import {
   Search,
   RotateCcw,
   Edit,
-  Trash2,
   Eye,
   MoreHorizontal,
   Star,

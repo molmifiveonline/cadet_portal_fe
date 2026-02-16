@@ -8,16 +8,10 @@ import {
   Trash2,
   Upload,
   RotateCcw,
-  MoreHorizontal,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu';
+
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import Permission from '../../components/common/Permission';

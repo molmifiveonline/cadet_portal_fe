@@ -16,6 +16,7 @@ const RolePermissions = () => {
   /* Fetch all roles on component mount */
   useEffect(() => {
     fetchRoles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* Fetch permissions when role is selected */

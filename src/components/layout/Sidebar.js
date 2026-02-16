@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
+import { LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../../lib/utils/utils';
 import { MenuItems } from '../../lib/utils/menu';
@@ -16,7 +16,7 @@ const Sidebar = () => {
   const [expandedMenus, setExpandedMenus] = useState({});
 
   // Get user permissions from database
-  const { hasPermission, loading } = useUserPermissions();
+  const { hasPermission } = useUserPermissions();
 
   const toggleMenu = (title) => {
     setExpandedMenus((prev) => ({

@@ -67,7 +67,7 @@ const InstitutesManagement = () => {
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePageChange = (newPage) => {
     fetchInstitutes(

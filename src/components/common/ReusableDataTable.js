@@ -119,8 +119,6 @@ export default function ReusableDataTable({
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
   const [selected, setSelected] = useState(rowSelectionModel || []);
-  const [selectedPageJump, setSelectedPageJump] = useState('');
-  const [pageJumpError, setPageJumpError] = useState('');
 
   const stableSelectionModel = useMemo(
     () => rowSelectionModel || [],
@@ -202,39 +200,6 @@ export default function ReusableDataTable({
   const handleChangePage = (newPage) => {
     // API uses 1-based page numbers
     handlePageChange?.(newPage);
-  };
-
-  const validatePageNumber = (value) => {
-    if (!value) {
-      setPageJumpError('');
-      return;
-    }
-    const pageNumber = parseInt(value, 10);
-    if (isNaN(pageNumber)) {
-      setPageJumpError('Please enter a valid number');
-    } else if (pageNumber < 1) {
-      setPageJumpError('Page number must be at least 1');
-    } else if (pageNumber > totalPages) {
-      setPageJumpError(`Page number cannot exceed ${totalPages}`);
-    } else {
-      setPageJumpError('');
-    }
-  };
-
-  const handlePageJumpChange = (value) => {
-    setSelectedPageJump(value);
-    validatePageNumber(value);
-  };
-
-  const handlePageJump = () => {
-    if (selectedPageJump && !pageJumpError) {
-      const pageNumber = parseInt(selectedPageJump, 10);
-      if (pageNumber >= 1 && pageNumber <= totalPages) {
-        handleChangePage(pageNumber);
-        setSelectedPageJump(''); // Reset after jump
-        setPageJumpError(''); // Clear error
-      }
-    }
   };
 
   // Since API returns paginated data, just sort the current page's rows if not server-side sorting
