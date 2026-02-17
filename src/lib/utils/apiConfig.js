@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL + '/api',
-  // baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: (process.env.REACT_APP_API_URL || 'http://localhost:5000') + '/api',
+  // baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -16,6 +16,7 @@ api.interceptors.request.use(
       try {
         const user = JSON.parse(userStr);
         if (user.token) {
+          // console.log('Attaching user token:', user.token.substring(0, 10) + '...');
           config.headers.Authorization = `Bearer ${user.token}`;
         }
       } catch (error) {
@@ -27,6 +28,7 @@ api.interceptors.request.use(
     if (!config.headers.Authorization) {
       const token = localStorage.getItem('token');
       if (token) {
+        // console.log('Attaching fallback token:', token.substring(0, 10) + '...');
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
@@ -41,6 +43,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response && error.response.status === 401) {
+      // Clear local storage and redirect to login if token is invalid
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
     return Promise.reject(error);
   },
 );

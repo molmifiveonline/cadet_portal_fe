@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import {
+  Loader2,
+  ArrowLeft,
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+} from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
 import { toast } from 'sonner';
 import { Button } from 'components/ui/button';
+import { Input } from 'components/ui/input';
 
 const InstituteForm = () => {
   const { id } = useParams();
@@ -110,86 +118,98 @@ const InstituteForm = () => {
         </div>
       </div>
 
-      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8'>
+      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500'>
         <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Institute Name <span className='text-red-500 ml-1'>*</span>
+              <label className='text-sm font-medium text-gray-700 ml-1'>
+                Institute Name <span className='text-red-500'>*</span>
               </label>
-              <input
-                {...register('institute_name', {
-                  required: 'Name is required',
-                })}
-                className='w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all'
-                placeholder='Enter institute name'
-              />
+              <div className='relative group'>
+                <Building2 className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
+                <Input
+                  {...register('institute_name', {
+                    required: 'Name is required',
+                  })}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  placeholder='Enter institute name'
+                />
+              </div>
               {errors.institute_name && (
-                <span className='text-red-500 text-xs'>
+                <span className='text-red-500 text-xs ml-1'>
                   {errors.institute_name.message}
                 </span>
               )}
             </div>
 
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Email Address <span className='text-red-500 ml-1'>*</span>
+              <label className='text-sm font-medium text-gray-700 ml-1'>
+                Email Address <span className='text-red-500'>*</span>
               </label>
-              <input
-                type='email'
-                {...register('institute_email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^\S+@\S+$/i,
-                    message: 'Invalid email address',
-                  },
-                })}
-                className='w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all'
-                placeholder='contact@institute.com'
-              />
+              <div className='relative group'>
+                <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
+                <Input
+                  type='email'
+                  {...register('institute_email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^\S+@\S+$/i,
+                      message: 'Invalid email address',
+                    },
+                  })}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  placeholder='contact@institute.com'
+                />
+              </div>
               {errors.institute_email && (
-                <span className='text-red-500 text-xs'>
+                <span className='text-red-500 text-xs ml-1'>
                   {errors.institute_email.message}
                 </span>
               )}
             </div>
 
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Mobile Number <span className='text-red-500 ml-1'>*</span>
+              <label className='text-sm font-medium text-gray-700 ml-1'>
+                Mobile Number <span className='text-red-500'>*</span>
               </label>
-              <input
-                {...register('mobile_number', {
-                  required: 'Mobile number is required',
-                  pattern: {
-                    value: /^\d{10}$/,
-                    message: 'Must be exactly 10 digits',
-                  },
-                })}
-                className='w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all'
-                placeholder='1234567890'
-                maxLength={10}
-              />
+              <div className='relative group'>
+                <Phone className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
+                <Input
+                  {...register('mobile_number', {
+                    required: 'Mobile number is required',
+                    pattern: {
+                      value: /^\d{10}$/,
+                      message: 'Must be exactly 10 digits',
+                    },
+                  })}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  placeholder='1234567890'
+                  maxLength={10}
+                />
+              </div>
               {errors.mobile_number && (
-                <span className='text-red-500 text-xs'>
+                <span className='text-red-500 text-xs ml-1'>
                   {errors.mobile_number.message}
                 </span>
               )}
             </div>
 
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Location/City <span className='text-red-500 ml-1'>*</span>
+              <label className='text-sm font-medium text-gray-700 ml-1'>
+                Location/City <span className='text-red-500'>*</span>
               </label>
-              <input
-                {...register('location', {
-                  required: 'Location is required',
-                })}
-                className='w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all'
-                placeholder='e.g. Mumbai'
-              />
+              <div className='relative group'>
+                <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
+                <Input
+                  {...register('location', {
+                    required: 'Location is required',
+                  })}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  placeholder='e.g. Mumbai'
+                />
+              </div>
               {errors.location && (
-                <span className='text-red-500 text-xs'>
+                <span className='text-red-500 text-xs ml-1'>
                   {errors.location.message}
                 </span>
               )}
@@ -197,17 +217,20 @@ const InstituteForm = () => {
           </div>
 
           <div className='space-y-2'>
-            <label className='text-sm font-medium text-gray-700'>
-              Full Address <span className='text-red-500 ml-1'>*</span>
+            <label className='text-sm font-medium text-gray-700 ml-1'>
+              Full Address <span className='text-red-500'>*</span>
             </label>
-            <textarea
-              {...register('address', { required: 'Address is required' })}
-              rows={3}
-              className='w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none'
-              placeholder='Enter full address...'
-            />
+            <div className='relative group'>
+              <MapPin className='absolute left-3 top-3 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
+              <textarea
+                {...register('address', { required: 'Address is required' })}
+                rows={3}
+                className='w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none resize-none'
+                placeholder='Enter full address...'
+              />
+            </div>
             {errors.address && (
-              <span className='text-red-500 text-xs'>
+              <span className='text-red-500 text-xs ml-1'>
                 {errors.address.message}
               </span>
             )}
@@ -223,6 +246,7 @@ const InstituteForm = () => {
             </button>
             <Button
               type='submit'
+              className='bg-[#3a5f9e] hover:bg-[#325186] text-white px-6 py-2.5 h-auto'
               disabled={isSubmitting || loading}
             >
               {isSubmitting || loading ? (

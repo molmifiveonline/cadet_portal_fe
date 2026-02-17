@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, User, Mail, Shield, Lock } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import {
@@ -143,86 +143,101 @@ const UserForm = () => {
         </div>
       </div>
 
-      <div className='bg-white rounded-xl shadow-sm border border-gray-100 p-8'>
+      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8'>
         <form onSubmit={handleSubmit} className='space-y-6'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                First Name <span className='text-red-500'>*</span>
+                First Name <span className='text-red-500 ml-1'>*</span>
               </label>
-              <Input
-                name='first_name'
-                type='text'
-                placeholder='John'
-                value={formData.first_name}
-                onChange={handleInputChange}
-                className='h-11'
-                required
-              />
+              <div className='relative'>
+                <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  name='first_name'
+                  type='text'
+                  placeholder='John'
+                  value={formData.first_name}
+                  onChange={handleInputChange}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  required
+                />
+              </div>
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Last Name <span className='text-red-500'>*</span>
+                Last Name <span className='text-red-500 ml-1'>*</span>
               </label>
-              <Input
-                name='last_name'
-                type='text'
-                placeholder='Doe'
-                value={formData.last_name}
-                onChange={handleInputChange}
-                className='h-11'
-                required
-              />
+              <div className='relative'>
+                <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  name='last_name'
+                  type='text'
+                  placeholder='Doe'
+                  value={formData.last_name}
+                  onChange={handleInputChange}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  required
+                />
+              </div>
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Email Address <span className='text-red-500'>*</span>
+                Email Address <span className='text-red-500 ml-1'>*</span>
               </label>
-              <Input
-                name='email'
-                type='email'
-                placeholder='user@example.com'
-                value={formData.email}
-                onChange={handleInputChange}
-                className='h-11'
-                required
-              />
+              <div className='relative'>
+                <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  name='email'
+                  type='email'
+                  placeholder='user@example.com'
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  required
+                />
+              </div>
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Role <span className='text-red-500'>*</span>
+                Role <span className='text-red-500 ml-1'>*</span>
               </label>
-              <Select onValueChange={handleRoleChange} value={formData.role}>
-                <SelectTrigger className='h-11'>
-                  <SelectValue placeholder='Select a role' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='SuperAdmin'>SuperAdmin</SelectItem>
-                  <SelectItem value='Trainer'>Trainer</SelectItem>
-                  <SelectItem value='Candidate'>Candidate</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className='relative'>
+                <Shield className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10' />
+                <Select onValueChange={handleRoleChange} value={formData.role}>
+                  <SelectTrigger className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                    <SelectValue placeholder='Select a role' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='SuperAdmin'>SuperAdmin</SelectItem>
+                    <SelectItem value='Trainer'>Trainer</SelectItem>
+                    <SelectItem value='Candidate'>Candidate</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
                 {isEdit ? 'Password (leave blank to keep current)' : 'Password'}
-                {!isEdit && <span className='text-red-500'> *</span>}
+                {!isEdit && <span className='text-red-500 ml-1'> *</span>}
               </label>
-              <Input
-                name='password'
-                type='password'
-                placeholder='••••••••'
-                value={formData.password}
-                onChange={handleInputChange}
-                className='h-11'
-                required={!isEdit}
-              />
+              <div className='relative'>
+                <Lock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  name='password'
+                  type='password'
+                  placeholder='••••••••'
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  required={!isEdit}
+                />
+              </div>
               {isEdit && (
-                <p className='text-xs text-slate-500'>
+                <p className='text-xs text-slate-500 mt-1'>
                   Only enter a password if you want to change it.
                 </p>
               )}
@@ -230,17 +245,16 @@ const UserForm = () => {
           </div>
 
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-100 mt-8'>
-            <Button
+            <button
               type='button'
-              variant='outline'
               onClick={() => navigate('/users')}
-              className='h-11 px-6'
+              className='px-6 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors'
             >
               Cancel
-            </Button>
+            </button>
             <Button
               type='submit'
-              className='bg-[#3a5f9e] hover:bg-[#325186] text-white h-11 px-8'
+              className='bg-[#3a5f9e] hover:bg-[#325186] text-white px-6 py-2.5 h-auto'
               disabled={loading}
             >
               {loading ? (

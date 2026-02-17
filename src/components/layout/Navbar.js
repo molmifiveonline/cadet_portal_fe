@@ -24,13 +24,6 @@ const Navbar = () => {
         >
           <Menu className='w-6 h-6' />
         </button>
-
-        <div className='flex flex-col'>
-          <h1 className='text-lg font-bold text-slate-700 tracking-tight flex items-center gap-2'>
-            Hi, {user?.name || user?.first_name || 'Admin'}{' '}
-            <span className='animate-wave origin-[70%_70%]'>👋</span>
-          </h1>
-        </div>
       </div>
 
       <div className='flex items-center gap-2 sm:gap-4'>

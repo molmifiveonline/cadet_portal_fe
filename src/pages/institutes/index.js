@@ -167,6 +167,21 @@ const InstitutesManagement = () => {
             </Button>
           </Permission>
 
+          {selectedInstitutes.length === 0 && (
+            <Button
+              variant='outline'
+              onClick={() => {
+                toast.error(
+                  'Please select at least one institute to send an email',
+                );
+              }}
+              className='gap-2'
+            >
+              <Mail size={20} />
+              Send Email
+            </Button>
+          )}
+
           <Permission module='institutes' action='create'>
             <Button
               variant='default'
@@ -180,27 +195,27 @@ const InstitutesManagement = () => {
       </div>
 
       {selectedInstitutes.length > 0 && (
-        <div className='mb-4 flex items-center gap-4 bg-blue-50 p-3 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-2'>
-          <span className='text-sm text-blue-700 font-medium'>
-            {selectedInstitutes.length} institute
-            {selectedInstitutes.length !== 1 ? 's' : ''} selected
+        <div className='mb-4 flex items-center gap-4 bg-[#3a5f9e]/10 p-3 rounded-lg border border-[#3a5f9e]/20 animate-in fade-in slide-in-from-top-2'>
+          <span className='text-sm text-[#3a5f9e] font-medium'>
+            You have selected {selectedInstitutes.length} institute
+            {selectedInstitutes.length !== 1 ? 's' : ''}. Choose an action:
           </span>
           <div className='flex gap-2 ml-auto'>
             <Button
               variant='outline'
               size='sm'
               onClick={() => setSelectedInstitutes([])}
-              className='text-blue-600 border-blue-200 hover:bg-blue-100'
+              className='text-[#3a5f9e] border-[#3a5f9e]/20 hover:bg-[#3a5f9e]/10'
             >
               Clear Selection
             </Button>
             <Button
               size='sm'
               onClick={() => setIsEmailModalOpen(true)}
-              className='bg-blue-600 hover:bg-blue-700 text-white gap-2'
+              className='bg-[#3a5f9e] hover:bg-[#325186] text-white gap-2'
             >
               <Mail size={16} />
-              Send Email
+              Send Email to Selected
             </Button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { Upload, ListFilter } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import CadetTable from './CadetTable';
 import CadetImportModal from './CadetImportModal';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import { Button } from '../../components/ui/button';
 import Permission from '../../components/common/Permission';
 
@@ -37,6 +38,12 @@ const CadetManagement = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showShortlistedOnly, setShowShortlistedOnly] = useState(false);
   const [shortlistStats, setShortlistStats] = useState(null);
+
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    cadetId: null,
+    cadetName: '',
+  });
 
   const searchTimeoutRef = useRef(null);
 
@@ -224,6 +231,26 @@ const CadetManagement = () => {
     );
   };
 
+  const handleDeleteClick = (cadet) => {
+    setDeleteModal({
+      isOpen: true,
+      cadetId: cadet.id,
+      cadetName: cadet.name,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await api.delete(`/cadets/${deleteModal.cadetId}`);
+      toast.success('Cadet deleted successfully');
+      setDeleteModal({ isOpen: false, cadetId: null, cadetName: '' });
+      fetchCadets(pagination.current_page); // Refresh list
+    } catch (error) {
+      console.error('Error deleting cadet:', error);
+      toast.error('Failed to delete cadet');
+    }
+  };
+
   return (
     <div className='py-6'>
       {/* Header */}
@@ -297,6 +324,7 @@ const CadetManagement = () => {
         showShortlistedOnly={showShortlistedOnly}
         onToggleShortlisted={handleToggleShortlisted}
         shortlistStats={shortlistStats}
+        onDelete={handleDeleteClick}
       />
 
       <CadetImportModal
@@ -304,6 +332,16 @@ const CadetManagement = () => {
         onClose={() => setShowImportModal(false)}
         institutes={institutes}
         onSuccess={handleImportSuccess}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() =>
+          setDeleteModal({ isOpen: false, cadetId: null, cadetName: '' })
+        }
+        onConfirm={handleConfirmDelete}
+        title='Delete Cadet'
+        message={`Are you sure you want to delete ${deleteModal.cadetName}? This action cannot be undone.`}
       />
     </div>
   );

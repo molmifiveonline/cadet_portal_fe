@@ -1,49 +1,94 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
 import {
   ArrowLeft,
   Mail,
   Phone,
   Calendar,
   User,
-  BookOpen,
+  MapPin,
   Hash,
-  Percent,
   School,
-  Ruler,
-  Weight,
+  Percent,
+  Book,
   Activity,
   Award,
-  Book,
+  Ruler,
+  Weight,
+  Eye,
+  Syringe,
+  Home,
+  Briefcase,
+  Globe,
+  Image as ImageIcon,
   FileText,
+  Save,
+  X,
+  Loader2,
+  Camera,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
+import SectionTitle from '../../components/common/SectionTitle';
+import SharedDetailItem from '../../components/common/DetailItem';
 
 const CadetDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [cadet, setCadet] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const fileInputRef = React.useRef(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm();
+
+  useEffect(() => {
+    // Check if we should start in edit mode
+    if (location.state?.editMode) {
+      setIsEditing(true);
+      // Clear state so refresh doesn't keep it
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     const fetchCadetDetails = async () => {
       try {
         setLoading(true);
-        // Assuming the API endpoint is /cadets/:id
         const response = await api.get(`/cadets/${id}`);
-        setCadet(response.data.data || response.data);
+        const data = response.data.data || response.data;
+        setCadet(data);
+
+        // Format dates for form
+        const formData = { ...data };
+        ['dob', 'passing_out_date'].forEach((field) => {
+          if (formData[field]) {
+            const date = new Date(formData[field]);
+            if (!isNaN(date.getTime())) {
+              formData[field] = date.toISOString().split('T')[0];
+            } else {
+              console.warn(`Invalid date for field ${field}:`, formData[field]);
+              formData[field] = '';
+            }
+          }
+        });
+
+        reset(formData);
       } catch (error) {
         console.error('Error fetching cadet details:', error);
         toast.error('Failed to load cadet details');
-        navigate('/cadets'); // Redirect back on error
+        navigate('/cadets');
       } finally {
         setLoading(false);
       }
@@ -52,7 +97,57 @@ const CadetDetails = () => {
     if (id) {
       fetchCadetDetails();
     }
-  }, [id, navigate]);
+  }, [id, navigate, reset]);
+
+  const onSubmit = async (data) => {
+    try {
+      let payload = data;
+      let headers = {};
+
+      if (selectedFile) {
+        const formData = new FormData();
+        // Append all data fields
+        Object.keys(data).forEach((key) => {
+          if (data[key] !== null && data[key] !== undefined) {
+            formData.append(key, data[key]);
+          }
+        });
+        formData.append('photo', selectedFile);
+        payload = formData;
+        headers = { 'Content-Type': 'multipart/form-data' };
+      }
+
+      await api.put(`/cadets/${id}`, payload, { headers });
+      toast.success('Cadet updated successfully');
+
+      // Refresh cadet data to get the new photo URL
+      const response = await api.get(`/cadets/${id}`);
+      setCadet(response.data.data || response.data);
+
+      setIsEditing(false);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    } catch (error) {
+      console.error('Error updating cadet:', error);
+      toast.error('Failed to update cadet');
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+    }
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    reset();
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  };
 
   if (loading) {
     return (
@@ -62,455 +157,617 @@ const CadetDetails = () => {
     );
   }
 
-  if (!cadet) {
-    return (
-      <div className='flex flex-col items-center justify-center min-h-[500px] gap-4'>
-        <h2 className='text-xl font-semibold text-gray-700'>Cadet not found</h2>
-        <Button onClick={() => navigate('/cadets')}>Back to List</Button>
-      </div>
-    );
-  }
-
-  const DetailItem = ({ icon: Icon, label, value }) => (
-    <div className='flex items-start gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100'>
-      <div className='p-2 bg-white rounded-md shadow-sm text-blue-600'>
-        <Icon size={18} />
-      </div>
-      <div>
-        <p className='text-xs text-gray-500 font-medium uppercase tracking-wide'>
-          {label}
-        </p>
-        <p className='text-gray-900 font-medium mt-0.5'>{value || '-'}</p>
-      </div>
-    </div>
+  // Wrapper to inject form props
+  const DetailItem = (props) => (
+    <SharedDetailItem
+      {...props}
+      isEditing={isEditing}
+      register={register}
+      errors={errors}
+    />
   );
 
   return (
-    <div className='py-6 space-y-6 animate-in fade-in slide-in-from-bottom-4'>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className='py-6 space-y-6 animate-in fade-in slide-in-from-bottom-4'
+    >
       {/* Header */}
-      <div className='flex items-center gap-4 mb-6'>
+      <div className='flex items-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100'>
         <Button
-          variant='outline'
+          type='button'
+          variant='ghost'
           size='icon'
           onClick={() => navigate('/cadets')}
           className='rounded-full hover:bg-gray-100'
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={24} className='text-gray-600' />
         </Button>
         <div>
           <h1 className='text-2xl font-bold text-gray-900'>Cadet Details</h1>
           <p className='text-gray-500 text-sm'>
-            View full information about {cadet.name}
+            {isEditing
+              ? `Editing ${cadet.name}`
+              : `View full information about ${cadet.name}`}
           </p>
+        </div>
+        <div className='ml-auto flex gap-2'>
+          {isEditing ? (
+            <>
+              <Button
+                type='button'
+                variant='outline'
+                onClick={cancelEdit}
+                className='gap-2'
+                disabled={isSubmitting}
+              >
+                <X size={16} /> Cancel
+              </Button>
+              <Button
+                type='submit'
+                className='gap-2 bg-blue-600 hover:bg-blue-700 text-white'
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className='animate-spin' size={16} />
+                ) : (
+                  <Save size={16} />
+                )}
+                Save Changes
+              </Button>
+            </>
+          ) : (
+            <Button
+              type='button'
+              onClick={() => setIsEditing(true)}
+              className='gap-2'
+            >
+              <FileText size={16} /> Edit Cadet
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-        {/* Main Info Card */}
-        <Card className='md:col-span-1 shadow-sm border-gray-200'>
-          <CardHeader className='bg-gray-50/50 border-b border-gray-100 pb-4'>
-            <div className='flex justify-center mb-4'>
-              <div className='h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-3xl font-bold border-4 border-white shadow-md'>
-                {cadet.name?.charAt(0).toUpperCase()}
-              </div>
-            </div>
-            <CardTitle className='text-center text-xl'>{cadet.name}</CardTitle>
-            <p className='text-center text-gray-500 text-sm'>{cadet.email}</p>
-            <div className='mt-4 flex justify-center'>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  cadet.current_stage === 'selected'
-                    ? 'bg-green-100 text-green-800'
-                    : cadet.current_stage === 'rejected'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-blue-100 text-blue-800'
+      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8'>
+        <div className='space-y-8'>
+          {/* Photo Section */}
+          <div className='bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col md:flex-row items-center gap-6'>
+            <div className='relative group'>
+              <input
+                type='file'
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept='image/*'
+                className='hidden'
+              />
+              <div
+                className={`w-32 h-32 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-200 flex items-center justify-center relative ${
+                  isEditing ? 'cursor-pointer' : ''
                 }`}
+                onClick={() => isEditing && fileInputRef.current?.click()}
               >
-                {cadet.current_stage?.replace(/_/g, ' ').toUpperCase() ||
-                  'UNKNOWN'}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className='pt-6 space-y-4'>
-            <div className='space-y-3'>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <Mail size={16} />
-                <span className='truncate'>{cadet.email}</span>
-              </div>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <Phone size={16} />
-                <span>{cadet.phone || '-'}</span>
-              </div>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <User size={16} />
-                <span>{cadet.gender || '-'}</span>
-              </div>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <Calendar size={16} />
-                <span>
-                  {cadet.dob ? new Date(cadet.dob).toLocaleDateString() : '-'}
-                </span>
-              </div>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <User size={16} />
-                <span>Hometown: {cadet.hometown || '-'}</span>
-              </div>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <Activity size={16} />
-                <span>Blood Group: {cadet.blood_group || '-'}</span>
-              </div>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <Ruler size={16} />
-                <span>Height: {cadet.height ? `${cadet.height} cm` : '-'}</span>
-              </div>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <Weight size={16} />
-                <span>Weight: {cadet.weight ? `${cadet.weight} kg` : '-'}</span>
-              </div>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <Activity size={16} />
-                <span>BMI: {cadet.bmi || '-'}</span>
+                {previewUrl || cadet.photo_path ? (
+                  <img
+                    src={previewUrl || cadet.photo_path}
+                    alt={cadet.name}
+                    className='w-full h-full object-cover'
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src =
+                        'https://via.placeholder.com/150?text=No+Image';
+                    }}
+                  />
+                ) : (
+                  <ImageIcon size={48} className='text-gray-400' />
+                )}
+
+                {isEditing && (
+                  <div className='absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity'>
+                    <Camera className='text-white w-8 h-8' />
+                  </div>
+                )}
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Detailed Info Grid */}
-        <div className='md:col-span-2 space-y-6'>
-          {/* Official Documents */}
-          <Card className='shadow-sm border-gray-200'>
-            <CardHeader className='pb-3 border-b border-gray-100'>
-              <CardTitle className='text-lg flex items-center gap-2'>
-                <FileText size={20} className='text-blue-600' />
-                Official Documents
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='pt-6'>
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                <DetailItem
-                  icon={Hash}
-                  label='INDoS Number'
-                  value={cadet.indos_number}
-                />
-                <DetailItem
-                  icon={Hash}
-                  label='CDC Number'
-                  value={cadet.cdc_number}
-                />
-                <DetailItem
-                  icon={Hash}
-                  label='Passport Number'
-                  value={cadet.passport_number}
-                />
+            <div className='flex-1 text-center md:text-left'>
+              <h3 className='text-xl font-bold text-gray-800'>{cadet.name}</h3>
+              <p className='text-gray-500 font-medium'>
+                {cadet.course || 'Course not specified'}
+              </p>
+              <div className='flex flex-wrap gap-2 mt-3 justify-center md:justify-start'>
+                {cadet.phone && (
+                  <span className='px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-100'>
+                    Mobile: {cadet.phone}
+                  </span>
+                )}
+                {cadet.institute_name && (
+                  <span className='px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full border border-purple-100'>
+                    Institute: {cadet.institute_name}
+                  </span>
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Academic & Course Info */}
-          <Card className='shadow-sm border-gray-200'>
-            <CardHeader className='pb-3 border-b border-gray-100'>
-              <CardTitle className='text-lg flex items-center gap-2'>
-                <School size={20} className='text-blue-600' />
-                Academic & Course Info
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='pt-6'>
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+          {/* Personal Information */}
+          <div>
+            <SectionTitle title='Personal Information' icon={User} />
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+              <DetailItem
+                label='Full Name'
+                value={cadet.name}
+                name='name'
+                required
+                icon={User}
+              />
+              <DetailItem
+                label='Email'
+                value={cadet.email}
+                name='email'
+                type='email'
+                required
+                icon={Mail}
+              />
+              <DetailItem
+                label='Phone'
+                value={cadet.phone}
+                name='phone'
+                required
+                icon={Phone}
+              />
+              <DetailItem
+                label='Gender'
+                value={cadet.gender}
+                name='gender'
+                icon={User}
+              />
+              <DetailItem
+                label='Date of Birth'
+                value={
+                  cadet.dob ? new Date(cadet.dob).toLocaleDateString() : '-'
+                }
+                name='dob'
+                type='date'
+                icon={Calendar}
+              />
+              <DetailItem
+                label='Hometown'
+                value={cadet.hometown}
+                name='hometown'
+                icon={MapPin}
+              />
+              <DetailItem
+                label='Nationality'
+                value={cadet.nationality}
+                name='nationality'
+                icon={Globe}
+              />
+              <DetailItem
+                label='Blood Group'
+                value={cadet.blood_group}
+                name='blood_group'
+                icon={Activity}
+              />
+            </div>
+          </div>
+
+          {/* Physical Details */}
+          <div>
+            <SectionTitle title='Physical Details' icon={Activity} />
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+              <DetailItem
+                label='Height (cm)'
+                value={cadet.height ? `${cadet.height} cm` : '-'}
+                name='height'
+                type='float'
+                icon={Ruler}
+              />
+              <DetailItem
+                label='Weight (kg)'
+                value={cadet.weight ? `${cadet.weight} kg` : '-'}
+                name='weight'
+                type='float'
+                icon={Weight}
+              />
+              <DetailItem
+                label='Waist (cm)'
+                value={cadet.waist_in_cm ? `${cadet.waist_in_cm} cm` : '-'}
+                name='waist_in_cm'
+                type='float'
+                icon={Ruler}
+              />
+              <DetailItem
+                label='BMI'
+                value={cadet.bmi}
+                name='bmi'
+                type='float'
+                icon={Activity}
+              />
+              <DetailItem
+                label='Eye Color'
+                value={cadet.eye_color}
+                name='eye_color'
+                icon={Eye}
+              />
+              <DetailItem
+                label='Eye Vision'
+                value={cadet.eye_vision}
+                name='eye_vision'
+                icon={Eye}
+              />
+            </div>
+          </div>
+
+          {/* Medical Information */}
+          <div>
+            <SectionTitle title='Medical Information' icon={Syringe} />
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+              <DetailItem
+                label='COVID Vaccination'
+                value={cadet.covid_vaccination}
+                name='covid_vaccination'
+                icon={Syringe}
+              />
+              <DetailItem
+                label='COVID Dose'
+                value={cadet.covid_dose}
+                name='covid_dose'
+                icon={Syringe}
+              />
+              <DetailItem
+                label='Medical History'
+                value={cadet.medical_history}
+                name='medical_history'
+                icon={Activity}
+              />
+              <DetailItem
+                label='Family Medical History'
+                value={cadet.family_medical_history}
+                name='family_medical_history'
+                icon={Activity}
+              />
+            </div>
+          </div>
+
+          {/* Documents */}
+          <div>
+            <SectionTitle title='Documents & IDs' icon={Hash} />
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+              <DetailItem
+                label='INDoS Number'
+                value={cadet.indos_number}
+                name='indos_number'
+                icon={Hash}
+              />
+              <DetailItem
+                label='CDC Number'
+                value={cadet.cdc_number}
+                name='cdc_number'
+                icon={Hash}
+              />
+              <DetailItem
+                label='Passport Number'
+                value={cadet.passport_number}
+                name='passport_number'
+                icon={Hash}
+              />
+            </div>
+          </div>
+
+          {/* Academic Information */}
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+            {/* 10th Standard */}
+            <div>
+              <SectionTitle title='10th Standard' icon={School} />
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <DetailItem
+                  label='Board'
+                  value={cadet.tenth_board}
+                  name='tenth_board'
                   icon={School}
-                  label='Institute'
-                  value={cadet.institute_name}
                 />
                 <DetailItem
-                  icon={BookOpen}
-                  label='Course'
-                  value={cadet.course}
-                />
-                <DetailItem icon={Hash} label='Batch' value={cadet.batch} />
-                <DetailItem
-                  icon={Award}
-                  label='Batch Rank'
-                  value={cadet.batch_rank}
-                />
-                <DetailItem
+                  label='Year'
+                  value={cadet.tenth_year}
+                  name='tenth_year'
+                  type='number'
                   icon={Calendar}
-                  label='Passing Out Date'
+                />
+                <DetailItem
+                  label='Percentage'
                   value={
-                    cadet.passing_out_date
-                      ? new Date(cadet.passing_out_date).toLocaleDateString()
+                    cadet.tenth_percentage ? `${cadet.tenth_percentage}%` : '-'
+                  }
+                  name='tenth_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Maths'
+                  value={cadet.tenth_maths ? `${cadet.tenth_maths}%` : '-'}
+                  name='tenth_maths'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Science'
+                  value={cadet.tenth_science ? `${cadet.tenth_science}%` : '-'}
+                  name='tenth_science'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='English'
+                  value={cadet.tenth_english ? `${cadet.tenth_english}%` : '-'}
+                  name='tenth_english'
+                  type='float'
+                  icon={Percent}
+                />
+              </div>
+            </div>
+
+            {/* 12th Standard */}
+            <div>
+              <SectionTitle title='12th Standard' icon={School} />
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <DetailItem
+                  label='Board'
+                  value={cadet.twelfth_board}
+                  name='twelfth_board'
+                  icon={School}
+                />
+                <DetailItem
+                  label='Year'
+                  value={cadet.twelfth_year}
+                  name='twelfth_year'
+                  type='number'
+                  icon={Calendar}
+                />
+                <DetailItem
+                  label='Percentage'
+                  value={
+                    cadet.twelfth_percentage
+                      ? `${cadet.twelfth_percentage}%`
                       : '-'
                   }
+                  name='twelfth_percentage'
+                  type='float'
+                  icon={Percent}
                 />
                 <DetailItem
-                  icon={User}
-                  label='Age at Passing Out'
-                  value={cadet.age_at_passing_out}
+                  label='PCM %'
+                  value={
+                    cadet.pcm_percentage ? `${cadet.pcm_percentage}%` : '-'
+                  }
+                  name='pcm_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Maths'
+                  value={cadet.twelfth_maths ? `${cadet.twelfth_maths}%` : '-'}
+                  name='twelfth_maths'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Physics'
+                  value={
+                    cadet.twelfth_physics ? `${cadet.twelfth_physics}%` : '-'
+                  }
+                  name='twelfth_physics'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Chemistry'
+                  value={
+                    cadet.twelfth_chemistry
+                      ? `${cadet.twelfth_chemistry}%`
+                      : '-'
+                  }
+                  name='twelfth_chemistry'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='English'
+                  value={
+                    cadet.twelfth_english ? `${cadet.twelfth_english}%` : '-'
+                  }
+                  name='twelfth_english'
+                  type='float'
+                  icon={Percent}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Educational Qualifications */}
-          <Card className='shadow-sm border-gray-200'>
-            <CardHeader className='pb-3 border-b border-gray-100'>
-              <CardTitle className='text-lg flex items-center gap-2'>
-                <Percent size={20} className='text-blue-600' />
-                Educational Qualifications
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='pt-6'>
-              <div className='space-y-6'>
-                {/* 10th Standard */}
-                <div>
-                  <h4 className='text-sm font-semibold text-gray-700 mb-3'>
-                    10th Standard
-                  </h4>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                    <DetailItem
-                      icon={School}
-                      label='Board'
-                      value={cadet.tenth_board}
-                    />
-                    <DetailItem
-                      icon={Calendar}
-                      label='Year'
-                      value={cadet.tenth_year}
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='Percentage'
-                      value={
-                        cadet.tenth_percentage
-                          ? `${cadet.tenth_percentage}%`
-                          : '-'
-                      }
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='Maths'
-                      value={cadet.tenth_maths ? `${cadet.tenth_maths}%` : '-'}
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='Science'
-                      value={
-                        cadet.tenth_science ? `${cadet.tenth_science}%` : '-'
-                      }
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='English'
-                      value={
-                        cadet.tenth_english ? `${cadet.tenth_english}%` : '-'
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* 12th Standard */}
-                <div>
-                  <h4 className='text-sm font-semibold text-gray-700 mb-3 border-t pt-4'>
-                    12th Standard
-                  </h4>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                    <DetailItem
-                      icon={School}
-                      label='Board'
-                      value={cadet.twelfth_board}
-                    />
-                    <DetailItem
-                      icon={Calendar}
-                      label='Year'
-                      value={cadet.twelfth_year}
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='Percentage'
-                      value={
-                        cadet.twelfth_percentage
-                          ? `${cadet.twelfth_percentage}%`
-                          : '-'
-                      }
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='English'
-                      value={
-                        cadet.twelfth_english
-                          ? `${cadet.twelfth_english}%`
-                          : '-'
-                      }
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='Physics'
-                      value={
-                        cadet.twelfth_physics
-                          ? `${cadet.twelfth_physics}%`
-                          : '-'
-                      }
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='Chemistry'
-                      value={
-                        cadet.twelfth_chemistry
-                          ? `${cadet.twelfth_chemistry}%`
-                          : '-'
-                      }
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='Maths'
-                      value={
-                        cadet.twelfth_maths ? `${cadet.twelfth_maths}%` : '-'
-                      }
-                    />
-                    <DetailItem
-                      icon={Percent}
-                      label='PCM Percentage'
-                      value={
-                        cadet.pcm_percentage ? `${cadet.pcm_percentage}%` : '-'
-                      }
-                    />
-                  </div>
-                </div>
-
-                {/* Degree & Others */}
-                <div>
-                  <h4 className='text-sm font-semibold text-gray-700 mb-3 border-t pt-4'>
-                    Degree & Others
-                  </h4>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                    <DetailItem
-                      icon={Percent}
-                      label='Degree Percentage'
-                      value={
-                        cadet.degree_percentage
-                          ? `${cadet.degree_percentage}%`
-                          : '-'
-                      }
-                    />
-                    <DetailItem
-                      icon={Book}
-                      label='No. of Arrears'
-                      value={cadet.no_of_arrears}
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* IMU Info */}
-          <Card className='shadow-sm border-gray-200'>
-            <CardHeader className='pb-3 border-b border-gray-100'>
-              <CardTitle className='text-lg flex items-center gap-2'>
-                <School size={20} className='text-blue-600' />
-                IMU Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='pt-6'>
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+          {/* Higher Education & IMU */}
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+            {/* Graduation */}
+            <div>
+              <SectionTitle title='Graduation / Degree' icon={Book} />
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <DetailItem
-                  icon={Award}
+                  label='Course'
+                  value={cadet.graduation_course || cadet.course}
+                  name='graduation_course'
+                  icon={Book}
+                />
+                <DetailItem
+                  label='University'
+                  value={cadet.graduation_university}
+                  name='graduation_university'
+                  icon={School}
+                />
+                <DetailItem
+                  label='Percentage'
+                  value={
+                    cadet.degree_percentage
+                      ? `${cadet.degree_percentage}%`
+                      : '-'
+                  }
+                  name='degree_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+              </div>
+            </div>
+
+            {/* IMU Details */}
+            <div>
+              <SectionTitle title='IMU Performance' icon={Award} />
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <DetailItem
                   label='IMU Rank'
                   value={cadet.imu_rank}
+                  name='imu_rank'
+                  type='number'
+                  icon={Award}
                 />
                 <DetailItem
-                  icon={Percent}
-                  label='IMU Avg %'
+                  label='Avg %'
                   value={
                     cadet.imu_avg_percentage
                       ? `${cadet.imu_avg_percentage}%`
                       : '-'
                   }
-                />
-                <DetailItem
+                  name='imu_avg_percentage'
+                  type='float'
                   icon={Percent}
-                  label='Sem 1'
-                  value={cadet.imu_sem1}
-                />
-                <DetailItem
-                  icon={Percent}
-                  label='Sem 2'
-                  value={cadet.imu_sem2}
-                />
-                <DetailItem
-                  icon={Percent}
-                  label='Sem 3'
-                  value={cadet.imu_sem3}
-                />
-                <DetailItem
-                  icon={Percent}
-                  label='Sem 4'
-                  value={cadet.imu_sem4}
-                />
-                <DetailItem
-                  icon={Percent}
-                  label='Sem 5'
-                  value={cadet.imu_sem5}
-                />
-                <DetailItem
-                  icon={Percent}
-                  label='Sem 6'
-                  value={cadet.imu_sem6}
-                />
-                <DetailItem
-                  icon={Percent}
-                  label='Sem 7'
-                  value={cadet.imu_sem7}
-                />
-                <DetailItem
-                  icon={Percent}
-                  label='Sem 8'
-                  value={cadet.imu_sem8}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Extra Curricular */}
-          <Card className='shadow-sm border-gray-200'>
-            <CardHeader className='pb-3 border-b border-gray-100'>
-              <CardTitle className='text-lg flex items-center gap-2'>
-                <Activity size={20} className='text-blue-600' />
-                Extra Curricular
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='pt-6'>
-              <p className='text-gray-700 whitespace-pre-wrap'>
-                {cadet.extra_curricular ||
-                  'No extra curricular details provided.'}
-              </p>
-            </CardContent>
-          </Card>
+          {/* Course & Training */}
+          <div>
+            <SectionTitle title='Course & Training Details' icon={Briefcase} />
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+              <DetailItem
+                label='Batch'
+                value={cadet.batch}
+                name='batch'
+                icon={Hash}
+              />
+              <DetailItem
+                label='Batch Rank'
+                value={cadet.batch_rank}
+                name='batch_rank'
+                icon={Award}
+              />
+              <DetailItem
+                label='Arrears'
+                value={cadet.no_of_arrears}
+                name='no_of_arrears'
+                type='number'
+                icon={Book}
+              />
+              <DetailItem
+                label='Passing Out Date'
+                value={
+                  cadet.passing_out_date
+                    ? new Date(cadet.passing_out_date).toLocaleDateString()
+                    : '-'
+                }
+                name='passing_out_date'
+                type='date'
+                icon={Calendar}
+              />
+              <DetailItem
+                label='Age at Passing'
+                value={cadet.age_at_passing_out}
+                name='age_at_passing_out'
+                type='number'
+                icon={User}
+              />
+              <DetailItem
+                label='Post Applied For'
+                value={cadet.post_applied_for}
+                name='post_applied_for'
+                icon={Briefcase}
+              />
+            </div>
+          </div>
 
-          {/* Metadata */}
-          <Card className='shadow-sm border-gray-200'>
-            <CardHeader className='pb-3 border-b border-gray-100'>
-              <CardTitle className='text-lg flex items-center gap-2'>
-                <Activity size={20} className='text-blue-600' />
-                System Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='pt-6'>
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <DetailItem
-                  icon={Calendar}
-                  label='Created At'
-                  value={
-                    cadet.created_at
-                      ? new Date(cadet.created_at).toLocaleDateString()
-                      : '-'
-                  }
-                />
+          {/* Family & Additional */}
+          <div>
+            <SectionTitle title='Family & Additional Info' icon={Home} />
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+              <DetailItem
+                label="Father's Occupation"
+                value={cadet.father_occupation}
+                name='father_occupation'
+                icon={Briefcase}
+              />
+              <DetailItem
+                label="Mother's Occupation"
+                value={cadet.mother_occupation}
+                name='mother_occupation'
+                icon={Briefcase}
+              />
+              <DetailItem
+                label='Languages'
+                value={cadet.language_known}
+                name='language_known'
+                icon={Globe}
+              />
+              <DetailItem
+                label='Loan'
+                value={cadet.educational_loan}
+                name='educational_loan'
+                icon={FileText}
+              />
+              <DetailItem
+                label='Extra Curricular'
+                value={cadet.extra_curricular}
+                name='extra_curricular'
+                icon={Activity}
+              />
+            </div>
+          </div>
+
+          {/* Address */}
+          <div>
+            <SectionTitle title='Address' icon={MapPin} />
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div className='p-4 bg-gray-50 rounded-lg border border-gray-100'>
+                <h4 className='font-semibold text-gray-700 mb-2'>
+                  Current Address
+                </h4>
+                {isEditing ? (
+                  <textarea
+                    {...register('address')}
+                    className='w-full p-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all'
+                    rows={3}
+                  />
+                ) : (
+                  <p className='text-gray-600 text-sm whitespace-pre-wrap'>
+                    {cadet.address || '-'}
+                  </p>
+                )}
               </div>
-            </CardContent>
-          </Card>
+              <div className='p-4 bg-gray-50 rounded-lg border border-gray-100'>
+                <h4 className='font-semibold text-gray-700 mb-2'>
+                  Permanent Address
+                </h4>
+                {isEditing ? (
+                  <textarea
+                    {...register('permanent_address')}
+                    className='w-full p-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all'
+                    rows={3}
+                  />
+                ) : (
+                  <p className='text-gray-600 text-sm whitespace-pre-wrap'>
+                    {cadet.permanent_address || '-'}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </form>
   );
 };
 

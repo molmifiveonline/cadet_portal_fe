@@ -15,6 +15,7 @@ import { Button } from '../../components/ui/button';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 import Permission from '../../components/common/Permission';
+import { Input } from 'components/ui/input';
 
 const InstituteSubmissions = () => {
   const [submissions, setSubmissions] = useState([]);
@@ -115,6 +116,10 @@ const InstituteSubmissions = () => {
   };
 
   const handleBulkDeleteClick = () => {
+    if (selectedSubmissions.length === 0) {
+      toast.error('Please select at least one submission to delete');
+      return;
+    }
     setConfirmationModal({
       isOpen: true,
       type: 'bulk-delete',
@@ -123,6 +128,10 @@ const InstituteSubmissions = () => {
   };
 
   const handleBulkImportClick = () => {
+    if (selectedSubmissions.length === 0) {
+      toast.error('Please select at least one submission to import');
+      return;
+    }
     // Filter out already imported submissions if needed, strictly speaking backend handles it but good to warn?
     // Backend returns status for each.
     setConfirmationModal({
@@ -317,7 +326,7 @@ const InstituteSubmissions = () => {
           message:
             'Are you sure you want to import this submission? It will add cadets to the database.',
           confirmText: 'Import',
-          confirmClass: 'bg-blue-600 hover:bg-blue-700',
+          confirmClass: 'bg-[#3a5f9e] hover:bg-[#325186]',
         };
       case 'delete':
         return {
@@ -325,21 +334,21 @@ const InstituteSubmissions = () => {
           message:
             'Are you sure you want to delete this submission? This action cannot be undone.',
           confirmText: 'Delete',
-          confirmClass: 'bg-red-600 hover:bg-red-700',
+          confirmClass: 'bg-[#3a5f9e] hover:bg-[#325186]',
         };
       case 'bulk-delete':
         return {
           title: 'Bulk Delete',
           message: `Are you sure you want to delete ${selectedSubmissions.length} submissions?`,
           confirmText: 'Delete All',
-          confirmClass: 'bg-red-600 hover:bg-red-700',
+          confirmClass: 'bg-[#3a5f9e] hover:bg-[#325186]',
         };
       case 'bulk-import':
         return {
           title: 'Bulk Import',
           message: `Are you sure you want to import ${selectedSubmissions.length} submissions?`,
           confirmText: 'Import All',
-          confirmClass: 'bg-blue-600 hover:bg-blue-700',
+          confirmClass: 'bg-[#3a5f9e] hover:bg-[#325186]',
         };
       default:
         return {};
@@ -365,43 +374,43 @@ const InstituteSubmissions = () => {
             <div className='flex items-center gap-2 w-full md:w-auto flex-1'>
               <div className='relative w-full md:w-80'>
                 <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4' />
-                <input
+                <Input
                   type='text'
                   placeholder='Search by institute or file name...'
                   className='w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
                   onChange={(e) => handleSearch(e.target.value)}
                 />
               </div>
-              {selectedSubmissions.length > 0 && (
-                <div className='flex gap-2 animate-in fade-in slide-in-from-left-2'>
-                  <Permission module='institutes' action='edit'>
-                    <Button
-                      size='sm'
-                      variant='default'
-                      onClick={handleBulkImportClick}
-                      className='gap-2'
-                    >
-                      <Upload className='w-4 h-4' />
-                      Import ({selectedSubmissions.length})
-                    </Button>
-                  </Permission>
-                  <Permission module='institutes' action='delete'>
-                    <Button
-                      size='sm'
-                      variant='destructive'
-                      onClick={handleBulkDeleteClick}
-                      className='gap-2'
-                    >
-                      <Trash2 className='w-4 h-4' />
-                      Delete ({selectedSubmissions.length})
-                    </Button>
-                  </Permission>
-                </div>
-              )}
             </div>
-            <Button variant='outline' onClick={handleRefresh} title='Refresh'>
-              <RotateCcw className='w-4 h-4' />
-            </Button>
+
+            <div className='flex gap-2'>
+              <Permission module='institutes' action='edit'>
+                <Button
+                  size='sm'
+                  variant='default'
+                  onClick={handleBulkImportClick}
+                  className='gap-2'
+                >
+                  <Upload className='w-4 h-4' />
+                  Import ({selectedSubmissions.length})
+                </Button>
+              </Permission>
+              <Permission module='institutes' action='delete'>
+                <Button
+                  size='sm'
+                  variant='destructive'
+                  onClick={handleBulkDeleteClick}
+                  className='gap-2'
+                >
+                  <Trash2 className='w-4 h-4' />
+                  Delete ({selectedSubmissions.length})
+                </Button>
+              </Permission>
+
+              <Button variant='outline' onClick={handleRefresh} title='Refresh'>
+                <RotateCcw className='w-4 h-4' />
+              </Button>
+            </div>
           </div>
         </div>
 

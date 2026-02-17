@@ -219,7 +219,7 @@ export default function ReusableDataTable({
   const isSomeSelected = selected.length > 0 && selected.length < rows.length;
 
   return (
-    <div className='w-full'>
+    <div className='w-full p-3'>
       {/* Header Section */}
       {(title || (checkboxSelection && selected.length > 0)) && (
         <div className='flex items-center justify-between'>
@@ -234,7 +234,7 @@ export default function ReusableDataTable({
       )}
 
       {/* Table Container */}
-      <div className='relative border rounded-md overflow-x-auto p-3'>
+      <div className='relative border rounded-md overflow-x-auto'>
         {/* Loading Overlay */}
         {loading && (
           <div className='absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm'>

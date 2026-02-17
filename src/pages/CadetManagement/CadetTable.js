@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
   RotateCcw,
   Edit,
   Eye,
-  MoreHorizontal,
   Star,
   Filter,
-  FileText,
+  Trash2,
 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
-import CVViewModal from './CVViewModal';
 import { Button } from '../../components/ui/button';
 import {
   Select,
@@ -20,12 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../../components/ui/dropdown-menu';
 
 const CadetTable = ({
   cadets,
@@ -46,10 +38,9 @@ const CadetTable = ({
   showShortlistedOnly,
   onToggleShortlisted,
   shortlistStats,
+  onDelete,
 }) => {
   const navigate = useNavigate();
-  const [cvModalOpen, setCvModalOpen] = useState(false);
-  const [selectedCadetForCV, setSelectedCadetForCV] = useState(null);
 
   const getCurrentStageLabel = (stage) => {
     const stageLabels = {
@@ -251,42 +242,44 @@ const CadetTable = ({
     {
       field: 'actions',
       headerName: 'Actions',
-      width: '80px',
+      width: '140px',
       align: 'right',
       sortable: false,
       sticky: 'right',
       cellClassName: 'bg-white',
       headerClassName: 'bg-white',
       renderCell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant='ghost' className='h-8 w-8 p-0'>
-              <span className='sr-only'>Open menu</span>
-              <MoreHorizontal className='h-4 w-4' />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
-            <DropdownMenuItem
-              onClick={() => navigate(`/cadets/view/${row.id}`)}
-            >
-              <Eye className='mr-2 h-4 w-4' />
-              View Details
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                setSelectedCadetForCV(row);
-                setCvModalOpen(true);
-              }}
-            >
-              <FileText className='mr-2 h-4 w-4' />
-              View CV
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Edit className='mr-2 h-4 w-4' />
-              Edit
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className='flex items-center justify-end gap-1'>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+            onClick={() => navigate(`/cadets/view/${row.id}`)}
+            title='View Details'
+          >
+            <Eye size={16} />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50'
+            onClick={() => 
+              navigate(`/cadets/view/${row.id}`, { state: { editMode: true } })
+            }
+            title='Edit'
+          >
+            <Edit size={16} />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50'
+            onClick={() => onDelete(row)}
+            title='Delete'
+          >
+            <Trash2 size={16} />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -385,16 +378,6 @@ const CadetTable = ({
           }
         />
       </div>
-
-      {/* CV View Modal */}
-      <CVViewModal
-        cadet={selectedCadetForCV}
-        isOpen={cvModalOpen}
-        onClose={() => {
-          setCvModalOpen(false);
-          setSelectedCadetForCV(null);
-        }}
-      />
     </>
   );
 };
