@@ -101,7 +101,6 @@ const CVViewModal = ({ cadet, isOpen, onClose }) => {
               {/* Documents */}
               <CVSection title='Documents & IDs'>
                 <CVField label='INDoS Number' value={cadet.indos_number} />
-                <CVField label='INDoS No. 2' value={cadet.indos_no2} />
                 <CVField label='CDC Number' value={cadet.cdc_number} />
                 <CVField
                   label='Passport Number'
@@ -194,10 +193,6 @@ const CVViewModal = ({ cadet, isOpen, onClose }) => {
                       ? `${cadet.degree_percentage}%`
                       : '-'
                   }
-                />
-                <CVField
-                  label='CGPA (Till Last Sem)'
-                  value={cadet.cgpa_till_last_semester}
                 />
               </CVSection>
 

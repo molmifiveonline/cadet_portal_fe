@@ -23,6 +23,7 @@ import InstituteForm from 'pages/institutes/InstituteForm';
 import SubmitExcel from 'pages/institutes/SubmitExcel';
 import InstituteSubmissions from 'pages/institutes/InstituteSubmissions';
 import RolePermissions from './pages/RolePermissions';
+import CVForm from './pages/CVForm';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
@@ -47,6 +48,7 @@ function App() {
             />
             <Route path='/' element={<Navigate to='/login' replace />} />
             <Route path='/institute/submit-excel' element={<SubmitExcel />} />
+            <Route path='/cv-form/:token' element={<CVForm />} />
 
             {/* Protected Routes with Layout */}
             <Route
