@@ -30,7 +30,6 @@ import {
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 import SectionTitle from '../../components/common/SectionTitle';
 import SharedDetailItem from '../../components/common/DetailItem';
