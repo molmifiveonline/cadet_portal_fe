@@ -254,7 +254,7 @@ const InstituteSubmissions = () => {
       width: 110,
       renderCell: ({ value }) => (
         <div className='flex flex-col'>
-          <span>{new Date(value).toLocaleDateString()}</span>
+          <span>{new Date(value).toLocaleDateString('en-GB')}</span>
           <span className='text-xs text-gray-400'>
             {new Date(value).toLocaleTimeString()}
           </span>

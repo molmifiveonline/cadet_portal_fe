@@ -1,25 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import {
-  Upload,
-  FileText,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Upload, FileText, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
-import api from '../../lib/utils/apiConfig';
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: process.env.REACT_APP_API_URL + '/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 const SubmitExcel = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [verifying, setVerifying] = useState(true);
   const [isValidToken, setIsValidToken] = useState(false);
   const [instituteName, setInstituteName] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const verifyToken = async () => {
@@ -29,10 +33,6 @@ const SubmitExcel = () => {
       }
 
       try {
-        // Verify token endpoint - assuming backend has this or we just try to submit
-        // For better UX, we should ideally verify the token on load
-        // But if no verify endpoint exists, we can skip this or use a dummy check
-        // Assuming we might want to check token validity and get institute details
         const response = await api.get(
           `/institutes/verify-token?token=${token}`,
         );
@@ -49,6 +49,8 @@ const SubmitExcel = () => {
 
     verifyToken();
   }, [token]);
+
+  // handleLogin logic has been moved to main Login.js component.
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -74,9 +76,13 @@ const SubmitExcel = () => {
 
     setLoading(true);
     try {
+      // Get token from URL or state if we just logged in
+      const currentToken =
+        token || new URLSearchParams(window.location.search).get('token');
+
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('token', token);
+      formData.append('token', currentToken);
 
       await api.post('/institutes/submit-excel', formData, {
         headers: {
@@ -109,23 +115,10 @@ const SubmitExcel = () => {
     );
   }
 
-  if (!token || !isValidToken) {
-    return (
-      <div className='min-h-screen flex items-center justify-center bg-gray-50 p-4'>
-        <div className='bg-white max-w-md w-full rounded-2xl shadow-sm border border-gray-100 p-8 text-center'>
-          <div className='w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6'>
-            <AlertCircle className='w-8 h-8 text-red-500' />
-          </div>
-          <h1 className='text-2xl font-bold text-gray-900 mb-2'>
-            Invalid or Expired Link
-          </h1>
-          <p className='text-gray-500 mb-6'>
-            The link you are trying to access is either invalid or has expired.
-            Please contact the administrator for a new link.
-          </p>
-        </div>
-      </div>
-    );
+  // If no token and not valid, redirect to main Login page
+  if (!isValidToken) {
+    navigate('/login?redirect=/institute/submit-excel');
+    return null;
   }
 
   if (submitted) {

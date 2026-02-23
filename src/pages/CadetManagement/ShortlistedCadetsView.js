@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Download, ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Mail } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import CadetTable from './CadetTable';
 import { Button } from '../../components/ui/button';
@@ -21,7 +21,6 @@ const ShortlistedCadetsView = () => {
   const [selectedInstitute, setSelectedInstitute] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [shortlistStats, setShortlistStats] = useState(null);
-  const [downloading, setDownloading] = useState(false);
   const [sending, setSending] = useState(false);
 
   const [pagination, setPagination] = useState({
@@ -157,52 +156,6 @@ const ShortlistedCadetsView = () => {
     toast.success('Data refreshed');
   };
 
-  const handleExportExcel = async () => {
-    if (!selectedInstitute || selectedInstitute === 'all') {
-      toast.error('Please select a specific institute to export');
-      return;
-    }
-
-    try {
-      setDownloading(true);
-      const response = await api.get(
-        `/cadets/shortlisted/export/${selectedInstitute}`,
-        {
-          responseType: 'blob',
-        },
-      );
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-
-      // Get filename from response headers or create default
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = `Shortlisted_Cadets_${Date.now()}.xlsx`;
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-        if (filenameMatch) {
-          filename = filenameMatch[1];
-        }
-      }
-
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      toast.success('Excel file downloaded successfully');
-    } catch (error) {
-      console.error('Error downloading Excel:', error);
-      toast.error(
-        error.response?.data?.message || 'Failed to download Excel file',
-      );
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   const handleSendCVFormEmail = async () => {
     if (!selectedInstitute || selectedInstitute === 'all') {
       toast.error('Please select a specific institute to send CV form emails');
@@ -273,7 +226,7 @@ const ShortlistedCadetsView = () => {
             </h1>
           </div>
           <p className='text-gray-500 text-sm mt-1 ml-12'>
-            View and export cadets who meet shortlisting criteria
+            View cadets who meet shortlisting criteria
           </p>
         </div>
       </div>
@@ -345,18 +298,6 @@ const ShortlistedCadetsView = () => {
             >
               <Mail size={18} />
               {sending ? 'Sending...' : 'Send CV Form Email'}
-            </Button>
-
-            <Button
-              variant='default'
-              onClick={handleExportExcel}
-              disabled={
-                downloading || !selectedInstitute || selectedInstitute === 'all'
-              }
-              className='flex items-center gap-2'
-            >
-              <Download size={18} />
-              {downloading ? 'Downloading...' : 'Export Excel'}
             </Button>
           </div>
         </div>

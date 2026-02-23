@@ -12,6 +12,8 @@ import Login from './pages/auth/Login';
 import Dashboard from './pages/Dashboard';
 import CadetManagement from './pages/CadetManagement';
 import CadetDetails from './pages/CadetManagement/CadetDetails';
+import AddCadetForm from './pages/CadetManagement/AddCadetForm';
+import AddCadetBasicForm from './pages/CadetManagement/AddCadetBasicForm';
 import ShortlistedCadetsView from './pages/CadetManagement/ShortlistedCadetsView';
 import MainLayout from './components/layout/MainLayout';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -136,6 +138,32 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='cadets' action='view'>
                       <ShortlistedCadetsView />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/add'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='create'>
+                      <AddCadetForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/add-basic'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='create'>
+                      <AddCadetBasicForm />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>

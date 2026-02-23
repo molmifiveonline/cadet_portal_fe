@@ -78,7 +78,7 @@ const UsersTable = ({
                     ${
                       value === 'SuperAdmin'
                         ? 'bg-purple-100 text-purple-700'
-                        : value === 'Trainer'
+                        : value === 'Institute'
                           ? 'bg-blue-100 text-blue-700'
                           : 'bg-green-100 text-green-700'
                     }`}
@@ -92,7 +92,7 @@ const UsersTable = ({
       headerName: 'Joined Date',
       width: '150px',
       renderCell: ({ value }) =>
-        value ? new Date(value).toLocaleDateString() : '-',
+        value ? new Date(value).toLocaleDateString('en-GB') : '-',
     },
     {
       field: 'actions',

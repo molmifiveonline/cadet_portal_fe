@@ -64,13 +64,18 @@ const Sidebar = () => {
       <aside
         className={cn(
           'fixed left-0 top-0 h-screen transition-all duration-300 z-50 flex flex-col bg-white border-r border-slate-200 shadow-sm',
-          isOpen ? 'w-64' : 'w-16',
+          // Mobile: fixed width, slide in/out
+          'w-64',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+          // Desktop: translate-0 always, width toggles
+          'md:translate-x-0',
+          isOpen ? 'md:w-64' : 'md:w-16',
         )}
       >
         {/* Logo Header */}
         <Link
           to='/dashboard'
-          className='flex items-center justify-center py-6 hover:opacity-80 transition-opacity cursor-pointer border-b border-slate-100'
+          className='flex items-center justify-center py-4 hover:opacity-80 transition-opacity cursor-pointer border-b border-slate-100'
         >
           {isOpen ? (
             <img src='/mol-logo.png' alt='Logo' />
@@ -80,7 +85,7 @@ const Sidebar = () => {
         </Link>
 
         {/* Menu Items */}
-        <nav className='flex-1 overflow-y-auto py-6 px-3 space-y-1'>
+        <nav className='flex-1 overflow-y-auto py-4 px-3 space-y-1'>
           {visibleItems.map((item) => {
             const Icon = item.icon;
             const hasSubItems = item.subItems && item.subItems.length > 0;
@@ -106,7 +111,7 @@ const Sidebar = () => {
                         toggleMenu(item.title);
                       }}
                       className={cn(
-                        'flex items-center py-3 rounded-lg transition-all duration-200 group relative cursor-pointer select-none',
+                        'flex items-center py-2 rounded-lg transition-all duration-200 group relative cursor-pointer select-none',
                         isOpen
                           ? 'px-4 gap-3 justify-between'
                           : 'justify-center',
@@ -164,6 +169,9 @@ const Sidebar = () => {
                             <Link
                               key={subItem.title}
                               to={subItem.url}
+                              onClick={() => {
+                                if (window.innerWidth < 768) setIsOpen(false);
+                              }}
                               className={cn(
                                 'flex items-center py-2.5 rounded-lg transition-all duration-200 pl-12 text-sm w-full group relative',
                                 isSubActive
@@ -196,7 +204,7 @@ const Sidebar = () => {
                     to={item.url}
                     onClick={handleNavClick}
                     className={cn(
-                      'flex items-center py-3 rounded-lg transition-all duration-200 group relative',
+                      'flex items-center py-2 rounded-lg transition-all duration-200 group relative',
                       isOpen ? 'px-4 gap-3 justify-start' : 'justify-center',
                       isActive
                         ? 'bg-[#3a5f9e] text-white shadow-md shadow-blue-900/10'

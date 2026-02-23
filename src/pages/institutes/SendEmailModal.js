@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
 import { X, Loader2, Upload, FileText } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 import api from '../../lib/utils/apiConfig';
 
 const SendEmailModal = ({ isOpen, onClose, selectedInstitutes, onSuccess }) => {
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i); // [currentYear+1, ... currentYear-3]
+
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
     file: null,
+    adminYear: currentYear.toString(),
   });
   const [loading, setLoading] = useState(false);
 
@@ -54,6 +65,7 @@ const SendEmailModal = ({ isOpen, onClose, selectedInstitutes, onSuccess }) => {
       data.append('instituteIds', JSON.stringify(selectedInstitutes));
       data.append('subject', formData.subject);
       data.append('description', formData.description);
+      data.append('adminYear', formData.adminYear);
       data.append('file', formData.file);
 
       await api.post('/institutes/send-email', data, {
@@ -63,7 +75,12 @@ const SendEmailModal = ({ isOpen, onClose, selectedInstitutes, onSuccess }) => {
       });
 
       toast.success('Emails sent successfully');
-      setFormData({ subject: '', description: '', file: null });
+      setFormData({
+        subject: '',
+        description: '',
+        adminYear: currentYear.toString(),
+        file: null,
+      });
       onSuccess?.();
       onClose();
     } catch (error) {
@@ -106,6 +123,30 @@ const SendEmailModal = ({ isOpen, onClose, selectedInstitutes, onSuccess }) => {
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
+          <div className='space-y-2'>
+            <label className='text-sm font-medium text-gray-700'>
+              Batch Year <span className='text-red-500'>*</span>
+            </label>
+            <Select
+              name='adminYear'
+              value={formData.adminYear}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, adminYear: value }))
+              }
+            >
+              <SelectTrigger className='w-full'>
+                <SelectValue placeholder='Select Year' />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className='space-y-2'>
             <label className='text-sm font-medium text-gray-700'>
               Subject <span className='text-red-500'>*</span>

@@ -75,7 +75,7 @@ const CadetDetails = () => {
           if (formData[field]) {
             const date = new Date(formData[field]);
             if (!isNaN(date.getTime())) {
-              formData[field] = date.toISOString().split('T')[0];
+              formData[field] = date.toISOString('en-GB').split('T')[0];
             } else {
               console.warn(`Invalid date for field ${field}:`, formData[field]);
               formData[field] = '';
@@ -322,7 +322,9 @@ const CadetDetails = () => {
               <DetailItem
                 label='Date of Birth'
                 value={
-                  cadet.dob ? new Date(cadet.dob).toLocaleDateString() : '-'
+                  cadet.dob
+                    ? new Date(cadet.dob).toLocaleDateString('en-GB')
+                    : '-'
                 }
                 name='dob'
                 type='date'
@@ -666,7 +668,9 @@ const CadetDetails = () => {
                 label='Passing Out Date'
                 value={
                   cadet.passing_out_date
-                    ? new Date(cadet.passing_out_date).toLocaleDateString()
+                    ? new Date(cadet.passing_out_date).toLocaleDateString(
+                        'en-GB',
+                      )
                     : '-'
                 }
                 name='passing_out_date'

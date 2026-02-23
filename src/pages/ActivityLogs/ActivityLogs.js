@@ -37,16 +37,18 @@ const ActivityLogs = () => {
       headerName: 'User',
       width: '200px',
       renderCell: ({ row }) => {
-        // Display user's full name if available, otherwise email, otherwise "Unknown"
+        // The backend intelligently merges Admin names and Institute names into 'user_name'
+        // If it's missing, fallback to the raw pieces or email
         const firstName = row.first_name || '';
         const lastName = row.last_name || '';
-        const fullName = `${firstName} ${lastName}`.trim();
-        const displayName = fullName || row.user_email || 'Unknown User';
+        const fallbackName = `${firstName} ${lastName}`.trim();
+        const displayName =
+          row.user_name || fallbackName || row.user_email || 'Unknown User';
 
         return (
           <div className='flex flex-col'>
             <span className='font-medium text-gray-900'>{displayName}</span>
-            {fullName && row.user_email && (
+            {row.user_email && (
               <span className='text-xs text-gray-500'>{row.user_email}</span>
             )}
           </div>

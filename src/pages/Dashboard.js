@@ -80,15 +80,15 @@ const FilterSection = () => {
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end'>
           <div className='space-y-2'>
             <label className='text-xs font-semibold text-slate-500 uppercase tracking-wider'>
-              Trainer
+              Institute
             </label>
             <Select>
               <SelectTrigger className='bg-white/80 border-slate-200/60 focus:ring-blue-500/20'>
-                <SelectValue placeholder='Select Trainer' />
+                <SelectValue placeholder='Select Institute' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='t1'>Trainer A</SelectItem>
-                <SelectItem value='t2'>Trainer B</SelectItem>
+                <SelectItem value='t1'>Institute A</SelectItem>
+                <SelectItem value='t2'>Institute B</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -167,13 +167,13 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
         <StatsCard
-          title='Total Candidates'
+          title='Total Cadets'
           value='3,519'
           icon={Users}
           gradient='from-blue-500 to-indigo-600'
         />
         <StatsCard
-          title='Total Trainers'
+          title='Total Institutes'
           value='22'
           icon={GraduationCap}
           gradient='from-violet-500 to-purple-600'
@@ -244,16 +244,14 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Candidate List Table */}
+        {/* Cadet List Table */}
         <div className='bg-white/80 backdrop-blur-xl rounded-3xl border border-white/60 shadow-sm overflow-hidden flex flex-col'>
           <div className='px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/50'>
             <div className='flex items-center gap-2'>
               <div className='p-1.5 bg-red-50 text-red-500 rounded-md'>
                 <AlertCircle className='w-4 h-4' />
               </div>
-              <h3 className='font-bold text-slate-800 text-lg'>
-                Candidate Alerts
-              </h3>
+              <h3 className='font-bold text-slate-800 text-lg'>Cadet Alerts</h3>
             </div>
           </div>
           <div className='overflow-x-auto'>
@@ -261,7 +259,7 @@ const Dashboard = () => {
               <thead>
                 <tr className='bg-slate-50/50 border-b border-slate-200'>
                   <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    Candidate ID
+                    Cadet ID
                   </th>
                   <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
                     Name
@@ -287,7 +285,7 @@ const Dashboard = () => {
                       <div className='p-3 bg-slate-50 rounded-full'>
                         <CheckCircle className='w-6 h-6 text-slate-300' />
                       </div>
-                      <p className='font-medium'>No candidate alerts found</p>
+                      <p className='font-medium'>No cadet alerts found</p>
                     </div>
                   </td>
                 </tr>

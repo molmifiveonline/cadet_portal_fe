@@ -32,7 +32,7 @@ const PermissionMatrix = ({
       location: 'Location',
       reports: 'Reports',
       system: 'System',
-      trainers: 'Trainers',
+      institutes: 'Institutes',
       'user-management': 'User Management',
     };
     return moduleNames[module] || module.toUpperCase();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Upload, ListFilter } from 'lucide-react';
+import { Upload, ListFilter, Plus } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import CadetTable from './CadetTable';
 import CadetImportModal from './CadetImportModal';
@@ -18,6 +18,9 @@ const CadetManagement = () => {
 
   // State for filters and search
   const [selectedInstitute, setSelectedInstitute] = useState('all');
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear().toString(),
+  );
   const [searchTerm, setSearchTerm] = useState('');
 
   // Pagination State
@@ -89,6 +92,7 @@ const CadetManagement = () => {
     search = searchTerm,
     instituteId = selectedInstitute,
     shortlistedOnly = showShortlistedOnly,
+    adminYearParam = selectedYear,
   ) => {
     try {
       setLoading(true);
@@ -99,6 +103,7 @@ const CadetManagement = () => {
         sortBy: sortBy || undefined,
         sortOrder: sortOrder || undefined,
         search: search || undefined,
+        adminYear: adminYearParam !== 'all' ? adminYearParam : undefined,
       };
 
       if (instituteId && instituteId !== 'all') {
@@ -144,6 +149,8 @@ const CadetManagement = () => {
       sortConfig.sortOrder,
       searchTerm,
       selectedInstitute,
+      showShortlistedOnly,
+      selectedYear,
     );
   };
 
@@ -155,6 +162,8 @@ const CadetManagement = () => {
       sortConfig.sortOrder,
       searchTerm,
       selectedInstitute,
+      showShortlistedOnly,
+      selectedYear,
     );
   };
 
@@ -168,6 +177,8 @@ const CadetManagement = () => {
       newSortOrder,
       searchTerm,
       selectedInstitute,
+      showShortlistedOnly,
+      selectedYear,
     );
   };
 
@@ -186,6 +197,8 @@ const CadetManagement = () => {
         sortConfig.sortOrder,
         value,
         selectedInstitute,
+        showShortlistedOnly,
+        selectedYear,
       );
     }, 500);
   };
@@ -199,6 +212,22 @@ const CadetManagement = () => {
       sortConfig.sortOrder,
       searchTerm,
       value,
+      showShortlistedOnly,
+      selectedYear,
+    );
+  };
+
+  const handleYearChange = (value) => {
+    setSelectedYear(value);
+    fetchCadets(
+      1,
+      pagination.per_page,
+      sortConfig.sortBy,
+      sortConfig.sortOrder,
+      searchTerm,
+      selectedInstitute,
+      showShortlistedOnly,
+      value,
     );
   };
 
@@ -207,7 +236,16 @@ const CadetManagement = () => {
     setSortConfig({ sortBy: '', sortOrder: '' });
     // Keep selected institute or reset? Typically refreshing data keeps filters but resets search/sort
     // Here resetting search/sort as per other pages
-    fetchCadets(1, pagination.per_page, '', '', '', selectedInstitute);
+    fetchCadets(
+      1,
+      pagination.per_page,
+      '',
+      '',
+      '',
+      selectedInstitute,
+      showShortlistedOnly,
+      selectedYear,
+    );
     toast.success('Data refreshed');
   };
 
@@ -228,6 +266,7 @@ const CadetManagement = () => {
       searchTerm,
       selectedInstitute,
       newValue,
+      selectedYear,
     );
   };
 
@@ -265,6 +304,22 @@ const CadetManagement = () => {
           <Permission module='cadets' action='create'>
             <Button
               variant='default'
+              onClick={() => navigate('/cadets/add')}
+              className='gap-2 bg-indigo-600 hover:bg-indigo-700'
+            >
+              <Plus size={18} />
+              Add Cadet
+            </Button>
+            <Button
+              variant='default'
+              onClick={() => navigate('/cadets/add-basic')}
+              className='gap-2 bg-emerald-600 hover:bg-emerald-700'
+            >
+              <Plus size={18} />
+              Basic Form
+            </Button>
+            <Button
+              variant='outline'
               onClick={() => setShowImportModal(true)}
               className='gap-2'
             >
@@ -319,6 +374,8 @@ const CadetManagement = () => {
         selectedInstitute={selectedInstitute}
         handleInstituteChange={handleInstituteChange}
         institutes={filteredInstitutes}
+        selectedYear={selectedYear}
+        handleYearChange={handleYearChange}
         selectedCadets={selectedCadets}
         onSelectionChange={setSelectedCadets}
         showShortlistedOnly={showShortlistedOnly}

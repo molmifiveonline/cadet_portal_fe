@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, Mail, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/utils/apiConfig';
 import ForgotPasswordModal from './ForgotPasswordModal';
@@ -15,6 +15,7 @@ const Login = () => {
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
 
   const handleChange = (e) => {
@@ -38,7 +39,8 @@ const Login = () => {
       login(response.data.user, response.data.token);
 
       toast.success('Login successful! Welcome back.');
-      navigate('/dashboard');
+      const redirectUrl = searchParams.get('redirect') || '/dashboard';
+      navigate(redirectUrl);
     } catch (err) {
       const message =
         err.response?.data?.message || 'Login failed. Please try again.';
@@ -95,20 +97,20 @@ const Login = () => {
             <form onSubmit={handleSubmit} className='space-y-6'>
               <div>
                 <label className='text-sm font-semibold text-gray-700 block mb-2'>
-                  Email Address
+                  Email Address or User ID
                 </label>
                 <div className='relative'>
                   <div className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'>
                     <Mail size={20} />
                   </div>
                   <input
-                    type='email'
+                    type='text'
                     name='email'
                     value={formData.email}
                     onChange={handleChange}
                     required
                     className='w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm'
-                    placeholder='admin@example.com'
+                    placeholder='admin@example.com or INST-123456'
                   />
                 </div>
               </div>

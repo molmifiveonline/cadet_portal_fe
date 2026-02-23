@@ -18,7 +18,7 @@ export const MenuItems = [
     url: '/dashboard',
     module: 'dashboard',
     action: 'view',
-    allowedRoles: ['SuperAdmin', 'Trainer', 'Candidate'],
+    allowedRoles: ['SuperAdmin', 'Institute', 'Cadet'],
   },
   {
     title: 'System Users',
@@ -58,7 +58,7 @@ export const MenuItems = [
     url: '/cadets',
     module: 'cadets',
     action: 'view',
-    allowedRoles: ['SuperAdmin', 'Trainer'],
+    allowedRoles: ['SuperAdmin', 'Institute'],
   },
   {
     title: 'Screening',
@@ -66,7 +66,7 @@ export const MenuItems = [
     url: '/screening',
     module: 'screening',
     action: 'view',
-    allowedRoles: ['SuperAdmin', 'Trainer'],
+    allowedRoles: ['SuperAdmin', 'Institute'],
   },
   {
     title: 'Tests & Interviews',
@@ -74,7 +74,7 @@ export const MenuItems = [
     url: '/tests',
     module: 'tests',
     action: 'view',
-    allowedRoles: ['SuperAdmin', 'Trainer'],
+    allowedRoles: ['SuperAdmin', 'Institute'],
   },
   {
     title: 'Medical & Docs',
@@ -82,7 +82,7 @@ export const MenuItems = [
     url: '/medical',
     module: 'medical',
     action: 'view',
-    allowedRoles: ['SuperAdmin', 'Trainer'],
+    allowedRoles: ['SuperAdmin', 'Institute'],
   },
   {
     title: 'Role Permissions',

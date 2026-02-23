@@ -212,8 +212,8 @@ const UserForm = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value='SuperAdmin'>SuperAdmin</SelectItem>
-                    <SelectItem value='Trainer'>Trainer</SelectItem>
-                    <SelectItem value='Candidate'>Candidate</SelectItem>
+                    <SelectItem value='Institute'>Institute</SelectItem>
+                    <SelectItem value='Cadet'>Cadet</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

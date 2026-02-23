@@ -34,6 +34,8 @@ const CadetTable = ({
   selectedInstitute,
   handleInstituteChange,
   institutes,
+  selectedYear,
+  handleYearChange,
   selectedCadets,
   onSelectionChange,
   showShortlistedOnly,
@@ -47,6 +49,9 @@ const CadetTable = ({
     title: '',
     content: '',
   });
+
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i);
 
   const handleReadMore = (title, content) => {
     setModalContent({ title, content });
@@ -348,6 +353,20 @@ const CadetTable = ({
                     value={institute.id.toString()}
                   >
                     {institute.institute_name || institute.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedYear} onValueChange={handleYearChange}>
+              <SelectTrigger className='w-[150px] bg-white border-gray-300'>
+                <SelectValue placeholder='Filter by Year' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>All Years</SelectItem>
+                {yearOptions.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
                   </SelectItem>
                 ))}
               </SelectContent>
