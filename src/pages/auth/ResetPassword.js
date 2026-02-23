@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Lock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../lib/utils/apiConfig';
 
 const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +33,7 @@ const ResetPassword = () => {
 
     setIsSubmitting(true);
     try {
-      await axios.post('http://localhost:5000/api/auth/reset-password', {
+      await api.post('/auth/reset-password', {
         userId,
         token, // Sending token if present
         password: data.password,

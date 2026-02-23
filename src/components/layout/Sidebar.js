@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, ChevronDown, ChevronRight, Dot } from 'lucide-react';
+import { LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '../../lib/utils/utils';
 import { MenuItems } from '../../lib/utils/menu';
 import { useAuth } from '../../context/AuthContext';
 import { useLayout } from '../../context/LayoutContext';
+import { useUserPermissions } from '../../hooks/usePermission';
 
 const Sidebar = () => {
   const { isOpen, setIsOpen } = useLayout();
@@ -14,6 +15,9 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
 
+  // Get user permissions from database
+  const { hasPermission } = useUserPermissions();
+
   const toggleMenu = (title) => {
     setExpandedMenus((prev) => ({
       ...prev,
@@ -21,8 +25,14 @@ const Sidebar = () => {
     }));
   };
 
-  // Filter menu items based on user role
+  // Filter menu items based on dynamic permissions
   const visibleItems = MenuItems.filter((item) => {
+    // If item has module and action, check database permission
+    if (item.module && item.action) {
+      return hasPermission(item.module, item.action);
+    }
+
+    // Fallback to role-based check if no module/action defined
     if (!item.allowedRoles) {
       return true;
     }
@@ -41,9 +51,9 @@ const Sidebar = () => {
     }
   };
 
-  const isLinkActive = (url) => {
-    if (url === '/dashboard') {
-      return location.pathname === '/dashboard';
+  const isLinkActive = (url, exact = false) => {
+    if (url === '/dashboard' || exact) {
+      return location.pathname === url;
     }
     return location.pathname === url || location.pathname.startsWith(`${url}/`);
   };
@@ -54,13 +64,18 @@ const Sidebar = () => {
       <aside
         className={cn(
           'fixed left-0 top-0 h-screen transition-all duration-300 z-50 flex flex-col bg-white border-r border-slate-200 shadow-sm',
-          isOpen ? 'w-64' : 'w-16',
+          // Mobile: fixed width, slide in/out
+          'w-64',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+          // Desktop: translate-0 always, width toggles
+          'md:translate-x-0',
+          isOpen ? 'md:w-64' : 'md:w-16',
         )}
       >
         {/* Logo Header */}
         <Link
           to='/dashboard'
-          className='flex items-center justify-center py-6 hover:opacity-80 transition-opacity cursor-pointer border-b border-slate-100'
+          className='flex items-center justify-center py-4 hover:opacity-80 transition-opacity cursor-pointer border-b border-slate-100'
         >
           {isOpen ? (
             <img src='/mol-logo.png' alt='Logo' />
@@ -70,14 +85,15 @@ const Sidebar = () => {
         </Link>
 
         {/* Menu Items */}
-        <nav className='flex-1 overflow-y-auto py-6 px-3 space-y-1'>
+        <nav className='flex-1 overflow-y-auto py-4 px-3 space-y-1'>
           {visibleItems.map((item) => {
             const Icon = item.icon;
             const hasSubItems = item.subItems && item.subItems.length > 0;
             const isExpanded = expandedMenus[item.title];
             const isParentActive =
-              hasSubItems && item.subItems.some((sub) => isLinkActive(sub.url));
-            const isActive = !hasSubItems && isLinkActive(item.url);
+              hasSubItems &&
+              item.subItems.some((sub) => isLinkActive(sub.url, sub.exact));
+            const isActive = !hasSubItems && isLinkActive(item.url, item.exact);
 
             const handleNavClick = () => {
               if (window.innerWidth < 768 && !hasSubItems) {
@@ -88,51 +104,107 @@ const Sidebar = () => {
             return (
               <div key={item.title}>
                 {hasSubItems ? (
-                  <div
-                    onClick={() => {
-                      if (!isOpen) setIsOpen(true);
-                      toggleMenu(item.title);
-                    }}
-                    className={cn(
-                      'flex items-center py-3 rounded-lg transition-all duration-200 group relative cursor-pointer select-none',
-                      isOpen ? 'px-4 gap-3 justify-between' : 'justify-center',
-                      isActive || isParentActive
-                        ? 'text-[#3a5f9e] bg-slate-50'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-[#3a5f9e]',
-                    )}
-                  >
+                  <>
                     <div
+                      onClick={() => {
+                        if (!isOpen) setIsOpen(true);
+                        toggleMenu(item.title);
+                      }}
                       className={cn(
-                        'flex items-center gap-3',
-                        !isOpen && 'justify-center',
+                        'flex items-center py-2 rounded-lg transition-all duration-200 group relative cursor-pointer select-none',
+                        isOpen
+                          ? 'px-4 gap-3 justify-between'
+                          : 'justify-center',
+                        isActive || isParentActive
+                          ? 'text-[#3a5f9e] hover:bg-slate-50'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-[#3a5f9e]',
                       )}
                     >
-                      <Icon
-                        className='transition-all duration-200 shrink-0'
-                        size={22}
-                      />
-                      {isOpen && (
-                        <span className='text-sm font-medium transition-all duration-200 whitespace-nowrap'>
-                          {item.title}
-                        </span>
-                      )}
-                    </div>
-                    {isOpen && (
-                      <div className='text-slate-400'>
-                        {isExpanded ? (
-                          <ChevronDown size={16} />
-                        ) : (
-                          <ChevronRight size={16} />
+                      <div
+                        className={cn(
+                          'flex items-center gap-3',
+                          !isOpen && 'justify-center',
+                        )}
+                      >
+                        <Icon
+                          className='transition-all duration-200 shrink-0'
+                          size={22}
+                        />
+                        {isOpen && (
+                          <span className='text-sm font-medium transition-all duration-200 whitespace-nowrap'>
+                            {item.title}
+                          </span>
                         )}
                       </div>
+                      {isOpen && (
+                        <div className='text-slate-900'>
+                          {isExpanded ? (
+                            <ChevronUp size={16} />
+                          ) : (
+                            <ChevronDown size={16} />
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Submenu Items */}
+                    {isOpen && isExpanded && (
+                      <div className='mt-1 space-y-1 mb-2'>
+                        {item.subItems.map((subItem) => {
+                          if (
+                            subItem.module &&
+                            subItem.action &&
+                            !hasPermission(subItem.module, subItem.action)
+                          ) {
+                            return null;
+                          }
+
+                          const isSubActive = isLinkActive(
+                            subItem.url,
+                            subItem.exact,
+                          );
+                          const SubIcon = subItem.icon;
+
+                          return (
+                            <Link
+                              key={subItem.title}
+                              to={subItem.url}
+                              onClick={() => {
+                                if (window.innerWidth < 768) setIsOpen(false);
+                              }}
+                              className={cn(
+                                'flex items-center py-2.5 rounded-lg transition-all duration-200 pl-12 text-sm w-full group relative',
+                                isSubActive
+                                  ? 'bg-[#3a5f9e] text-white shadow-md shadow-blue-900/10 font-semibold'
+                                  : 'text-slate-600 hover:text-[#3a5f9e] hover:bg-slate-50 font-medium',
+                              )}
+                            >
+                              {SubIcon && (
+                                <SubIcon
+                                  size={18}
+                                  className={cn(
+                                    'mr-3 shrink-0 -ml-4',
+                                    isSubActive
+                                      ? 'text-white'
+                                      : 'group-hover:text-[#3a5f9e]',
+                                  )}
+                                />
+                              )}
+                              <span className='whitespace-nowrap truncate'>
+                                {subItem.title}
+                              </span>
+                            </Link>
+                          );
+                        })}
+                      </div>
                     )}
-                  </div>
+                  </>
                 ) : (
                   <Link
                     to={item.url}
                     onClick={handleNavClick}
                     className={cn(
-                      'flex items-center py-3 rounded-lg transition-all duration-200 group relative',
+                      'flex items-center py-2 rounded-lg transition-all duration-200 group relative',
                       isOpen ? 'px-4 gap-3 justify-start' : 'justify-center',
                       isActive
                         ? 'bg-[#3a5f9e] text-white shadow-md shadow-blue-900/10'

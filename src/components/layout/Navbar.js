@@ -16,7 +16,7 @@ const Navbar = () => {
   const profileImage = user?.user_image;
 
   return (
-    <div className='flex justify-between items-center py-3 px-4 z-20 mt-4 mr-4 ml-4 rounded-3xl bg-white/30 backdrop-blur-xl border border-white/40 shadow-xl'>
+    <div className='flex justify-between items-center z-20 bg-white/30 backdrop-blur-xl border border-white/40 shadow-xl transition-all duration-300 py-2 px-3 mt-2 mx-2 rounded-xl md:py-3 md:px-4 md:mt-4 md:mx-4 md:rounded-3xl'>
       <div className='flex items-center gap-3'>
         <button
           onClick={toggleSidebar}
@@ -24,22 +24,15 @@ const Navbar = () => {
         >
           <Menu className='w-6 h-6' />
         </button>
-
-        <div className='flex flex-col'>
-          <h1 className='text-lg font-bold text-slate-700 tracking-tight flex items-center gap-2'>
-            Hi, {user?.name || user?.first_name || 'Admin'}{' '}
-            <span className='animate-wave origin-[70%_70%]'>👋</span>
-          </h1>
-        </div>
       </div>
 
       <div className='flex items-center gap-2 sm:gap-4'>
         <div className='flex items-center gap-3'>
           <div className='text-right hidden sm:block'>
-            <p className='text-sm font-bold text-slate-700 leading-none mb-1'>
+            <p className='text-sm font-bold text-slate-700 leading-none mb-1 capitalize'>
               {user?.name || user?.first_name || 'Admin'}
             </p>
-            <p className='text-xs text-blue-600 font-semibold capitalize bg-blue-50 px-2 py-0.5 rounded-full inline-block'>
+            <p className='text-xs text-[#3a5f9e] font-semibold capitalize bg-blue-50 px-2 py-0.5 rounded-full inline-block'>
               {user?.role || 'Admin'}
             </p>
           </div>

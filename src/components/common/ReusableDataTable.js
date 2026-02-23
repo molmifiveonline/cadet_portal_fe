@@ -10,7 +10,6 @@ import {
 } from '../ui/table';
 import { Checkbox } from '../ui/checkbox';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import {
   ArrowUpDown,
   ArrowUp,
@@ -120,8 +119,6 @@ export default function ReusableDataTable({
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
   const [selected, setSelected] = useState(rowSelectionModel || []);
-  const [selectedPageJump, setSelectedPageJump] = useState('');
-  const [pageJumpError, setPageJumpError] = useState('');
 
   const stableSelectionModel = useMemo(
     () => rowSelectionModel || [],
@@ -205,39 +202,6 @@ export default function ReusableDataTable({
     handlePageChange?.(newPage);
   };
 
-  const validatePageNumber = (value) => {
-    if (!value) {
-      setPageJumpError('');
-      return;
-    }
-    const pageNumber = parseInt(value, 10);
-    if (isNaN(pageNumber)) {
-      setPageJumpError('Please enter a valid number');
-    } else if (pageNumber < 1) {
-      setPageJumpError('Page number must be at least 1');
-    } else if (pageNumber > totalPages) {
-      setPageJumpError(`Page number cannot exceed ${totalPages}`);
-    } else {
-      setPageJumpError('');
-    }
-  };
-
-  const handlePageJumpChange = (value) => {
-    setSelectedPageJump(value);
-    validatePageNumber(value);
-  };
-
-  const handlePageJump = () => {
-    if (selectedPageJump && !pageJumpError) {
-      const pageNumber = parseInt(selectedPageJump, 10);
-      if (pageNumber >= 1 && pageNumber <= totalPages) {
-        handleChangePage(pageNumber);
-        setSelectedPageJump(''); // Reset after jump
-        setPageJumpError(''); // Clear error
-      }
-    }
-  };
-
   // Since API returns paginated data, just sort the current page's rows if not server-side sorting
   const visibleRows = useMemo(() => {
     if (handleSortChange) return rows;
@@ -255,7 +219,7 @@ export default function ReusableDataTable({
   const isSomeSelected = selected.length > 0 && selected.length < rows.length;
 
   return (
-    <div className='w-full'>
+    <div className='w-full p-3'>
       {/* Header Section */}
       {(title || (checkboxSelection && selected.length > 0)) && (
         <div className='flex items-center justify-between'>
@@ -270,7 +234,7 @@ export default function ReusableDataTable({
       )}
 
       {/* Table Container */}
-      <div className='relative border rounded-md overflow-x-auto p-3'>
+      <div className='relative border rounded-md overflow-x-auto'>
         {/* Loading Overlay */}
         {loading && (
           <div className='absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm'>

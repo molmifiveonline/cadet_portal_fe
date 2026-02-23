@@ -1,19 +1,23 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-const DeleteConfirmationModal = ({
+const ConfirmationModal = ({
   isOpen,
   onClose,
   onConfirm,
-  title = 'Confirm Delete',
-  message = 'Are you sure you want to delete this item? This action cannot be undone.',
+  title,
+  message,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  confirmButtonClass = 'bg-[#3a5f9e] hover:bg-[#325186] shadow-[#3a5f9e]/20',
+  isLoading = false,
 }) => {
   if (!isOpen) return null;
 
   return (
     <div
       className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm'
-      onClick={onClose}
+      onClick={!isLoading ? onClose : undefined}
     >
       <div
         className='bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl transform transition-all scale-100 relative'
@@ -21,7 +25,8 @@ const DeleteConfirmationModal = ({
       >
         <button
           onClick={onClose}
-          className='absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors'
+          disabled={isLoading}
+          className='absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50'
         >
           <X className='w-5 h-5' />
         </button>
@@ -30,15 +35,17 @@ const DeleteConfirmationModal = ({
         <div className='flex justify-end gap-3'>
           <button
             onClick={onClose}
-            className='px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors'
+            disabled={isLoading}
+            className='px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors disabled:opacity-50'
           >
-            Cancel
+            {cancelText}
           </button>
           <button
             onClick={onConfirm}
-            className='px-4 py-2 rounded-lg bg-[#3a5f9e] text-white hover:bg-[#325186] font-medium transition-colors shadow-lg shadow-[#3a5f9e]/20'
+            disabled={isLoading}
+            className={`px-4 py-2 rounded-lg text-white font-medium transition-colors shadow-lg disabled:opacity-50 ${confirmButtonClass}`}
           >
-            Delete
+            {isLoading ? 'Processing...' : confirmText}
           </button>
         </div>
       </div>
@@ -46,4 +53,4 @@ const DeleteConfirmationModal = ({
   );
 };
 
-export default DeleteConfirmationModal;
+export default ConfirmationModal;

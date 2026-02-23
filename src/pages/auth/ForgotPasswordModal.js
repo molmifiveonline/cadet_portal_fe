@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { X, Mail, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
+import api from '../../lib/utils/apiConfig';
 import { useNavigate } from 'react-router-dom';
 
 const ForgotPasswordModal = ({ isOpen, onClose }) => {
@@ -17,10 +17,9 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
 
   const onSubmit = async (data) => {
     try {
-      const response = await axios.post(
-        'http://localhost:5000/api/auth/forgot-password',
-        { email: data.email },
-      );
+      const response = await api.post('/auth/forgot-password', {
+        email: data.email,
+      });
       toast.success(response.data.message || 'Reset link sent to your email!');
 
       // In dev mode, show OTP for convenience
