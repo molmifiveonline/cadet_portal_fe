@@ -63,7 +63,7 @@ const Sidebar = () => {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 h-screen transition-all duration-300 z-50 flex flex-col bg-white border-r border-slate-200 shadow-sm',
+          'fixed left-0 top-0 h-[100dvh] transition-all duration-300 z-50 flex flex-col bg-white border-r border-slate-200 shadow-sm',
           // Mobile: fixed width, slide in/out
           'w-64',
           isOpen ? 'translate-x-0' : '-translate-x-full',
