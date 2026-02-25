@@ -55,15 +55,39 @@ export const MenuItems = [
   {
     title: 'Cadet Management',
     icon: Users,
-    url: '/cadets',
     module: 'cadets',
     action: 'view',
     allowedRoles: ['SuperAdmin', 'Institute'],
+    subItems: [
+      {
+        title: 'Engine Cadets',
+        icon: Users,
+        url: '/cadets/engine',
+        module: 'cadets',
+        action: 'view',
+      },
+      {
+        title: 'Deck Cadets',
+        icon: Users,
+        url: '/cadets/deck',
+        module: 'cadets',
+        action: 'view',
+      },
+      {
+        title: 'Shortlisted Cadets',
+        icon: ListChecks,
+        url: '/cadets/shortlist',
+        module: 'cadets',
+        action: 'view',
+      },
+    ],
   },
   {
     title: 'Submit Excel',
     icon: FileText,
     url: '/institute/submit-excel',
+    module: 'submit-excel',
+    action: 'view',
     allowedRoles: ['Institute'],
   },
   {

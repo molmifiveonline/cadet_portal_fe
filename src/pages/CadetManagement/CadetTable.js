@@ -1,14 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Search,
-  RotateCcw,
-  Edit,
-  Eye,
-  Star,
-  Filter,
-  Trash2,
-} from 'lucide-react';
+import { Search, RotateCcw, Edit, Eye, Filter, Trash2 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import { Button } from '../../components/ui/button';
 import {
@@ -42,6 +34,7 @@ const CadetTable = ({
   onToggleShortlisted,
   shortlistStats,
   onDelete,
+  onStatusChange,
 }) => {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -122,18 +115,38 @@ const CadetTable = ({
       ),
     },
     {
-      field: 'shortlist_indicator',
-      headerName: '',
-      width: '50px',
-      sortable: false,
-      renderCell: ({ row }) =>
-        isShortlisted(row) ? (
-          <Star
-            className='text-yellow-500 fill-yellow-500'
-            size={18}
-            title='Shortlisted'
-          />
-        ) : null,
+      field: 'status',
+      headerName: 'Status',
+      width: '140px',
+      sortable: true,
+      renderCell: ({ row }) => {
+        // Fallback to Shortlisted if organically computed and status is empty
+        const effectiveStatus =
+          row.status || (isShortlisted(row) ? 'Shortlisted' : undefined);
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <Select
+              value={effectiveStatus}
+              onValueChange={(val) =>
+                onStatusChange && onStatusChange(row.id, val)
+              }
+            >
+              <SelectTrigger className='h-8 w-full text-xs shrink-0'>
+                <SelectValue placeholder='Select Status' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='Shortlisted'>Shortlisted</SelectItem>
+                <SelectItem value='Assessment'>Assessment</SelectItem>
+                <SelectItem value='Interviewed'>Interviewed</SelectItem>
+                <SelectItem value='Selected'>Selected</SelectItem>
+                <SelectItem value='Rejected'>Rejected</SelectItem>
+                <SelectItem value='CTV Assigned'>CTV Assigned</SelectItem>
+                <SelectItem value='Onboarded'>Onboarded</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      },
     },
     {
       field: 'institute_name',

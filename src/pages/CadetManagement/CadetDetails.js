@@ -75,7 +75,14 @@ const CadetDetails = () => {
           if (formData[field]) {
             const date = new Date(formData[field]);
             if (!isNaN(date.getTime())) {
-              formData[field] = date.toISOString('en-GB').split('T')[0];
+              // Convert to local YYYY-MM-DD format for HTML date input
+              const localDateString = date.toLocaleDateString('en-GB'); // DD/MM/YYYY
+              const parts = localDateString.split('/');
+              if (parts.length === 3) {
+                formData[field] = `${parts[2]}-${parts[1]}-${parts[0]}`;
+              } else {
+                formData[field] = '';
+              }
             } else {
               console.warn(`Invalid date for field ${field}:`, formData[field]);
               formData[field] = '';
@@ -268,7 +275,9 @@ const CadetDetails = () => {
               </div>
             </div>
             <div className='flex-1 text-center md:text-left'>
-              <h3 className='text-xl font-bold text-gray-800'>{cadet.name_as_in_indos_cert}</h3>
+              <h3 className='text-xl font-bold text-gray-800'>
+                {cadet.name_as_in_indos_cert}
+              </h3>
               <p className='text-gray-500 font-medium'>
                 {cadet.course || 'Course not specified'}
               </p>
@@ -476,7 +485,9 @@ const CadetDetails = () => {
                 <DetailItem
                   label='Percentage'
                   value={
-                    cadet.tenth_avg_percentage ? `${cadet.tenth_avg_percentage}%` : '-'
+                    cadet.tenth_avg_percentage
+                      ? `${cadet.tenth_avg_percentage}%`
+                      : '-'
                   }
                   name='tenth_avg_percentage'
                   type='text'
@@ -484,21 +495,31 @@ const CadetDetails = () => {
                 />
                 <DetailItem
                   label='Maths'
-                  value={cadet.tenth_std_maths ? `${cadet.tenth_std_maths}%` : '-'}
+                  value={
+                    cadet.tenth_std_maths ? `${cadet.tenth_std_maths}%` : '-'
+                  }
                   name='tenth_std_maths'
                   type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Science'
-                  value={cadet.tenth_std_science ? `${cadet.tenth_std_science}%` : '-'}
+                  value={
+                    cadet.tenth_std_science
+                      ? `${cadet.tenth_std_science}%`
+                      : '-'
+                  }
                   name='tenth_std_science'
                   type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='English'
-                  value={cadet.tenth_std_english ? `${cadet.tenth_std_english}%` : '-'}
+                  value={
+                    cadet.tenth_std_english
+                      ? `${cadet.tenth_std_english}%`
+                      : '-'
+                  }
                   name='tenth_std_english'
                   type='text'
                   icon={Percent}
@@ -545,7 +566,11 @@ const CadetDetails = () => {
                 />
                 <DetailItem
                   label='Maths'
-                  value={cadet.twelfth_std_maths ? `${cadet.twelfth_std_maths}%` : '-'}
+                  value={
+                    cadet.twelfth_std_maths
+                      ? `${cadet.twelfth_std_maths}%`
+                      : '-'
+                  }
                   name='twelfth_std_maths'
                   type='text'
                   icon={Percent}
@@ -553,7 +578,9 @@ const CadetDetails = () => {
                 <DetailItem
                   label='Physics'
                   value={
-                    cadet.twelfth_std_physics ? `${cadet.twelfth_std_physics}%` : '-'
+                    cadet.twelfth_std_physics
+                      ? `${cadet.twelfth_std_physics}%`
+                      : '-'
                   }
                   name='twelfth_std_physics'
                   type='text'
@@ -573,7 +600,9 @@ const CadetDetails = () => {
                 <DetailItem
                   label='English'
                   value={
-                    cadet.twelfth_std_english ? `${cadet.twelfth_std_english}%` : '-'
+                    cadet.twelfth_std_english
+                      ? `${cadet.twelfth_std_english}%`
+                      : '-'
                   }
                   name='twelfth_std_english'
                   type='text'

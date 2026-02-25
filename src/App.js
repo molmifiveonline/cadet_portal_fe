@@ -70,8 +70,9 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    {/* Applying a generic view permission check, or specifically for 'institutes' 'submit' later if needed */}
-                    <SubmitExcel />
+                    <PermissionRoute module='submit-excel' action='view'>
+                      <SubmitExcel />
+                    </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
               }
@@ -130,12 +131,25 @@ function App() {
             />
 
             <Route
-              path='/cadets'
+              path='/cadets/engine'
               element={
                 <ProtectedRoute>
                   <MainLayout>
                     <PermissionRoute module='cadets' action='view'>
-                      <CadetManagement />
+                      <CadetManagement courseType='Engine' />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/deck'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='view'>
+                      <CadetManagement courseType='Deck' />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>

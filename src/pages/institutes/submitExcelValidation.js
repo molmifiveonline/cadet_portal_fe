@@ -62,6 +62,20 @@ export const isValidDate = (value) => {
   return true;
 };
 
+// Check if a header relates to 10th or 12th marks/percentage
+export const isMarksColumn = (header) => {
+  if (!header) return false;
+  const lower = header.toLowerCase();
+  return (
+    lower.includes('10') ||
+    lower.includes('12') ||
+    lower.includes('mark') ||
+    lower.includes('percent') ||
+    lower.includes('x') ||
+    lower.includes('xii')
+  );
+};
+
 // Format cell value for display — show EXACTLY as-is from Excel, no conversion
 export const formatCellValue = (value, header) => {
   if (value === undefined || value === null || value === '') return '';
@@ -80,8 +94,9 @@ export const validateExcelData = (rows, headers) => {
     headers.forEach((header) => {
       if (!header) return;
 
+      const value = row[header];
+
       if (isDateColumn(header)) {
-        const value = row[header];
         // Allow empty dates, but if present must be dd-mm-yyyy
         if (
           value !== undefined &&
@@ -91,6 +106,19 @@ export const validateExcelData = (rows, headers) => {
         ) {
           const key = `${rowIdx}-${header}`;
           errors[key] = `Invalid format. Must be dd-mm-yyyy (e.g., 24-04-2005)`;
+          errorCount++;
+        }
+      }
+
+      if (isMarksColumn(header)) {
+        // Prevent '%' sign in marks/percentage columns
+        if (
+          value !== undefined &&
+          value !== null &&
+          String(value).includes('%')
+        ) {
+          const key = `${rowIdx}-${header}`;
+          errors[key] = `Please enter marks without '%' sign`;
           errorCount++;
         }
       }
