@@ -43,7 +43,7 @@ const RolePermissions = () => {
         setRoles(filteredRoles);
         // Auto-select first role
         if (filteredRoles.length > 0 && !selectedRole) {
-          setSelectedRole(filteredRoles[0]);
+          setSelectedRole(filteredRoles[1]);
         }
       }
     } catch (err) {

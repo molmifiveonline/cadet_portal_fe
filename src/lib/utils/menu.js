@@ -61,6 +61,12 @@ export const MenuItems = [
     allowedRoles: ['SuperAdmin', 'Institute'],
   },
   {
+    title: 'Submit Excel',
+    icon: FileText,
+    url: '/institute/submit-excel',
+    allowedRoles: ['Institute'],
+  },
+  {
     title: 'Screening',
     icon: ClipboardCheck,
     url: '/screening',

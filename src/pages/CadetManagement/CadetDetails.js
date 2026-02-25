@@ -71,7 +71,7 @@ const CadetDetails = () => {
 
         // Format dates for form
         const formData = { ...data };
-        ['dob', 'passing_out_date'].forEach((field) => {
+        ['date_of_birth', 'passing_out_date'].forEach((field) => {
           if (formData[field]) {
             const date = new Date(formData[field]);
             if (!isNaN(date.getTime())) {
@@ -186,8 +186,8 @@ const CadetDetails = () => {
           <h1 className='text-2xl font-bold text-gray-900'>Cadet Details</h1>
           <p className='text-gray-500 text-sm'>
             {isEditing
-              ? `Editing ${cadet.name}`
-              : `View full information about ${cadet.name}`}
+              ? `Editing ${cadet.name_as_in_indos_cert}`
+              : `View full information about ${cadet.name_as_in_indos_cert}`}
           </p>
         </div>
         <div className='ml-auto flex gap-2'>
@@ -248,7 +248,7 @@ const CadetDetails = () => {
                 {previewUrl || cadet.photo_path ? (
                   <img
                     src={previewUrl || cadet.photo_path}
-                    alt={cadet.name}
+                    alt={cadet.name_as_in_indos_cert}
                     className='w-full h-full object-cover'
                     onError={(e) => {
                       e.target.onerror = null;
@@ -268,14 +268,14 @@ const CadetDetails = () => {
               </div>
             </div>
             <div className='flex-1 text-center md:text-left'>
-              <h3 className='text-xl font-bold text-gray-800'>{cadet.name}</h3>
+              <h3 className='text-xl font-bold text-gray-800'>{cadet.name_as_in_indos_cert}</h3>
               <p className='text-gray-500 font-medium'>
                 {cadet.course || 'Course not specified'}
               </p>
               <div className='flex flex-wrap gap-2 mt-3 justify-center md:justify-start'>
-                {cadet.phone && (
+                {cadet.contact_number && (
                   <span className='px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-100'>
-                    Mobile: {cadet.phone}
+                    Mobile: {cadet.contact_number}
                   </span>
                 )}
                 {cadet.institute_name && (
@@ -293,23 +293,23 @@ const CadetDetails = () => {
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
               <DetailItem
                 label='Full Name'
-                value={cadet.name}
-                name='name'
+                value={cadet.name_as_in_indos_cert}
+                name='name_as_in_indos_cert'
                 required
                 icon={User}
               />
               <DetailItem
                 label='Email'
-                value={cadet.email}
-                name='email'
-                type='email'
+                value={cadet.email_id}
+                name='email_id'
+                type='email_id'
                 required
                 icon={Mail}
               />
               <DetailItem
                 label='Phone'
-                value={cadet.phone}
-                name='phone'
+                value={cadet.contact_number}
+                name='contact_number'
                 required
                 icon={Phone}
               />
@@ -322,18 +322,18 @@ const CadetDetails = () => {
               <DetailItem
                 label='Date of Birth'
                 value={
-                  cadet.dob
-                    ? new Date(cadet.dob).toLocaleDateString('en-GB')
+                  cadet.date_of_birth
+                    ? new Date(cadet.date_of_birth).toLocaleDateString('en-GB')
                     : '-'
                 }
-                name='dob'
+                name='date_of_birth'
                 type='date'
                 icon={Calendar}
               />
               <DetailItem
                 label='Hometown'
-                value={cadet.hometown}
-                name='hometown'
+                value={cadet.home_town_or_nearby_airport}
+                name='home_town_or_nearby_airport'
                 icon={MapPin}
               />
               <DetailItem
@@ -357,15 +357,15 @@ const CadetDetails = () => {
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
               <DetailItem
                 label='Height (cm)'
-                value={cadet.height ? `${cadet.height} cm` : '-'}
-                name='height'
+                value={cadet.height_in_cms ? `${cadet.height_in_cms} cm` : '-'}
+                name='height_in_cms'
                 type='float'
                 icon={Ruler}
               />
               <DetailItem
                 label='Weight (kg)'
-                value={cadet.weight ? `${cadet.weight} kg` : '-'}
-                name='weight'
+                value={cadet.weight_in_kgs ? `${cadet.weight_in_kgs} kg` : '-'}
+                name='weight_in_kgs'
                 type='float'
                 icon={Weight}
               />
@@ -462,45 +462,45 @@ const CadetDetails = () => {
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <DetailItem
                   label='Board'
-                  value={cadet.tenth_board}
-                  name='tenth_board'
+                  value={cadet.tenth_std_board}
+                  name='tenth_std_board'
                   icon={School}
                 />
                 <DetailItem
                   label='Year'
-                  value={cadet.tenth_year}
-                  name='tenth_year'
-                  type='number'
+                  value={cadet.tenth_std_pass_out_year}
+                  name='tenth_std_pass_out_year'
+                  type='text'
                   icon={Calendar}
                 />
                 <DetailItem
                   label='Percentage'
                   value={
-                    cadet.tenth_percentage ? `${cadet.tenth_percentage}%` : '-'
+                    cadet.tenth_avg_percentage ? `${cadet.tenth_avg_percentage}%` : '-'
                   }
-                  name='tenth_percentage'
-                  type='float'
+                  name='tenth_avg_percentage'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Maths'
-                  value={cadet.tenth_maths ? `${cadet.tenth_maths}%` : '-'}
-                  name='tenth_maths'
-                  type='float'
+                  value={cadet.tenth_std_maths ? `${cadet.tenth_std_maths}%` : '-'}
+                  name='tenth_std_maths'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Science'
-                  value={cadet.tenth_science ? `${cadet.tenth_science}%` : '-'}
-                  name='tenth_science'
-                  type='float'
+                  value={cadet.tenth_std_science ? `${cadet.tenth_std_science}%` : '-'}
+                  name='tenth_std_science'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='English'
-                  value={cadet.tenth_english ? `${cadet.tenth_english}%` : '-'}
-                  name='tenth_english'
-                  type='float'
+                  value={cadet.tenth_std_english ? `${cadet.tenth_std_english}%` : '-'}
+                  name='tenth_std_english'
+                  type='text'
                   icon={Percent}
                 />
               </div>
@@ -512,26 +512,26 @@ const CadetDetails = () => {
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <DetailItem
                   label='Board'
-                  value={cadet.twelfth_board}
-                  name='twelfth_board'
+                  value={cadet.twelfth_std_board}
+                  name='twelfth_std_board'
                   icon={School}
                 />
                 <DetailItem
                   label='Year'
-                  value={cadet.twelfth_year}
-                  name='twelfth_year'
-                  type='number'
+                  value={cadet.twelfth_std_pass_out_year}
+                  name='twelfth_std_pass_out_year'
+                  type='text'
                   icon={Calendar}
                 />
                 <DetailItem
                   label='Percentage'
                   value={
-                    cadet.twelfth_percentage
-                      ? `${cadet.twelfth_percentage}%`
+                    cadet.twelfth_pcm_avg_percentage
+                      ? `${cadet.twelfth_pcm_avg_percentage}%`
                       : '-'
                   }
-                  name='twelfth_percentage'
-                  type='float'
+                  name='twelfth_pcm_avg_percentage'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
@@ -540,43 +540,43 @@ const CadetDetails = () => {
                     cadet.pcm_percentage ? `${cadet.pcm_percentage}%` : '-'
                   }
                   name='pcm_percentage'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Maths'
-                  value={cadet.twelfth_maths ? `${cadet.twelfth_maths}%` : '-'}
-                  name='twelfth_maths'
-                  type='float'
+                  value={cadet.twelfth_std_maths ? `${cadet.twelfth_std_maths}%` : '-'}
+                  name='twelfth_std_maths'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Physics'
                   value={
-                    cadet.twelfth_physics ? `${cadet.twelfth_physics}%` : '-'
+                    cadet.twelfth_std_physics ? `${cadet.twelfth_std_physics}%` : '-'
                   }
-                  name='twelfth_physics'
-                  type='float'
+                  name='twelfth_std_physics'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Chemistry'
                   value={
-                    cadet.twelfth_chemistry
-                      ? `${cadet.twelfth_chemistry}%`
+                    cadet.twelfth_std_chemistry
+                      ? `${cadet.twelfth_std_chemistry}%`
                       : '-'
                   }
-                  name='twelfth_chemistry'
-                  type='float'
+                  name='twelfth_std_chemistry'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='English'
                   value={
-                    cadet.twelfth_english ? `${cadet.twelfth_english}%` : '-'
+                    cadet.twelfth_std_english ? `${cadet.twelfth_std_english}%` : '-'
                   }
-                  name='twelfth_english'
-                  type='float'
+                  name='twelfth_std_english'
+                  type='text'
                   icon={Percent}
                 />
               </div>
@@ -609,7 +609,7 @@ const CadetDetails = () => {
                       : '-'
                   }
                   name='degree_percentage'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
               </div>
@@ -623,18 +623,18 @@ const CadetDetails = () => {
                   label='IMU Rank'
                   value={cadet.imu_rank}
                   name='imu_rank'
-                  type='number'
+                  type='text'
                   icon={Award}
                 />
                 <DetailItem
                   label='Avg %'
                   value={
-                    cadet.imu_avg_percentage
-                      ? `${cadet.imu_avg_percentage}%`
+                    cadet.imu_avg_all_semester_percentage
+                      ? `${cadet.imu_avg_all_semester_percentage}%`
                       : '-'
                   }
-                  name='imu_avg_percentage'
-                  type='float'
+                  name='imu_avg_all_semester_percentage'
+                  type='text'
                   icon={Percent}
                 />
               </div>
@@ -653,8 +653,8 @@ const CadetDetails = () => {
               />
               <DetailItem
                 label='Batch Rank'
-                value={cadet.batch_rank}
-                name='batch_rank'
+                value={cadet.batch_rank_out_of_72_cadets}
+                name='batch_rank_out_of_72_cadets'
                 icon={Award}
               />
               <DetailItem
@@ -665,7 +665,7 @@ const CadetDetails = () => {
                 icon={Book}
               />
               <DetailItem
-                label='Passing Out Date'
+                label='Passing Out Year'
                 value={
                   cadet.passing_out_date
                     ? new Date(cadet.passing_out_date).toLocaleDateString(
@@ -679,8 +679,8 @@ const CadetDetails = () => {
               />
               <DetailItem
                 label='Age at Passing'
-                value={cadet.age_at_passing_out}
-                name='age_at_passing_out'
+                value={cadet.age_when_passing_out}
+                name='age_when_passing_out'
                 type='number'
                 icon={User}
               />
@@ -723,8 +723,8 @@ const CadetDetails = () => {
               />
               <DetailItem
                 label='Extra Curricular'
-                value={cadet.extra_curricular}
-                name='extra_curricular'
+                value={cadet.any_extra_curricular_achievement}
+                name='any_extra_curricular_achievement'
                 icon={Activity}
               />
             </div>

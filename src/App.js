@@ -49,7 +49,6 @@ function App() {
               }
             />
             <Route path='/' element={<Navigate to='/login' replace />} />
-            <Route path='/institute/submit-excel' element={<SubmitExcel />} />
             <Route path='/cv-form/:token' element={<CVForm />} />
 
             {/* Protected Routes with Layout */}
@@ -61,6 +60,18 @@ function App() {
                     <PermissionRoute module='dashboard' action='view'>
                       <Dashboard />
                     </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/institute/submit-excel'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    {/* Applying a generic view permission check, or specifically for 'institutes' 'submit' later if needed */}
+                    <SubmitExcel />
                   </MainLayout>
                 </ProtectedRoute>
               }

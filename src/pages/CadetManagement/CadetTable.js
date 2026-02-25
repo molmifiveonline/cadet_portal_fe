@@ -95,15 +95,15 @@ const CadetTable = ({
   // Check if cadet meets shortlisting criteria
   const isShortlisted = (cadet) => {
     return (
-      parseFloat(cadet.tenth_percentage) >= 85 &&
-      parseFloat(cadet.tenth_maths) >= 80 &&
-      parseFloat(cadet.tenth_science) >= 80 &&
-      parseFloat(cadet.tenth_english) >= 80 &&
-      parseFloat(cadet.twelfth_percentage) >= 80 &&
-      parseFloat(cadet.twelfth_english) >= 75 &&
-      parseFloat(cadet.twelfth_physics) >= 75 &&
-      parseFloat(cadet.twelfth_chemistry) >= 75 &&
-      parseFloat(cadet.twelfth_maths) >= 75 &&
+      parseFloat(cadet.tenth_avg_percentage) >= 85 &&
+      parseFloat(cadet.tenth_std_maths) >= 80 &&
+      parseFloat(cadet.tenth_std_science) >= 80 &&
+      parseFloat(cadet.tenth_std_english) >= 80 &&
+      parseFloat(cadet.twelfth_pcm_avg_percentage) >= 80 &&
+      parseFloat(cadet.twelfth_std_english) >= 75 &&
+      parseFloat(cadet.twelfth_std_physics) >= 75 &&
+      parseFloat(cadet.twelfth_std_chemistry) >= 75 &&
+      parseFloat(cadet.twelfth_std_maths) >= 75 &&
       parseInt(cadet.imu_rank) <= 3000 &&
       parseFloat(cadet.bmi) < 25
     );
@@ -147,20 +147,20 @@ const CadetTable = ({
       ),
     },
     {
-      field: 'name',
+      field: 'name_as_in_indos_cert',
       headerName: 'Name',
       width: '180px',
       renderCell: ({ row }) => (
         <span
           className='font-medium text-gray-900 truncate block w-full'
-          title={row.name}
+          title={row.name_as_in_indos_cert}
         >
-          {row.name}
+          {row.name_as_in_indos_cert}
         </span>
       ),
     },
     {
-      field: 'email',
+      field: 'email_id',
       headerName: 'Email',
       width: '200px',
       renderCell: ({ value }) => (
@@ -169,19 +169,25 @@ const CadetTable = ({
         </span>
       ),
     },
-    { field: 'phone', headerName: 'Contact', width: '130px' },
+    { field: 'contact_number', headerName: 'Contact', width: '130px' },
     { field: 'gender', headerName: 'Gender', width: '80px' },
     {
-      field: 'dob',
+      field: 'date_of_birth',
       headerName: 'DOB',
-      width: '100px',
-      valueGetter: (value) =>
-        value ? new Date(value).toLocaleDateString() : '-',
+      width: '120px',
+      valueGetter: (value) => {
+        if (!value) return '-';
+        return new Date(value).toLocaleDateString('en-GB');
+      },
     },
-    { field: 'hometown', headerName: 'Hometown', width: '150px' },
+    {
+      field: 'home_town_or_nearby_airport',
+      headerName: 'Hometown',
+      width: '150px',
+    },
     { field: 'blood_group', headerName: 'Blood Group', width: '100px' },
-    { field: 'height', headerName: 'Height (cm)', width: '100px' },
-    { field: 'weight', headerName: 'Weight (kg)', width: '100px' },
+    { field: 'height_in_cms', headerName: 'Height (cm)', width: '100px' },
+    { field: 'weight_in_kgs', headerName: 'Weight (kg)', width: '100px' },
     { field: 'bmi', headerName: 'BMI', width: '80px' },
 
     { field: 'indos_number', headerName: 'INDoS', width: '120px' },
@@ -190,51 +196,87 @@ const CadetTable = ({
 
     { field: 'course', headerName: 'Course', width: '120px' },
     { field: 'batch', headerName: 'Batch', width: '120px' },
-    { field: 'batch_rank', headerName: 'Batch Rank', width: '100px' },
     {
-      field: 'passing_out_date',
-      headerName: 'Passing Out',
-      width: '120px',
-      valueGetter: (val) => (val ? new Date(val).toLocaleDateString() : '-'),
+      field: 'batch_rank_out_of_72_cadets',
+      headerName: 'Batch Rank',
+      width: '100px',
     },
     {
-      field: 'age_at_passing_out',
+      field: 'passing_out_date',
+      headerName: 'Passing Out Year',
+      width: '130px',
+      valueGetter: (value) => {
+        if (!value) return '-';
+        // Passing out date is now saved strictly as a 4-digit Year in DB
+        const strVal = String(value);
+        if (strVal.length >= 4) {
+          return strVal.substring(0, 4);
+        }
+        return strVal;
+      },
+    },
+    {
+      field: 'age_when_passing_out',
       headerName: 'Age at Passing',
       width: '120px',
     },
 
-    { field: 'tenth_board', headerName: '10th Board', width: '120px' },
-    { field: 'tenth_year', headerName: '10th Year', width: '100px' },
-    { field: 'tenth_percentage', headerName: '10th %', width: '80px' },
-    { field: 'tenth_maths', headerName: '10th Maths', width: '100px' },
-    { field: 'tenth_science', headerName: '10th Science', width: '100px' },
-    { field: 'tenth_english', headerName: '10th English', width: '100px' },
+    { field: 'tenth_std_board', headerName: '10th Board', width: '120px' },
+    {
+      field: 'tenth_std_pass_out_year',
+      headerName: '10th Year',
+      width: '100px',
+    },
+    { field: 'tenth_avg_percentage', headerName: '10th %', width: '80px' },
+    { field: 'tenth_std_maths', headerName: '10th Maths', width: '100px' },
+    { field: 'tenth_std_science', headerName: '10th Science', width: '100px' },
+    { field: 'tenth_std_english', headerName: '10th English', width: '100px' },
 
-    { field: 'twelfth_board', headerName: '12th Board', width: '120px' },
-    { field: 'twelfth_year', headerName: '12th Year', width: '100px' },
-    { field: 'twelfth_percentage', headerName: '12th %', width: '80px' },
-    { field: 'twelfth_english', headerName: '12th English', width: '100px' },
-    { field: 'twelfth_physics', headerName: '12th Physics', width: '100px' },
-    { field: 'twelfth_chemistry', headerName: '12th Chem', width: '100px' },
-    { field: 'twelfth_maths', headerName: '12th Maths', width: '100px' },
+    { field: 'twelfth_std_board', headerName: '12th Board', width: '120px' },
+    {
+      field: 'twelfth_std_pass_out_year',
+      headerName: '12th Year',
+      width: '100px',
+    },
+    {
+      field: 'twelfth_pcm_avg_percentage',
+      headerName: '12th %',
+      width: '80px',
+    },
+    {
+      field: 'twelfth_std_english',
+      headerName: '12th English',
+      width: '100px',
+    },
+    {
+      field: 'twelfth_std_physics',
+      headerName: '12th Physics',
+      width: '100px',
+    },
+    { field: 'twelfth_std_chemistry', headerName: '12th Chem', width: '100px' },
+    { field: 'twelfth_std_maths', headerName: '12th Maths', width: '100px' },
     { field: 'pcm_percentage', headerName: 'PCM %', width: '80px' },
 
     { field: 'degree_percentage', headerName: 'Degree %', width: '100px' },
     { field: 'no_of_arrears', headerName: 'Arrears', width: '80px' },
 
     { field: 'imu_rank', headerName: 'IMU Rank', width: '100px' },
-    { field: 'imu_avg_percentage', headerName: 'IMU Avg %', width: '100px' },
-    { field: 'imu_sem1', headerName: 'Sem 1', width: '80px' },
-    { field: 'imu_sem2', headerName: 'Sem 2', width: '80px' },
-    { field: 'imu_sem3', headerName: 'Sem 3', width: '80px' },
-    { field: 'imu_sem4', headerName: 'Sem 4', width: '80px' },
-    { field: 'imu_sem5', headerName: 'Sem 5', width: '80px' },
-    { field: 'imu_sem6', headerName: 'Sem 6', width: '80px' },
-    { field: 'imu_sem7', headerName: 'Sem 7', width: '80px' },
-    { field: 'imu_sem8', headerName: 'Sem 8', width: '80px' },
+    {
+      field: 'imu_avg_all_semester_percentage',
+      headerName: 'IMU Avg %',
+      width: '100px',
+    },
+    { field: 'imu_sem_', headerName: 'Sem 1', width: '80px' },
+    { field: 'imu_sem_', headerName: 'Sem 2', width: '80px' },
+    { field: 'imu_sem_', headerName: 'Sem 3', width: '80px' },
+    { field: 'imu_sem_', headerName: 'Sem 4', width: '80px' },
+    { field: 'imu_sem_', headerName: 'Sem 5', width: '80px' },
+    { field: 'imu_sem_', headerName: 'Sem 6', width: '80px' },
+    { field: 'imu_sem_', headerName: 'Sem 7', width: '80px' },
+    { field: 'imu_sem_', headerName: 'Sem 8', width: '80px' },
 
     {
-      field: 'extra_curricular',
+      field: 'any_extra_curricular_achievement',
       headerName: 'Extra Curricular',
       width: '200px',
       renderCell: ({ value }) => {

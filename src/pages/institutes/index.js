@@ -5,6 +5,7 @@ import api from '../../lib/utils/apiConfig';
 import { Plus, Mail, FileText } from 'lucide-react';
 import InstitutesTable from './InstitutesTable';
 import SendEmailModal from './SendEmailModal';
+import ExtendTokenModal from './ExtendTokenModal';
 import { Button } from 'components/ui/button';
 import Permission from 'components/common/Permission';
 
@@ -26,6 +27,11 @@ const InstitutesManagement = () => {
   const searchTimeoutRef = React.useRef(null);
   const [selectedInstitutes, setSelectedInstitutes] = useState([]);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [extendTokenInstitute, setExtendTokenInstitute] = useState(null);
+
+  const handleExtendToken = (institute) => {
+    setExtendTokenInstitute(institute);
+  };
 
   const fetchInstitutes = async (
     page = pagination.current_page,
@@ -227,9 +233,10 @@ const InstitutesManagement = () => {
         loading={loading}
         searchTerm={searchTerm}
         pagination={pagination}
-        sortConfig={sortConfig} // Added to sync sort state
+        sortConfig={sortConfig}
         handleEdit={handleEdit}
         handleDelete={handleDelete}
+        handleExtendToken={handleExtendToken}
         handlePageChange={handlePageChange}
         handlePerPageChange={handleLimitChange}
         handleSortChange={handleSortChange}
@@ -244,6 +251,22 @@ const InstitutesManagement = () => {
         onClose={() => setIsEmailModalOpen(false)}
         selectedInstitutes={selectedInstitutes}
         onSuccess={() => setSelectedInstitutes([])}
+      />
+
+      <ExtendTokenModal
+        isOpen={!!extendTokenInstitute}
+        onClose={() => setExtendTokenInstitute(null)}
+        institute={extendTokenInstitute}
+        onSuccess={() => {
+          setExtendTokenInstitute(null);
+          fetchInstitutes(
+            pagination.current_page,
+            pagination.per_page,
+            sortConfig.sortBy,
+            sortConfig.sortOrder,
+            searchTerm,
+          );
+        }}
       />
     </div>
   );
