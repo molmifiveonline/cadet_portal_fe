@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import {
   Loader2,
   ArrowLeft,
@@ -7,12 +7,20 @@ import {
   Mail,
   Phone,
   MapPin,
+  User,
 } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
 import { toast } from 'sonner';
 import { Button } from 'components/ui/button';
 import { Input } from 'components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'components/ui/select';
 
 const InstituteForm = () => {
   const { id } = useParams();
@@ -26,6 +34,7 @@ const InstituteForm = () => {
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm();
 
@@ -37,6 +46,8 @@ const InstituteForm = () => {
       setValue('mobile_number', data.mobile_number);
       setValue('address', data.address);
       setValue('location', data.location);
+      setValue('contact_person', data.contact_person || '');
+      setValue('institute_type', data.institute_type || '');
     } else if (id) {
       const fetchInstitute = async () => {
         try {
@@ -50,6 +61,8 @@ const InstituteForm = () => {
           setValue('mobile_number', data.mobile_number);
           setValue('address', data.address);
           setValue('location', data.location);
+          setValue('contact_person', data.contact_person || '');
+          setValue('institute_type', data.institute_type || '');
         } catch (error) {
           console.error('Error fetching institute:', error);
           toast.error('Failed to fetch institute data');
@@ -213,6 +226,51 @@ const InstituteForm = () => {
                   {errors.location.message}
                 </span>
               )}
+            </div>
+
+            {/* Contact Person — optional */}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700 ml-1'>
+                Contact Person Name
+              </label>
+              <div className='relative group'>
+                <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
+                <Input
+                  {...register('contact_person')}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  placeholder='e.g. John Doe'
+                />
+              </div>
+            </div>
+
+            {/* Institute Type — optional */}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700 ml-1'>
+                Institute Type
+              </label>
+              <Controller
+                name='institute_type'
+                control={control}
+                defaultValue=''
+                render={({ field }) => (
+                  <Select
+                    value={field.value || ''}
+                    onValueChange={(val) =>
+                      field.onChange(val === 'none' ? '' : val)
+                    }
+                  >
+                    <SelectTrigger className='w-full rounded-xl border border-gray-200 bg-gray-50/50 h-[42px]'>
+                      <SelectValue placeholder='Select type...' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='none'>— None —</SelectItem>
+                      <SelectItem value='IMU'>IMU</SelectItem>
+                      <SelectItem value='B.Tech'>B.Tech</SelectItem>
+                      <SelectItem value='Both'>Both</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
 

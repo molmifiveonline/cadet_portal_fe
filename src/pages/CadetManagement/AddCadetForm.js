@@ -171,15 +171,15 @@ const AddCadetForm = () => {
           <div>
             <SectionTitle title='Personal Information' icon={User} />
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem label='Full Name' name='name' required icon={User} />
+              <DetailItem label='Full Name' name='name_as_in_indos_cert' required icon={User} />
               <DetailItem
                 label='Email'
-                name='email'
-                type='email'
+                name='email_id'
+                type='email_id'
                 required
                 icon={Mail}
               />
-              <DetailItem label='Phone' name='phone' required icon={Phone} />
+              <DetailItem label='Phone' name='contact_number' required icon={Phone} />
               <DetailItem
                 label='Gender'
                 name='gender'
@@ -193,11 +193,11 @@ const AddCadetForm = () => {
               />
               <DetailItem
                 label='Date of Birth'
-                name='dob'
+                name='date_of_birth'
                 type='date'
                 icon={Calendar}
               />
-              <DetailItem label='Hometown' name='hometown' icon={MapPin} />
+              <DetailItem label='Hometown' name='home_town_or_nearby_airport' icon={MapPin} />
               <DetailItem label='Nationality' name='nationality' icon={Globe} />
               <DetailItem
                 label='Blood Group'
@@ -213,13 +213,13 @@ const AddCadetForm = () => {
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
               <DetailItem
                 label='Height (cm)'
-                name='height'
+                name='height_in_cms'
                 type='float'
                 icon={Ruler}
               />
               <DetailItem
                 label='Weight (kg)'
-                name='weight'
+                name='weight_in_kgs'
                 type='float'
                 icon={Weight}
               />
@@ -282,34 +282,34 @@ const AddCadetForm = () => {
             <div>
               <SectionTitle title='10th Standard' icon={School} />
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <DetailItem label='Board' name='tenth_board' icon={School} />
+                <DetailItem label='Board' name='tenth_std_board' icon={School} />
                 <DetailItem
                   label='Year'
-                  name='tenth_year'
+                  name='tenth_std_pass_out_year'
                   type='number'
                   icon={Calendar}
                 />
                 <DetailItem
                   label='Percentage'
-                  name='tenth_percentage'
+                  name='tenth_avg_percentage'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Maths'
-                  name='tenth_maths'
+                  name='tenth_std_maths'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Science'
-                  name='tenth_science'
+                  name='tenth_std_science'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='English'
-                  name='tenth_english'
+                  name='tenth_std_english'
                   type='float'
                   icon={Percent}
                 />
@@ -320,16 +320,16 @@ const AddCadetForm = () => {
             <div>
               <SectionTitle title='12th Standard' icon={School} />
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <DetailItem label='Board' name='twelfth_board' icon={School} />
+                <DetailItem label='Board' name='twelfth_std_board' icon={School} />
                 <DetailItem
                   label='Year'
-                  name='twelfth_year'
+                  name='twelfth_std_pass_out_year'
                   type='number'
                   icon={Calendar}
                 />
                 <DetailItem
                   label='Percentage'
-                  name='twelfth_percentage'
+                  name='twelfth_pcm_avg_percentage'
                   type='float'
                   icon={Percent}
                 />
@@ -341,25 +341,25 @@ const AddCadetForm = () => {
                 />
                 <DetailItem
                   label='Maths'
-                  name='twelfth_maths'
+                  name='twelfth_std_maths'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Physics'
-                  name='twelfth_physics'
+                  name='twelfth_std_physics'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Chemistry'
-                  name='twelfth_chemistry'
+                  name='twelfth_std_chemistry'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='English'
-                  name='twelfth_english'
+                  name='twelfth_std_english'
                   type='float'
                   icon={Percent}
                 />
@@ -404,56 +404,56 @@ const AddCadetForm = () => {
                 />
                 <DetailItem
                   label='Avg %'
-                  name='imu_avg_percentage'
+                  name='imu_avg_all_semester_percentage'
                   type='float'
                   icon={Percent}
                 />
                 {/* Semester Wise */}
                 <DetailItem
                   label='Sem 1'
-                  name='imu_sem1'
+                  name='imu_sem_'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 2'
-                  name='imu_sem2'
+                  name='imu_sem_'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 3'
-                  name='imu_sem3'
+                  name='imu_sem_'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 4'
-                  name='imu_sem4'
+                  name='imu_sem_'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 5'
-                  name='imu_sem5'
+                  name='imu_sem_'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 6'
-                  name='imu_sem6'
+                  name='imu_sem_'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 7'
-                  name='imu_sem7'
+                  name='imu_sem_'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 8'
-                  name='imu_sem8'
+                  name='imu_sem_'
                   type='float'
                   icon={Percent}
                 />
@@ -466,7 +466,7 @@ const AddCadetForm = () => {
             <SectionTitle title='Course & Training Details' icon={Briefcase} />
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
               <DetailItem label='Batch' name='batch' icon={Hash} />
-              <DetailItem label='Batch Rank' name='batch_rank' icon={Award} />
+              <DetailItem label='Batch Rank' name='batch_rank_out_of_72_cadets' icon={Award} />
               <DetailItem
                 label='Arrears'
                 name='no_of_arrears'
@@ -481,7 +481,7 @@ const AddCadetForm = () => {
               />
               <DetailItem
                 label='Age at Passing'
-                name='age_at_passing_out'
+                name='age_when_passing_out'
                 type='number'
                 icon={User}
               />
@@ -519,7 +519,7 @@ const AddCadetForm = () => {
               />
               <DetailItem
                 label='Extra Curricular'
-                name='extra_curricular'
+                name='any_extra_curricular_achievement'
                 icon={Activity}
               />
             </div>

@@ -9,21 +9,20 @@ import DeleteConfirmationModal from '../../components/common/DeleteConfirmationM
 import { Button } from '../../components/ui/button';
 import Permission from '../../components/common/Permission';
 
-const CadetManagement = () => {
+// Single-table logic with courseType parameter
+const CadetManagement = ({ courseType }) => {
   const navigate = useNavigate();
   const [institutes, setInstitutes] = useState([]);
   const [filteredInstitutes, setFilteredInstitutes] = useState([]);
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State for filters and search
   const [selectedInstitute, setSelectedInstitute] = useState('all');
   const [selectedYear, setSelectedYear] = useState(
     new Date().getFullYear().toString(),
   );
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Pagination State
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 10,
@@ -31,7 +30,6 @@ const CadetManagement = () => {
     last_page: 1,
   });
 
-  // Sorting State
   const [sortConfig, setSortConfig] = useState({
     sortBy: '',
     sortOrder: '',
@@ -52,14 +50,21 @@ const CadetManagement = () => {
 
   useEffect(() => {
     fetchInstitutes();
-    fetchCadets(1);
     fetchShortlistStats();
-
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch cadets whenever courseType changes or filters are applied
+  useEffect(() => {
+    // We only fetch here automatically on courseType change
+    fetchCadets(1);
+    // Reset selection when course changes
+    setSelectedCadets([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseType]);
 
   const fetchInstitutes = async () => {
     try {
@@ -91,47 +96,39 @@ const CadetManagement = () => {
     sortOrder = sortConfig.sortOrder,
     search = searchTerm,
     instituteId = selectedInstitute,
-    shortlistedOnly = showShortlistedOnly,
-    adminYearParam = selectedYear,
+    shortlisted = showShortlistedOnly,
+    batchYear = selectedYear,
   ) => {
     try {
       setLoading(true);
-
       const params = {
         page,
         limit,
-        sortBy: sortBy || undefined,
-        sortOrder: sortOrder || undefined,
-        search: search || undefined,
-        adminYear: adminYearParam !== 'all' ? adminYearParam : undefined,
+        ...(sortBy && { sortBy }),
+        ...(sortOrder && { sortOrder }),
+        ...(search && { search }),
+        ...(courseType && { course_type: courseType }),
       };
 
-      if (instituteId && instituteId !== 'all') {
-        params.instituteId = instituteId;
-      }
+      if (instituteId !== 'all') params.instituteId = instituteId;
+      if (batchYear !== 'all') params.batch_year = batchYear;
 
-      const endpoint = shortlistedOnly ? '/cadets/shortlisted' : '/cadets';
+      const endpoint = shortlisted ? '/cadets/shortlisted' : '/cadets';
       const response = await api.get(endpoint, { params });
 
-      const {
-        data,
-        total,
-        page: currentPage,
-        limit: perPage,
-        last_page,
-      } = response.data;
-
-      // Handle potential response structure variations
-      const cadetList = Array.isArray(data) ? data : data?.data || [];
+      const data = response.data;
+      const cadetList = Array.isArray(data.data)
+        ? data.data
+        : data?.data?.data || [];
 
       setCadets(cadetList);
       setPagination({
-        current_page: currentPage || page,
-        per_page: perPage || limit,
-        total: total || cadetList.length,
+        current_page: data.page || page,
+        per_page: data.limit || limit,
+        total: data.total || cadetList.length,
         last_page:
-          last_page ||
-          Math.ceil((total || cadetList.length) / (perPage || limit)),
+          data.last_page ||
+          Math.ceil((data.total || cadetList.length) / (data.limit || limit)),
       });
     } catch (error) {
       console.error('Error fetching cadets:', error);
@@ -141,54 +138,19 @@ const CadetManagement = () => {
     }
   };
 
-  const handlePageChange = (newPage) => {
-    fetchCadets(
-      newPage,
-      pagination.per_page,
-      sortConfig.sortBy,
-      sortConfig.sortOrder,
-      searchTerm,
-      selectedInstitute,
-      showShortlistedOnly,
-      selectedYear,
-    );
-  };
+  const handlePageChange = (newPage) => fetchCadets(newPage);
 
-  const handleLimitChange = (newLimit) => {
-    fetchCadets(
-      1,
-      newLimit,
-      sortConfig.sortBy,
-      sortConfig.sortOrder,
-      searchTerm,
-      selectedInstitute,
-      showShortlistedOnly,
-      selectedYear,
-    );
-  };
+  const handleLimitChange = (newLimit) => fetchCadets(1, newLimit);
 
   const handleSortChange = (field, order) => {
     const newSortOrder = order.toUpperCase();
     setSortConfig({ sortBy: field, sortOrder: newSortOrder });
-    fetchCadets(
-      1,
-      pagination.per_page,
-      field,
-      newSortOrder,
-      searchTerm,
-      selectedInstitute,
-      showShortlistedOnly,
-      selectedYear,
-    );
+    fetchCadets(1, pagination.per_page, field, newSortOrder);
   };
 
   const handleSearch = (value) => {
     setSearchTerm(value);
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(() => {
       fetchCadets(
         1,
@@ -196,9 +158,6 @@ const CadetManagement = () => {
         sortConfig.sortBy,
         sortConfig.sortOrder,
         value,
-        selectedInstitute,
-        showShortlistedOnly,
-        selectedYear,
       );
     }, 500);
   };
@@ -212,8 +171,6 @@ const CadetManagement = () => {
       sortConfig.sortOrder,
       searchTerm,
       value,
-      showShortlistedOnly,
-      selectedYear,
     );
   };
 
@@ -234,8 +191,6 @@ const CadetManagement = () => {
   const handleRefresh = () => {
     setSearchTerm('');
     setSortConfig({ sortBy: '', sortOrder: '' });
-    // Keep selected institute or reset? Typically refreshing data keeps filters but resets search/sort
-    // Here resetting search/sort as per other pages
     fetchCadets(
       1,
       pagination.per_page,
@@ -266,7 +221,6 @@ const CadetManagement = () => {
       searchTerm,
       selectedInstitute,
       newValue,
-      selectedYear,
     );
   };
 
@@ -290,14 +244,33 @@ const CadetManagement = () => {
     }
   };
 
+  const handleStatusChange = async (cadetId, newStatus) => {
+    try {
+      await api.put(`/cadets/${cadetId}`, { status: newStatus });
+      toast.success('Status updated successfully');
+      // Update local state without full refetch for better UX
+      setCadets((prevCadets) =>
+        prevCadets.map((cadet) =>
+          cadet.id === cadetId ? { ...cadet, status: newStatus } : cadet,
+        ),
+      );
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status');
+    }
+  };
+
   return (
     <div className='py-6'>
       {/* Header */}
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 ml-2'>
         <div>
-          <h1 className='text-2xl font-bold text-gray-800'>Cadet Management</h1>
+          <h1 className='text-2xl font-bold text-gray-800'>
+            {courseType ? `${courseType} Cadets` : 'Cadet Management'}
+          </h1>
           <p className='text-gray-500 text-sm mt-1'>
-            Manage, track, and monitor all cadets
+            Manage, track, and monitor{' '}
+            {courseType ? courseType.toLowerCase() : 'all'} cadets
           </p>
         </div>
         <div className='flex gap-2'>
@@ -340,49 +313,32 @@ const CadetManagement = () => {
         </div>
       </div>
 
-      {selectedCadets.length > 0 && (
-        <div className='mb-4 flex items-center gap-4 bg-blue-50 p-3 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-2'>
-          <span className='text-sm text-blue-700 font-medium'>
-            {selectedCadets.length} cadet
-            {selectedCadets.length !== 1 ? 's' : ''} selected
-          </span>
-          <div className='flex gap-2 ml-auto'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => setSelectedCadets([])}
-              className='text-blue-600 border-blue-200 hover:bg-blue-100'
-            >
-              Clear Selection
-            </Button>
-            {/* Add bulk actions here if needed */}
-          </div>
-        </div>
-      )}
-
-      <CadetTable
-        cadets={cadets}
-        loading={loading}
-        pagination={pagination}
-        handlePageChange={handlePageChange}
-        handlePerPageChange={handleLimitChange}
-        sortConfig={sortConfig}
-        handleSortChange={handleSortChange}
-        searchTerm={searchTerm}
-        handleSearch={handleSearch}
-        handleRefresh={handleRefresh}
-        selectedInstitute={selectedInstitute}
-        handleInstituteChange={handleInstituteChange}
-        institutes={filteredInstitutes}
-        selectedYear={selectedYear}
-        handleYearChange={handleYearChange}
-        selectedCadets={selectedCadets}
-        onSelectionChange={setSelectedCadets}
-        showShortlistedOnly={showShortlistedOnly}
-        onToggleShortlisted={handleToggleShortlisted}
-        shortlistStats={shortlistStats}
-        onDelete={handleDeleteClick}
-      />
+      <div className='mt-6'>
+        <CadetTable
+          cadets={cadets}
+          loading={loading}
+          pagination={pagination}
+          handlePageChange={handlePageChange}
+          handlePerPageChange={handleLimitChange}
+          sortConfig={sortConfig}
+          handleSortChange={handleSortChange}
+          searchTerm={searchTerm}
+          handleSearch={handleSearch}
+          handleRefresh={handleRefresh}
+          selectedInstitute={selectedInstitute}
+          handleInstituteChange={handleInstituteChange}
+          institutes={filteredInstitutes}
+          selectedYear={selectedYear}
+          handleYearChange={handleYearChange}
+          selectedCadets={selectedCadets}
+          onSelectionChange={setSelectedCadets}
+          showShortlistedOnly={showShortlistedOnly}
+          onToggleShortlisted={handleToggleShortlisted}
+          shortlistStats={shortlistStats}
+          onDelete={handleDeleteClick}
+          onStatusChange={handleStatusChange}
+        />
+      </div>
 
       <CadetImportModal
         isOpen={showImportModal}

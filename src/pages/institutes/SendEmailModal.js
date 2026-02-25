@@ -20,7 +20,7 @@ const SendEmailModal = ({ isOpen, onClose, selectedInstitutes, onSuccess }) => {
     subject: '',
     description: '',
     file: null,
-    adminYear: currentYear.toString(),
+    batch_year: currentYear.toString(),
   });
   const [loading, setLoading] = useState(false);
 
@@ -65,7 +65,7 @@ const SendEmailModal = ({ isOpen, onClose, selectedInstitutes, onSuccess }) => {
       data.append('instituteIds', JSON.stringify(selectedInstitutes));
       data.append('subject', formData.subject);
       data.append('description', formData.description);
-      data.append('adminYear', formData.adminYear);
+      data.append('batch_year', formData.batch_year);
       data.append('file', formData.file);
 
       await api.post('/institutes/send-email', data, {
@@ -78,7 +78,7 @@ const SendEmailModal = ({ isOpen, onClose, selectedInstitutes, onSuccess }) => {
       setFormData({
         subject: '',
         description: '',
-        adminYear: currentYear.toString(),
+        batch_year: currentYear.toString(),
         file: null,
       });
       onSuccess?.();
@@ -128,10 +128,10 @@ const SendEmailModal = ({ isOpen, onClose, selectedInstitutes, onSuccess }) => {
               Batch Year <span className='text-red-500'>*</span>
             </label>
             <Select
-              name='adminYear'
-              value={formData.adminYear}
+              name='batch_year'
+              value={formData.batch_year}
               onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, adminYear: value }))
+                setFormData((prev) => ({ ...prev, batch_year: value }))
               }
             >
               <SelectTrigger className='w-full'>

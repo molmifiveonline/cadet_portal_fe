@@ -49,7 +49,6 @@ function App() {
               }
             />
             <Route path='/' element={<Navigate to='/login' replace />} />
-            <Route path='/institute/submit-excel' element={<SubmitExcel />} />
             <Route path='/cv-form/:token' element={<CVForm />} />
 
             {/* Protected Routes with Layout */}
@@ -60,6 +59,19 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='dashboard' action='view'>
                       <Dashboard />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/institute/submit-excel'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='submit-excel' action='view'>
+                      <SubmitExcel />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
@@ -119,12 +131,25 @@ function App() {
             />
 
             <Route
-              path='/cadets'
+              path='/cadets/engine'
               element={
                 <ProtectedRoute>
                   <MainLayout>
                     <PermissionRoute module='cadets' action='view'>
-                      <CadetManagement />
+                      <CadetManagement courseType='Engine' />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/deck'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='view'>
+                      <CadetManagement courseType='Deck' />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
