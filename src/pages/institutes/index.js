@@ -133,21 +133,19 @@ const InstitutesManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this institute?')) {
-      try {
-        await api.delete(`/institutes/${id}`);
-        toast.success('Institute deleted successfully');
-        fetchInstitutes(
-          pagination.current_page,
-          pagination.per_page,
-          sortConfig.sortBy,
-          sortConfig.sortOrder,
-          searchTerm,
-        );
-      } catch (error) {
-        console.error('Error deleting institute:', error);
-        toast.error('Failed to delete institute');
-      }
+    try {
+      await api.delete(`/institutes/${id}`);
+      toast.success('Institute deleted successfully');
+      fetchInstitutes(
+        pagination.current_page,
+        pagination.per_page,
+        sortConfig.sortBy,
+        sortConfig.sortOrder,
+        searchTerm,
+      );
+    } catch (error) {
+      console.error('Error deleting institute:', error);
+      toast.error('Failed to delete institute');
     }
   };
 
@@ -162,7 +160,7 @@ const InstitutesManagement = () => {
           </p>
         </div>
         <div className='flex gap-2'>
-          <Permission module='institutes' action='view'>
+          {/* <Permission module='institutes' action='view'>
             <Button
               variant='outline'
               onClick={() => navigate('/institutes/submissions')}
@@ -171,7 +169,7 @@ const InstitutesManagement = () => {
               <FileText size={20} />
               View Submissions
             </Button>
-          </Permission>
+          </Permission> */}
 
           {selectedInstitutes.length === 0 && (
             <Button
