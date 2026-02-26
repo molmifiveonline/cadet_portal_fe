@@ -133,21 +133,19 @@ const InstitutesManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this institute?')) {
-      try {
-        await api.delete(`/institutes/${id}`);
-        toast.success('Institute deleted successfully');
-        fetchInstitutes(
-          pagination.current_page,
-          pagination.per_page,
-          sortConfig.sortBy,
-          sortConfig.sortOrder,
-          searchTerm,
-        );
-      } catch (error) {
-        console.error('Error deleting institute:', error);
-        toast.error('Failed to delete institute');
-      }
+    try {
+      await api.delete(`/institutes/${id}`);
+      toast.success('Institute deleted successfully');
+      fetchInstitutes(
+        pagination.current_page,
+        pagination.per_page,
+        sortConfig.sortBy,
+        sortConfig.sortOrder,
+        searchTerm,
+      );
+    } catch (error) {
+      console.error('Error deleting institute:', error);
+      toast.error('Failed to delete institute');
     }
   };
 

@@ -9,6 +9,13 @@ import {
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 import api from '../../lib/utils/apiConfig';
 import * as xlsx from 'xlsx';
 import {
@@ -33,6 +40,29 @@ const SubmitExcel = () => {
   const [validationError, setValidationError] = useState('');
   const [cellErrors, setCellErrors] = useState({});
   const [errorCount, setErrorCount] = useState(0);
+
+  // Admin specific state
+  const [institutes, setInstitutes] = useState([]);
+  const [selectedInstitute, setSelectedInstitute] = useState('');
+  const [selectedBatchYear, setSelectedBatchYear] = useState('');
+
+  const isAdmin = user?.role === 'SuperAdmin';
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i);
+
+  React.useEffect(() => {
+    if (isAdmin) {
+      const fetchInstitutes = async () => {
+        try {
+          const response = await api.get('/institutes?limit=1000');
+          setInstitutes(response.data.data || []);
+        } catch (error) {
+          console.error('Error fetching institutes:', error);
+        }
+      };
+      fetchInstitutes();
+    }
+  }, [isAdmin]);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -188,6 +218,14 @@ const SubmitExcel = () => {
       toast.error('Please fix file errors before submitting');
       return;
     }
+    if (isAdmin && !selectedInstitute) {
+      toast.error('Please select an Institute');
+      return;
+    }
+    if (isAdmin && !selectedBatchYear) {
+      toast.error('Please select a Batch Year');
+      return;
+    }
     setShowConfirm(true);
   };
 
@@ -197,6 +235,12 @@ const SubmitExcel = () => {
 
     try {
       const formData = new FormData();
+
+      if (isAdmin) {
+        formData.append('instituteId', selectedInstitute);
+        formData.append('batch_year', selectedBatchYear);
+      }
+
       formData.append('file', file);
 
       await api.post('/institutes/submit-excel', formData, {
@@ -256,6 +300,52 @@ const SubmitExcel = () => {
       <div className='bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden'>
         <div className='p-6 border-b border-gray-100 bg-slate-50'>
           <form onSubmit={startSubmit}>
+            {isAdmin && (
+              <div className='flex flex-col md:flex-row gap-4 mb-6'>
+                <div className='flex-1 space-y-2'>
+                  <label className='text-sm font-medium leading-none'>
+                    Select Institute <span className='text-red-500'>*</span>
+                  </label>
+                  <Select
+                    value={selectedInstitute}
+                    onValueChange={setSelectedInstitute}
+                  >
+                    <SelectTrigger className='bg-white'>
+                      <SelectValue placeholder='Choose an institute' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {institutes.map((inst) => (
+                        <SelectItem key={inst.id} value={inst.id.toString()}>
+                          {inst.institute_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className='flex-1 space-y-2'>
+                  <label className='text-sm font-medium leading-none'>
+                    Batch Year <span className='text-red-500'>*</span>
+                  </label>
+                  <Select
+                    value={selectedBatchYear}
+                    onValueChange={setSelectedBatchYear}
+                  >
+                    <SelectTrigger className='bg-white'>
+                      <SelectValue placeholder='Select year' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
             <div className='border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-blue-500 hover:bg-blue-50/50 transition-all cursor-pointer relative group'>
               <input
                 type='file'

@@ -203,12 +203,7 @@ const CadetTable = ({
     { field: 'weight_in_kgs', headerName: 'Weight (kg)', width: '100px' },
     { field: 'bmi', headerName: 'BMI', width: '80px' },
 
-    { field: 'indos_number', headerName: 'INDoS', width: '120px' },
-    { field: 'cdc_number', headerName: 'CDC Number', width: '120px' },
-    { field: 'passport_number', headerName: 'Passport', width: '120px' },
-
     { field: 'course', headerName: 'Course', width: '120px' },
-    { field: 'batch', headerName: 'Batch', width: '120px' },
     {
       field: 'batch_rank_out_of_72_cadets',
       headerName: 'Batch Rank',
@@ -249,12 +244,7 @@ const CadetTable = ({
     {
       field: 'twelfth_std_pass_out_year',
       headerName: '12th Year',
-      width: '100px',
-    },
-    {
-      field: 'twelfth_pcm_avg_percentage',
-      headerName: '12th %',
-      width: '80px',
+      width: '130px',
     },
     {
       field: 'twelfth_std_english',
@@ -268,9 +258,12 @@ const CadetTable = ({
     },
     { field: 'twelfth_std_chemistry', headerName: '12th Chem', width: '100px' },
     { field: 'twelfth_std_maths', headerName: '12th Maths', width: '100px' },
-    { field: 'pcm_percentage', headerName: 'PCM %', width: '80px' },
+    {
+      field: 'twelfth_pcm_avg_percentage',
+      headerName: 'PCM %',
+      width: '130px',
+    },
 
-    { field: 'degree_percentage', headerName: 'Degree %', width: '100px' },
     { field: 'no_of_arrears', headerName: 'Arrears', width: '80px' },
 
     { field: 'imu_rank', headerName: 'IMU Rank', width: '100px' },
@@ -279,14 +272,14 @@ const CadetTable = ({
       headerName: 'IMU Avg %',
       width: '100px',
     },
-    { field: 'imu_sem_', headerName: 'Sem 1', width: '80px' },
-    { field: 'imu_sem_', headerName: 'Sem 2', width: '80px' },
-    { field: 'imu_sem_', headerName: 'Sem 3', width: '80px' },
-    { field: 'imu_sem_', headerName: 'Sem 4', width: '80px' },
-    { field: 'imu_sem_', headerName: 'Sem 5', width: '80px' },
-    { field: 'imu_sem_', headerName: 'Sem 6', width: '80px' },
-    { field: 'imu_sem_', headerName: 'Sem 7', width: '80px' },
-    { field: 'imu_sem_', headerName: 'Sem 8', width: '80px' },
+    { field: 'imu_sem_1_percentage', headerName: 'Sem 1', width: '80px' },
+    { field: 'imu_sem_2_percentage', headerName: 'Sem 2', width: '80px' },
+    { field: 'imu_sem_3_percentage', headerName: 'Sem 3', width: '80px' },
+    { field: 'imu_sem_4_percentage', headerName: 'Sem 4', width: '80px' },
+    { field: 'imu_sem_5_percentage', headerName: 'Sem 5', width: '80px' },
+    { field: 'imu_sem_6_percentage', headerName: 'Sem 6', width: '80px' },
+    { field: 'imu_sem_7_percentage', headerName: 'Sem 7', width: '80px' },
+    { field: 'imu_sem_8_percentage', headerName: 'Sem 8', width: '80px' },
 
     {
       field: 'any_extra_curricular_achievement',
@@ -314,17 +307,6 @@ const CadetTable = ({
           </div>
         );
       },
-    },
-
-    {
-      field: 'current_stage',
-      headerName: 'Current Stage',
-      width: '160px',
-      renderCell: ({ value }) => (
-        <span className={getStageBadgeClass(value)}>
-          {getCurrentStageLabel(value)}
-        </span>
-      ),
     },
     {
       field: 'created_at',

@@ -544,7 +544,7 @@ const CadetDetails = () => {
                   type='text'
                   icon={Calendar}
                 />
-                <DetailItem
+                {/* <DetailItem
                   label='Percentage'
                   value={
                     cadet.twelfth_pcm_avg_percentage
@@ -554,13 +554,15 @@ const CadetDetails = () => {
                   name='twelfth_pcm_avg_percentage'
                   type='text'
                   icon={Percent}
-                />
+                /> */}
                 <DetailItem
                   label='PCM %'
                   value={
-                    cadet.pcm_percentage ? `${cadet.pcm_percentage}%` : '-'
+                    cadet.twelfth_pcm_avg_percentage
+                      ? `${cadet.twelfth_pcm_avg_percentage}%`
+                      : '-'
                   }
-                  name='pcm_percentage'
+                  name='twelfth_pcm_avg_percentage'
                   type='text'
                   icon={Percent}
                 />
@@ -674,12 +676,12 @@ const CadetDetails = () => {
           <div>
             <SectionTitle title='Course & Training Details' icon={Briefcase} />
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem
+              {/* <DetailItem
                 label='Batch'
                 value={cadet.batch}
                 name='batch'
                 icon={Hash}
-              />
+              /> */}
               <DetailItem
                 label='Batch Rank'
                 value={cadet.batch_rank_out_of_72_cadets}

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, ListFilter, Plus } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import CadetTable from './CadetTable';
-import CadetImportModal from './CadetImportModal';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import { Button } from '../../components/ui/button';
 import Permission from '../../components/common/Permission';
@@ -36,7 +35,6 @@ const CadetManagement = ({ courseType }) => {
   });
 
   const [selectedCadets, setSelectedCadets] = useState([]);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [showShortlistedOnly, setShowShortlistedOnly] = useState(false);
   const [shortlistStats, setShortlistStats] = useState(null);
 
@@ -204,12 +202,6 @@ const CadetManagement = ({ courseType }) => {
     toast.success('Data refreshed');
   };
 
-  const handleImportSuccess = () => {
-    fetchCadets(1);
-    fetchShortlistStats();
-    toast.success('Cadets imported successfully');
-  };
-
   const handleToggleShortlisted = () => {
     const newValue = !showShortlistedOnly;
     setShowShortlistedOnly(newValue);
@@ -293,7 +285,7 @@ const CadetManagement = ({ courseType }) => {
             </Button>
             <Button
               variant='outline'
-              onClick={() => setShowImportModal(true)}
+              onClick={() => navigate('/institute/submit-excel')}
               className='gap-2'
             >
               <Upload size={18} />
@@ -339,13 +331,6 @@ const CadetManagement = ({ courseType }) => {
           onStatusChange={handleStatusChange}
         />
       </div>
-
-      <CadetImportModal
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        institutes={institutes}
-        onSuccess={handleImportSuccess}
-      />
 
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
