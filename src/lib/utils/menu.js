@@ -9,6 +9,7 @@ import {
   UserCog,
   Shield,
   FileText,
+  Stethoscope,
 } from 'lucide-react';
 
 export const MenuItems = [
@@ -25,6 +26,22 @@ export const MenuItems = [
     icon: UserCog,
     url: '/users',
     module: 'users',
+    action: 'view',
+    allowedRoles: ['SuperAdmin'],
+  },
+  {
+    title: 'Vessel Master',
+    icon: School, // Will find a better icon if needed later, using School temporarily as Ship is not imported
+    url: '/vessels',
+    module: 'vessel-master',
+    action: 'view',
+    allowedRoles: ['SuperAdmin'],
+  },
+  {
+    title: 'Medical Centers',
+    icon: Stethoscope,
+    url: '/medical-centers',
+    module: 'medical-centers',
     action: 'view',
     allowedRoles: ['SuperAdmin'],
   },

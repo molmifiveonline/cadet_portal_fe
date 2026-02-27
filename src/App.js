@@ -13,7 +13,6 @@ import Dashboard from './pages/Dashboard';
 import CadetManagement from './pages/CadetManagement';
 import CadetDetails from './pages/CadetManagement/CadetDetails';
 import AddCadetForm from './pages/CadetManagement/AddCadetForm';
-import AddCadetBasicForm from './pages/CadetManagement/AddCadetBasicForm';
 import ShortlistedCadetsView from './pages/CadetManagement/ShortlistedCadetsView';
 import MainLayout from './components/layout/MainLayout';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -26,10 +25,15 @@ import SubmitExcel from 'pages/institutes/SubmitExcel';
 import InstituteSubmissions from 'pages/institutes/InstituteSubmissions';
 import RolePermissions from './pages/RolePermissions';
 import CVForm from './pages/CVForm';
+import VesselList from './pages/vessels';
+import VesselForm from './pages/vessels/VesselForm';
+import MedicalCenterList from './pages/medical-centers';
+import MedicalCenterForm from './pages/medical-centers/MedicalCenterForm';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
-import { PublicRoute } from 'components/common/PublicRoute';
+import { PublicRoute } from './components/common/PublicRoute';
+import HomeRedirect from './components/common/HomeRedirect';
 
 function App() {
   return (
@@ -48,7 +52,7 @@ function App() {
                 </PublicRoute>
               }
             />
-            <Route path='/' element={<Navigate to='/login' replace />} />
+            <Route path='/' element={<HomeRedirect />} />
             <Route path='/cv-form/:token' element={<CVForm />} />
 
             {/* Protected Routes with Layout */}
@@ -183,19 +187,6 @@ function App() {
             />
 
             <Route
-              path='/cadets/add-basic'
-              element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <PermissionRoute module='cadets' action='create'>
-                      <AddCadetBasicForm />
-                    </PermissionRoute>
-                  </MainLayout>
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
               path='/cadets/view/:id'
               element={
                 <ProtectedRoute>
@@ -267,6 +258,86 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='role-permissions' action='manage'>
                       <RolePermissions />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Vessel Master Routes */}
+            <Route
+              path='/vessels'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='view'>
+                      <VesselList />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/vessels/add'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='create'>
+                      <VesselForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/vessels/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='edit'>
+                      <VesselForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Medical Center Master Routes */}
+            <Route
+              path='/medical-centers'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='view'>
+                      <MedicalCenterList />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-centers/add'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='create'>
+                      <MedicalCenterForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-centers/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='edit'>
+                      <MedicalCenterForm />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>

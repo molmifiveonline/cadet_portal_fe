@@ -66,7 +66,12 @@ const InstituteForm = () => {
         } catch (error) {
           console.error('Error fetching institute:', error);
           toast.error('Failed to fetch institute data');
-          navigate('/institutes');
+          const returnState = location.state?.returnState;
+          if (returnState) {
+            navigate('/institutes', { state: { returnState } });
+          } else {
+            navigate('/institutes');
+          }
         } finally {
           setFetching(false);
         }
@@ -87,7 +92,12 @@ const InstituteForm = () => {
         await api.post('/institutes', data);
         toast.success('Institute created successfully');
       }
-      navigate('/institutes');
+      const returnState = location.state?.returnState;
+      if (returnState) {
+        navigate('/institutes', { state: { returnState } });
+      } else {
+        navigate('/institutes');
+      }
     } catch (error) {
       console.error('Error saving institute:', error);
       toast.error(error.response?.data?.message || 'Failed to save institute');
@@ -97,7 +107,12 @@ const InstituteForm = () => {
   };
 
   const handleCancel = () => {
-    navigate('/institutes');
+    const returnState = location.state?.returnState;
+    if (returnState) {
+      navigate('/institutes', { state: { returnState } });
+    } else {
+      navigate('/institutes');
+    }
   };
 
   if (fetching) {

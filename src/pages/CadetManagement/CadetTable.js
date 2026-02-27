@@ -329,7 +329,21 @@ const CadetTable = ({
             variant='ghost'
             size='icon'
             className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-            onClick={() => navigate(`/cadets/view/${row.id}`)}
+            onClick={() =>
+              navigate(`/cadets/view/${row.id}`, {
+                state: {
+                  returnPath: window.location.pathname,
+                  returnState: {
+                    pagination,
+                    sortConfig,
+                    searchTerm,
+                    selectedInstitute,
+                    selectedYear,
+                    showShortlistedOnly,
+                  },
+                },
+              })
+            }
             title='View Details'
           >
             <Eye size={16} />
@@ -339,7 +353,20 @@ const CadetTable = ({
             size='icon'
             className='h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50'
             onClick={() =>
-              navigate(`/cadets/view/${row.id}`, { state: { editMode: true } })
+              navigate(`/cadets/view/${row.id}`, {
+                state: {
+                  editMode: true,
+                  returnPath: window.location.pathname,
+                  returnState: {
+                    pagination,
+                    sortConfig,
+                    searchTerm,
+                    selectedInstitute,
+                    selectedYear,
+                    showShortlistedOnly,
+                  },
+                },
+              })
             }
             title='Edit'
           >

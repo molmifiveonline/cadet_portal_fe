@@ -39,7 +39,7 @@ const Login = () => {
       login(response.data.user, response.data.token);
 
       toast.success('Login successful! Welcome back.');
-      const redirectUrl = searchParams.get('redirect') || '/dashboard';
+      const redirectUrl = searchParams.get('redirect') || '/';
       navigate(redirectUrl);
     } catch (err) {
       const message =

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Upload, ListFilter, Plus } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import CadetTable from './CadetTable';
@@ -11,31 +11,42 @@ import Permission from '../../components/common/Permission';
 // Single-table logic with courseType parameter
 const CadetManagement = ({ courseType }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnState = location.state?.returnState || null;
+
   const [institutes, setInstitutes] = useState([]);
   const [filteredInstitutes, setFilteredInstitutes] = useState([]);
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedInstitute, setSelectedInstitute] = useState('all');
-  const [selectedYear, setSelectedYear] = useState(
-    new Date().getFullYear().toString(),
+  const [selectedInstitute, setSelectedInstitute] = useState(
+    returnState?.selectedInstitute || 'all',
   );
-  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedYear, setSelectedYear] = useState(
+    returnState?.selectedYear || new Date().getFullYear().toString(),
+  );
+  const [searchTerm, setSearchTerm] = useState(returnState?.searchTerm || '');
 
-  const [pagination, setPagination] = useState({
-    current_page: 1,
-    per_page: 10,
-    total: 0,
-    last_page: 1,
-  });
+  const [pagination, setPagination] = useState(
+    returnState?.pagination || {
+      current_page: 1,
+      per_page: 10,
+      total: 0,
+      last_page: 1,
+    },
+  );
 
-  const [sortConfig, setSortConfig] = useState({
-    sortBy: '',
-    sortOrder: '',
-  });
+  const [sortConfig, setSortConfig] = useState(
+    returnState?.sortConfig || {
+      sortBy: '',
+      sortOrder: '',
+    },
+  );
 
   const [selectedCadets, setSelectedCadets] = useState([]);
-  const [showShortlistedOnly, setShowShortlistedOnly] = useState(false);
+  const [showShortlistedOnly, setShowShortlistedOnly] = useState(
+    returnState?.showShortlistedOnly || false,
+  );
   const [shortlistStats, setShortlistStats] = useState(null);
 
   const [deleteModal, setDeleteModal] = useState({
@@ -58,7 +69,16 @@ const CadetManagement = ({ courseType }) => {
   // Fetch cadets whenever courseType changes or filters are applied
   useEffect(() => {
     // We only fetch here automatically on courseType change
-    fetchCadets(1);
+    fetchCadets(
+      pagination.current_page,
+      pagination.per_page,
+      sortConfig.sortBy,
+      sortConfig.sortOrder,
+      searchTerm,
+      selectedInstitute,
+      showShortlistedOnly,
+      selectedYear,
+    );
     // Reset selection when course changes
     setSelectedCadets([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -229,7 +249,13 @@ const CadetManagement = ({ courseType }) => {
       await api.delete(`/cadets/${deleteModal.cadetId}`);
       toast.success('Cadet deleted successfully');
       setDeleteModal({ isOpen: false, cadetId: null, cadetName: '' });
-      fetchCadets(pagination.current_page); // Refresh list
+
+      // If deleting the last item on current page (and not on first page), go to previous page
+      if (cadets.length === 1 && pagination.current_page > 1) {
+        fetchCadets(pagination.current_page - 1);
+      } else {
+        fetchCadets(pagination.current_page); // Refresh list
+      }
     } catch (error) {
       console.error('Error deleting cadet:', error);
       toast.error('Failed to delete cadet');

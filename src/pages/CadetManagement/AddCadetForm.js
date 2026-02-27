@@ -32,24 +32,31 @@ import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import SectionTitle from '../../components/common/SectionTitle';
 import SharedDetailItem from '../../components/common/DetailItem';
-// import api from '../../lib/utils/apiConfig'; // API not used yet as per request
+import api from '../../lib/utils/apiConfig';
 
 const AddCadetForm = () => {
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [photoError, setPhotoError] = useState(null);
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm();
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setPhotoError('Image size must be less than 5MB');
+        e.target.value = '';
+        return;
+      }
+      setPhotoError(null);
       setSelectedFile(file);
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
@@ -57,16 +64,33 @@ const AddCadetForm = () => {
   };
 
   const onSubmit = async (data) => {
-    // UI Only implementation for now
     setLoading(true);
     try {
-      console.log('Form Submitted', data, selectedFile);
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate delay
-      toast.success('Form submitted (UI Only). Backend integration pending.');
-      // connect to backend later
+      let payload = data;
+      let headers = {};
+
+      if (selectedFile) {
+        const formData = new FormData();
+        Object.keys(data).forEach((key) => {
+          if (
+            data[key] !== null &&
+            data[key] !== undefined &&
+            data[key] !== ''
+          ) {
+            formData.append(key, data[key]);
+          }
+        });
+        formData.append('photo', selectedFile);
+        payload = formData;
+        headers = { 'Content-Type': 'multipart/form-data' };
+      }
+
+      await api.post('/cadets', payload, { headers });
+      toast.success('Cadet added successfully');
+      navigate('/cadets'); // Navigate back to the list
     } catch (error) {
-      console.error('Error', error);
-      toast.error('Error submitting form');
+      console.error('Error submitting form:', error);
+      toast.error('Failed to add cadet');
     } finally {
       setLoading(false);
     }
@@ -149,6 +173,11 @@ const AddCadetForm = () => {
                     src={previewUrl}
                     alt='Preview'
                     className='w-full h-full object-cover'
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src =
+                        'https://via.placeholder.com/150?text=No+Image';
+                    }}
                   />
                 ) : (
                   <ImageIcon size={48} className='text-gray-400' />
@@ -158,6 +187,11 @@ const AddCadetForm = () => {
                   <Camera className='text-white w-8 h-8' />
                 </div>
               </div>
+              {photoError && (
+                <p className='text-red-500 text-sm font-medium mt-2 text-center absolute -bottom-6 w-full whitespace-nowrap'>
+                  {photoError}
+                </p>
+              )}
             </div>
             <div className='flex-1 text-center md:text-left'>
               <h3 className='text-xl font-bold text-gray-800'>Cadet Photo</h3>
@@ -171,7 +205,12 @@ const AddCadetForm = () => {
           <div>
             <SectionTitle title='Personal Information' icon={User} />
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem label='Full Name' name='name_as_in_indos_cert' required icon={User} />
+              <DetailItem
+                label='Full Name'
+                name='name_as_in_indos_cert'
+                required
+                icon={User}
+              />
               <DetailItem
                 label='Email'
                 name='email_id'
@@ -179,25 +218,24 @@ const AddCadetForm = () => {
                 required
                 icon={Mail}
               />
-              <DetailItem label='Phone' name='contact_number' required icon={Phone} />
               <DetailItem
-                label='Gender'
-                name='gender'
-                icon={User}
-                type='select'
-                options={[
-                  { value: 'Male', label: 'Male' },
-                  { value: 'Female', label: 'Female' },
-                  { value: 'Other', label: 'Other' },
-                ]}
+                label='Phone'
+                name='contact_number'
+                required
+                icon={Phone}
               />
+              <DetailItem label='Gender' name='gender' icon={User} />
               <DetailItem
                 label='Date of Birth'
                 name='date_of_birth'
                 type='date'
                 icon={Calendar}
               />
-              <DetailItem label='Hometown' name='home_town_or_nearby_airport' icon={MapPin} />
+              <DetailItem
+                label='Hometown'
+                name='home_town_or_nearby_airport'
+                icon={MapPin}
+              />
               <DetailItem label='Nationality' name='nationality' icon={Globe} />
               <DetailItem
                 label='Blood Group'
@@ -282,7 +320,11 @@ const AddCadetForm = () => {
             <div>
               <SectionTitle title='10th Standard' icon={School} />
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <DetailItem label='Board' name='tenth_std_board' icon={School} />
+                <DetailItem
+                  label='Board'
+                  name='tenth_std_board'
+                  icon={School}
+                />
                 <DetailItem
                   label='Year'
                   name='tenth_std_pass_out_year'
@@ -292,25 +334,25 @@ const AddCadetForm = () => {
                 <DetailItem
                   label='Percentage'
                   name='tenth_avg_percentage'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Maths'
                   name='tenth_std_maths'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Science'
                   name='tenth_std_science'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='English'
                   name='tenth_std_english'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
               </div>
@@ -320,74 +362,61 @@ const AddCadetForm = () => {
             <div>
               <SectionTitle title='12th Standard' icon={School} />
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <DetailItem label='Board' name='twelfth_std_board' icon={School} />
+                <DetailItem
+                  label='Board'
+                  name='twelfth_std_board'
+                  icon={School}
+                />
                 <DetailItem
                   label='Year'
                   name='twelfth_std_pass_out_year'
-                  type='number'
+                  type='text'
                   icon={Calendar}
                 />
                 <DetailItem
-                  label='Percentage'
-                  name='twelfth_pcm_avg_percentage'
-                  type='float'
-                  icon={Percent}
-                />
-                <DetailItem
                   label='PCM %'
-                  name='pcm_percentage'
-                  type='float'
+                  name='twelfth_pcm_avg_percentage'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Maths'
                   name='twelfth_std_maths'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Physics'
                   name='twelfth_std_physics'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Chemistry'
                   name='twelfth_std_chemistry'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
                 <DetailItem
                   label='English'
                   name='twelfth_std_english'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
               </div>
             </div>
           </div>
 
-          {/* Higher Education & IMU */}
+          {/* Education & IMU */}
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
             {/* Graduation */}
             <div>
               <SectionTitle title='Graduation / Degree' icon={Book} />
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <DetailItem
-                  label='Course'
-                  name='graduation_course'
-                  icon={Book}
-                />
-                <DetailItem
                   label='University'
                   name='graduation_university'
                   icon={School}
-                />
-                <DetailItem
-                  label='Percentage'
-                  name='degree_percentage'
-                  type='float'
-                  icon={Percent}
                 />
               </div>
             </div>
@@ -399,61 +428,61 @@ const AddCadetForm = () => {
                 <DetailItem
                   label='IMU Rank'
                   name='imu_rank'
-                  type='number'
+                  type='text'
                   icon={Award}
                 />
                 <DetailItem
                   label='Avg %'
                   name='imu_avg_all_semester_percentage'
-                  type='float'
+                  type='text'
                   icon={Percent}
                 />
                 {/* Semester Wise */}
                 <DetailItem
                   label='Sem 1'
-                  name='imu_sem_'
+                  name='imu_sem_1_percentage'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 2'
-                  name='imu_sem_'
+                  name='imu_sem_2_percentage'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 3'
-                  name='imu_sem_'
+                  name='imu_sem_3_percentage'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 4'
-                  name='imu_sem_'
+                  name='imu_sem_4_percentage'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 5'
-                  name='imu_sem_'
+                  name='imu_sem_5_percentage'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 6'
-                  name='imu_sem_'
+                  name='imu_sem_6_percentage'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 7'
-                  name='imu_sem_'
+                  name='imu_sem_7_percentage'
                   type='float'
                   icon={Percent}
                 />
                 <DetailItem
                   label='Sem 8'
-                  name='imu_sem_'
+                  name='imu_sem_8_percentage'
                   type='float'
                   icon={Percent}
                 />
@@ -465,8 +494,11 @@ const AddCadetForm = () => {
           <div>
             <SectionTitle title='Course & Training Details' icon={Briefcase} />
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem label='Batch' name='batch' icon={Hash} />
-              <DetailItem label='Batch Rank' name='batch_rank_out_of_72_cadets' icon={Award} />
+              <DetailItem
+                label='Batch Rank'
+                name='batch_rank_out_of_72_cadets'
+                icon={Award}
+              />
               <DetailItem
                 label='Arrears'
                 name='no_of_arrears'
@@ -474,7 +506,7 @@ const AddCadetForm = () => {
                 icon={Book}
               />
               <DetailItem
-                label='Passing Out Date'
+                label='Passing Out Year'
                 name='passing_out_date'
                 type='date'
                 icon={Calendar}
@@ -484,11 +516,6 @@ const AddCadetForm = () => {
                 name='age_when_passing_out'
                 type='number'
                 icon={User}
-              />
-              <DetailItem
-                label='Post Applied For'
-                name='post_applied_for'
-                icon={Briefcase}
               />
             </div>
           </div>
@@ -508,6 +535,11 @@ const AddCadetForm = () => {
                 icon={Briefcase}
               />
               <DetailItem
+                label='Any Relative in Marine Field'
+                name='marine_relative'
+                icon={User}
+              />
+              <DetailItem
                 label='Languages'
                 name='language_known'
                 icon={Globe}
@@ -521,6 +553,93 @@ const AddCadetForm = () => {
                 label='Extra Curricular'
                 name='any_extra_curricular_achievement'
                 icon={Activity}
+              />
+            </div>
+          </div>
+
+          {/* STCW Courses */}
+          <div>
+            <SectionTitle title='STCW Courses' icon={Book} />
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+              <DetailItem
+                label='Elementary/Medical First Aid/Medicare'
+                name='stcw_elementary_first_aid'
+                type='select'
+                options={[
+                  { label: 'Not Done', value: 'Not Done' },
+                  { label: 'Done', value: 'Done' },
+                ]}
+                icon={Syringe}
+              />
+              <DetailItem
+                label='Security Training for Sea Farers'
+                name='stcw_security_training'
+                type='select'
+                options={[
+                  { label: 'Not Done', value: 'Not Done' },
+                  { label: 'Done', value: 'Done' },
+                ]}
+                icon={Book}
+              />
+              <DetailItem
+                label='Personal Safety & Social Responsibility'
+                name='stcw_personal_safety'
+                type='select'
+                options={[
+                  { label: 'Not Done', value: 'Not Done' },
+                  { label: 'Done', value: 'Done' },
+                ]}
+                icon={User}
+              />
+              <DetailItem
+                label='Petrol Tanker Familiarization'
+                name='stcw_petrol_tanker'
+                type='select'
+                options={[
+                  { label: 'Not Done', value: 'Not Done' },
+                  { label: 'Done', value: 'Done' },
+                ]}
+                icon={Book}
+              />
+              <DetailItem
+                label='Fire Prevention and Fire Fighting'
+                name='stcw_fire_prevention'
+                type='select'
+                options={[
+                  { label: 'Not Done', value: 'Not Done' },
+                  { label: 'Done', value: 'Done' },
+                ]}
+                icon={Activity}
+              />
+              <DetailItem
+                label='Chemical Tanker Familiarization'
+                name='stcw_chemical_tanker'
+                type='select'
+                options={[
+                  { label: 'Not Done', value: 'Not Done' },
+                  { label: 'Done', value: 'Done' },
+                ]}
+                icon={Book}
+              />
+              <DetailItem
+                label='Personal Survival Techniques'
+                name='stcw_personal_survival'
+                type='select'
+                options={[
+                  { label: 'Not Done', value: 'Not Done' },
+                  { label: 'Done', value: 'Done' },
+                ]}
+                icon={Activity}
+              />
+              <DetailItem
+                label='Gas Tanker Familiarization'
+                name='stcw_gas_tanker'
+                type='select'
+                options={[
+                  { label: 'Not Done', value: 'Not Done' },
+                  { label: 'Done', value: 'Done' },
+                ]}
+                icon={Book}
               />
             </div>
           </div>

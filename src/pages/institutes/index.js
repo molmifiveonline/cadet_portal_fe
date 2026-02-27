@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
 import { Plus, Mail, FileText } from 'lucide-react';
 import InstitutesTable from './InstitutesTable';
@@ -12,18 +12,25 @@ import Permission from 'components/common/Permission';
 const InstitutesManagement = () => {
   const [institutes, setInstitutes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
-  const [pagination, setPagination] = useState({
-    current_page: 1,
-    per_page: 10,
-    total: 0,
-    last_page: 1,
-  });
-  const [sortConfig, setSortConfig] = useState({
-    sortBy: '',
-    sortOrder: '',
-  });
+  const location = useLocation();
+  const returnState = location.state?.returnState || null;
+
+  const [searchTerm, setSearchTerm] = useState(returnState?.searchTerm || '');
+  const [pagination, setPagination] = useState(
+    returnState?.pagination || {
+      current_page: 1,
+      per_page: 10,
+      total: 0,
+      last_page: 1,
+    },
+  );
+  const [sortConfig, setSortConfig] = useState(
+    returnState?.sortConfig || {
+      sortBy: '',
+      sortOrder: '',
+    },
+  );
   const searchTimeoutRef = React.useRef(null);
   const [selectedInstitutes, setSelectedInstitutes] = useState([]);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -69,7 +76,13 @@ const InstitutesManagement = () => {
   };
 
   useEffect(() => {
-    fetchInstitutes(1); // Fetch first page on mount
+    fetchInstitutes(
+      pagination.current_page,
+      pagination.per_page,
+      sortConfig.sortBy,
+      sortConfig.sortOrder,
+      searchTerm,
+    );
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
@@ -128,7 +141,14 @@ const InstitutesManagement = () => {
 
   const handleEdit = (institute) => {
     navigate(`/institutes/edit/${institute.id}`, {
-      state: { instituteData: institute },
+      state: {
+        instituteData: institute,
+        returnState: {
+          pagination,
+          sortConfig,
+          searchTerm,
+        },
+      },
     });
   };
 

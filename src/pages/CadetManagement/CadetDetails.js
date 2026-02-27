@@ -43,7 +43,11 @@ const CadetDetails = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [photoError, setPhotoError] = useState(null);
   const fileInputRef = React.useRef(null);
+
+  const [returnPath] = useState(location.state?.returnPath || null);
+  const [returnStatePayload] = useState(location.state?.returnState || null);
 
   const {
     register,
@@ -56,8 +60,14 @@ const CadetDetails = () => {
     // Check if we should start in edit mode
     if (location.state?.editMode) {
       setIsEditing(true);
-      // Clear state so refresh doesn't keep it
-      navigate(location.pathname, { replace: true, state: {} });
+      // Clear editMode so refresh doesn't keep it, but keep return routing
+      navigate(location.pathname, {
+        replace: true,
+        state: {
+          returnPath: location.state?.returnPath,
+          returnState: location.state?.returnState,
+        },
+      });
     }
   }, [location, navigate]);
 
@@ -94,7 +104,11 @@ const CadetDetails = () => {
       } catch (error) {
         console.error('Error fetching cadet details:', error);
         toast.error('Failed to load cadet details');
-        navigate('/cadets');
+        if (returnPath) {
+          navigate(returnPath, { state: { returnState: returnStatePayload } });
+        } else {
+          navigate('/cadets');
+        }
       } finally {
         setLoading(false);
       }
@@ -142,6 +156,12 @@ const CadetDetails = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setPhotoError('Image size must be less than 5MB');
+        e.target.value = '';
+        return;
+      }
+      setPhotoError(null);
       setSelectedFile(file);
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
@@ -153,6 +173,7 @@ const CadetDetails = () => {
     reset();
     setSelectedFile(null);
     setPreviewUrl(null);
+    setPhotoError(null);
   };
 
   if (loading) {
@@ -184,7 +205,15 @@ const CadetDetails = () => {
           type='button'
           variant='ghost'
           size='icon'
-          onClick={() => navigate('/cadets')}
+          onClick={() => {
+            if (returnPath) {
+              navigate(returnPath, {
+                state: { returnState: returnStatePayload },
+              });
+            } else {
+              navigate(-1);
+            }
+          }}
           className='rounded-full hover:bg-gray-100'
         >
           <ArrowLeft size={24} className='text-gray-600' />
@@ -273,6 +302,11 @@ const CadetDetails = () => {
                   </div>
                 )}
               </div>
+              {photoError && (
+                <p className='text-red-500 text-sm font-medium mt-2 text-center absolute -bottom-6 w-full whitespace-nowrap'>
+                  {photoError}
+                </p>
+              )}
             </div>
             <div className='flex-1 text-center md:text-left'>
               <h3 className='text-xl font-bold text-gray-800'>
@@ -614,34 +648,17 @@ const CadetDetails = () => {
             </div>
           </div>
 
-          {/* Higher Education & IMU */}
+          {/* Education & IMU */}
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
             {/* Graduation */}
             <div>
               <SectionTitle title='Graduation / Degree' icon={Book} />
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                 <DetailItem
-                  label='Course'
-                  value={cadet.graduation_course || cadet.course}
-                  name='graduation_course'
-                  icon={Book}
-                />
-                <DetailItem
                   label='University'
                   value={cadet.graduation_university}
                   name='graduation_university'
                   icon={School}
-                />
-                <DetailItem
-                  label='Percentage'
-                  value={
-                    cadet.degree_percentage
-                      ? `${cadet.degree_percentage}%`
-                      : '-'
-                  }
-                  name='degree_percentage'
-                  type='text'
-                  icon={Percent}
                 />
               </div>
             </div>
@@ -666,6 +683,95 @@ const CadetDetails = () => {
                   }
                   name='imu_avg_all_semester_percentage'
                   type='text'
+                  icon={Percent}
+                />
+                {/* Semester Wise */}
+                <DetailItem
+                  label='Sem 1'
+                  value={
+                    cadet.imu_sem_1_percentage
+                      ? `${cadet.imu_sem_1_percentage}%`
+                      : '-'
+                  }
+                  name='imu_sem_1_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Sem 2'
+                  value={
+                    cadet.imu_sem_2_percentage
+                      ? `${cadet.imu_sem_2_percentage}%`
+                      : '-'
+                  }
+                  name='imu_sem_2_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Sem 3'
+                  value={
+                    cadet.imu_sem_3_percentage
+                      ? `${cadet.imu_sem_3_percentage}%`
+                      : '-'
+                  }
+                  name='imu_sem_3_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Sem 4'
+                  value={
+                    cadet.imu_sem_4_percentage
+                      ? `${cadet.imu_sem_4_percentage}%`
+                      : '-'
+                  }
+                  name='imu_sem_4_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Sem 5'
+                  value={
+                    cadet.imu_sem_5_percentage
+                      ? `${cadet.imu_sem_5_percentage}%`
+                      : '-'
+                  }
+                  name='imu_sem_5_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Sem 6'
+                  value={
+                    cadet.imu_sem_6_percentage
+                      ? `${cadet.imu_sem_6_percentage}%`
+                      : '-'
+                  }
+                  name='imu_sem_6_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Sem 7'
+                  value={
+                    cadet.imu_sem_7_percentage
+                      ? `${cadet.imu_sem_7_percentage}%`
+                      : '-'
+                  }
+                  name='imu_sem_7_percentage'
+                  type='float'
+                  icon={Percent}
+                />
+                <DetailItem
+                  label='Sem 8'
+                  value={
+                    cadet.imu_sem_8_percentage
+                      ? `${cadet.imu_sem_8_percentage}%`
+                      : '-'
+                  }
+                  name='imu_sem_8_percentage'
+                  type='float'
                   icon={Percent}
                 />
               </div>
@@ -715,12 +821,6 @@ const CadetDetails = () => {
                 type='number'
                 icon={User}
               />
-              <DetailItem
-                label='Post Applied For'
-                value={cadet.post_applied_for}
-                name='post_applied_for'
-                icon={Briefcase}
-              />
             </div>
           </div>
 
@@ -741,6 +841,12 @@ const CadetDetails = () => {
                 icon={Briefcase}
               />
               <DetailItem
+                label='Any Relative in Marine Field'
+                value={cadet.marine_relative}
+                name='marine_relative'
+                icon={User}
+              />
+              <DetailItem
                 label='Languages'
                 value={cadet.language_known}
                 name='language_known'
@@ -757,6 +863,101 @@ const CadetDetails = () => {
                 value={cadet.any_extra_curricular_achievement}
                 name='any_extra_curricular_achievement'
                 icon={Activity}
+              />
+            </div>
+          </div>
+
+          {/* STCW Courses */}
+          <div>
+            <SectionTitle title='STCW Courses' icon={Book} />
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+              <DetailItem
+                label='Elementary/Medical First Aid/Medicare'
+                value={cadet.stcw_elementary_first_aid}
+                name='stcw_elementary_first_aid'
+                type='select'
+                options={[
+                  { label: 'Done', value: 'Done' },
+                  { label: 'Not Done', value: 'Not Done' },
+                ]}
+                icon={Syringe}
+              />
+              <DetailItem
+                label='Security Training for Sea Farers'
+                value={cadet.stcw_security_training}
+                name='stcw_security_training'
+                type='select'
+                options={[
+                  { label: 'Done', value: 'Done' },
+                  { label: 'Not Done', value: 'Not Done' },
+                ]}
+                icon={Book}
+              />
+              <DetailItem
+                label='Personal Safety & Social Responsibility'
+                value={cadet.stcw_personal_safety}
+                name='stcw_personal_safety'
+                type='select'
+                options={[
+                  { label: 'Done', value: 'Done' },
+                  { label: 'Not Done', value: 'Not Done' },
+                ]}
+                icon={User}
+              />
+              <DetailItem
+                label='Petrol Tanker Familiarization'
+                value={cadet.stcw_petrol_tanker}
+                name='stcw_petrol_tanker'
+                type='select'
+                options={[
+                  { label: 'Done', value: 'Done' },
+                  { label: 'Not Done', value: 'Not Done' },
+                ]}
+                icon={Book}
+              />
+              <DetailItem
+                label='Fire Prevention and Fire Fighting'
+                value={cadet.stcw_fire_prevention}
+                name='stcw_fire_prevention'
+                type='select'
+                options={[
+                  { label: 'Done', value: 'Done' },
+                  { label: 'Not Done', value: 'Not Done' },
+                ]}
+                icon={Activity}
+              />
+              <DetailItem
+                label='Chemical Tanker Familiarization'
+                value={cadet.stcw_chemical_tanker}
+                name='stcw_chemical_tanker'
+                type='select'
+                options={[
+                  { label: 'Done', value: 'Done' },
+                  { label: 'Not Done', value: 'Not Done' },
+                ]}
+                icon={Book}
+              />
+              <DetailItem
+                label='Personal Survival Techniques'
+                value={cadet.stcw_personal_survival}
+                name='stcw_personal_survival'
+                type='select'
+                options={[
+                  { label: 'Done', value: 'Done' },
+                  { label: 'Not Done', value: 'Not Done' },
+                ]}
+                icon={Activity}
+              />
+              <DetailItem
+                label='Gas Tanker Familiarization'
+                value={cadet.stcw_gas_tanker}
+                name='stcw_gas_tanker'
+                type='select'
+                options={[
+                  { label: 'Done', value: 'Done' },
+                  { label: 'Not Done', value: 'Not Done' },
+                ]}
+                icon={Book}
               />
             </div>
           </div>
