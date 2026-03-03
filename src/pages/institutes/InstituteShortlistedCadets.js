@@ -1,20 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ListChecks, Search, RefreshCw } from 'lucide-react';
+import { ListChecks, Search, RotateCcw, Eye, Edit } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { useAuth } from '../../context/AuthContext';
+import ReusableDataTable from '../../components/common/ReusableDataTable';
+import { Button } from '../../components/ui/button';
+import TextModal from '../../components/common/TextModal';
 
 const InstituteShortlistedCadets = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: '', content: '' });
 
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 10,
     total: 0,
     last_page: 1,
+  });
+
+  const [sortConfig, setSortConfig] = useState({
+    key: 'created_at',
+    direction: 'desc',
   });
 
   useEffect(() => {
@@ -26,6 +38,7 @@ const InstituteShortlistedCadets = () => {
     page = pagination.current_page,
     limit = pagination.per_page,
     search = searchTerm,
+    sort = sortConfig,
   ) => {
     try {
       setLoading(true);
@@ -33,6 +46,8 @@ const InstituteShortlistedCadets = () => {
         page,
         limit,
         search: search || undefined,
+        sort_key: sort.key,
+        sort_dir: sort.direction,
       };
 
       const response = await api.get('/cadets/institute-shortlisted', {
@@ -70,11 +85,25 @@ const InstituteShortlistedCadets = () => {
     fetchShortlistedCadets(newPage, pagination.per_page, searchTerm);
   };
 
+  const handlePerPageChange = (newLimit) => {
+    fetchShortlistedCadets(1, newLimit, searchTerm);
+  };
+
+  const handleSortChange = (key) => {
+    const direction =
+      sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
+    const newSort = { key, direction };
+    setSortConfig(newSort);
+    fetchShortlistedCadets(1, pagination.per_page, searchTerm, newSort);
+  };
+
   const handleSearch = (value) => {
     setSearchTerm(value);
-    setTimeout(() => {
-      fetchShortlistedCadets(1, pagination.per_page, value);
-    }, 500);
+    // Simple debounce if needed, but fetchShortlistedCadets is called from input onChange
+  };
+
+  const executeSearch = () => {
+    fetchShortlistedCadets(1, pagination.per_page, searchTerm);
   };
 
   const handleRefresh = () => {
@@ -83,210 +112,256 @@ const InstituteShortlistedCadets = () => {
     toast.success('Data refreshed');
   };
 
+  const handleReadMore = (title, content) => {
+    setModalContent({ title, content });
+    setModalOpen(true);
+  };
+
+  const columns = [
+    {
+      field: 'id',
+      headerName: 'Sr. No',
+      width: '70px',
+      sortable: false,
+      renderCell: ({ index }) => (
+        <span className='text-sm text-gray-500 font-medium'>
+          {(pagination?.current_page - 1) * pagination?.per_page + index + 1}
+        </span>
+      ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: '130px',
+      sortable: true,
+      renderCell: ({ row }) => {
+        const status = row.status || 'Shortlisted';
+        return (
+          <span className='px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800'>
+            {status}
+          </span>
+        );
+      },
+    },
+    {
+      field: 'name_as_in_indos_cert',
+      headerName: 'Name',
+      width: '200px',
+      sortable: true,
+      renderCell: ({ value }) => (
+        <span
+          className='font-medium text-gray-900 truncate block w-full'
+          title={value}
+        >
+          {value}
+        </span>
+      ),
+    },
+    {
+      field: 'email_id',
+      headerName: 'Email',
+      width: '200px',
+      renderCell: ({ value }) => (
+        <span className='truncate block w-full text-gray-600' title={value}>
+          {value || '-'}
+        </span>
+      ),
+    },
+    {
+      field: 'contact_number',
+      headerName: 'Contact',
+      width: '130px',
+      renderCell: ({ value }) => (
+        <span className='text-gray-600'>{value || '-'}</span>
+      ),
+    },
+    {
+      field: 'course',
+      headerName: 'Course',
+      width: '120px',
+      renderCell: ({ value }) => (
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            value?.toLowerCase().includes('engine')
+              ? 'bg-orange-100 text-orange-800'
+              : 'bg-blue-100 text-blue-800'
+          }`}
+        >
+          {value || '-'}
+        </span>
+      ),
+    },
+    { field: 'tenth_avg_percentage', headerName: '10th %', width: '80px' },
+    {
+      field: 'twelfth_pcm_avg_percentage',
+      headerName: '12th %',
+      width: '80px',
+    },
+    { field: 'imu_rank', headerName: 'IMU Rank', width: '100px' },
+    {
+      field: 'any_extra_curricular_achievement',
+      headerName: 'Achievements',
+      width: '200px',
+      renderCell: ({ value }) => {
+        if (!value) return '-';
+        const maxLength = 30;
+        if (value.length <= maxLength)
+          return <span title={value}>{value}</span>;
+        return (
+          <div className='flex items-center'>
+            <span className='truncate mr-1 text-gray-600' title={value}>
+              {value.substring(0, maxLength)}...
+            </span>
+            <button
+              onClick={() => handleReadMore('Extra Curricular', value)}
+              className='text-green-600 hover:text-green-800 text-xs font-medium whitespace-nowrap'
+            >
+              Read More
+            </button>
+          </div>
+        );
+      },
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: '100px',
+      align: 'right',
+      sortable: false,
+      sticky: 'right',
+      cellClassName: 'bg-white',
+      headerClassName: 'bg-white',
+      renderCell: ({ row }) => (
+        <div className='flex justify-end gap-1'>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50'
+            onClick={() => navigate(`/cadets/view/${row.id}`)}
+            title='View Details'
+          >
+            <Eye size={16} />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+            onClick={() =>
+              navigate(`/cadets/view/${row.id}`, {
+                state: {
+                  editMode: true,
+                  returnPath: '/institute/shortlisted-cadets',
+                },
+              })
+            }
+            title='Edit Cadet'
+          >
+            <Edit size={16} />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div className='py-6 px-4'>
+    <div className='py-6 px-4 md:px-8 bg-slate-50 min-h-screen'>
       {/* Header */}
-      <div className='mb-6'>
-        <div className='flex items-center gap-3 mb-2'>
-          <div className='p-2 bg-green-100 rounded-lg'>
-            <ListChecks className='text-green-600' size={24} />
+      <div className='mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4'>
+        <div className='flex items-center gap-3'>
+          <div className='p-2 bg-green-600 rounded-lg shadow-sm'>
+            <ListChecks className='text-white' size={24} />
           </div>
           <div>
-            <h1 className='text-2xl font-bold text-gray-800'>
+            <h1 className='text-2xl font-bold text-gray-900'>
               Shortlisted Cadets
             </h1>
             <p className='text-gray-500 text-sm'>
-              {user?.first_name
-                ? `${user.first_name} — Shortlisted cadets from your institute`
-                : 'View cadets shortlisted from your institute'}
+              {user?.first_name || 'Institute Portal'} — Shortlisted cadets from
+              your institute
             </p>
           </div>
         </div>
       </div>
 
       {/* Stats Card */}
-      <div className='bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100 mb-6'>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-          <div>
-            <p className='text-sm text-gray-600 mb-1'>Total Shortlisted</p>
-            <p className='text-3xl font-bold text-green-600'>
+      <div className='bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center justify-between'>
+        <div>
+          <p className='text-sm font-medium text-gray-500 mb-1 capitalize'>
+            Total Shortlisted
+          </p>
+          <div className='flex items-baseline gap-2'>
+            <span className='text-3xl font-bold text-gray-900'>
               {pagination.total}
-            </p>
+            </span>
+            <span className='text-sm text-green-600 font-medium'>
+              Qualified
+            </span>
           </div>
-          <div>
-            <p className='text-sm text-gray-600 mb-1'>Institute</p>
-            <p className='text-xl font-semibold text-emerald-600'>
-              {user?.first_name || 'Your Institute'}
-            </p>
-          </div>
+        </div>
+        <div className='h-12 w-12 bg-green-50 rounded-full flex items-center justify-center'>
+          <ListChecks className='text-green-600' size={24} />
         </div>
       </div>
 
       {/* Search and Refresh */}
-      <div className='bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6'>
-        <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-3'>
-          <div className='relative w-full md:w-80'>
-            <Search
-              className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
-              size={18}
-            />
+      <div className='bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6'>
+        <div className='flex flex-col md:flex-row justify-between items-center gap-4'>
+          <div className='flex items-center bg-gray-50 rounded-xl px-3 border border-gray-200 w-full md:w-96 focus-within:ring-2 focus-within:ring-green-100 focus-within:border-green-300 transition-all'>
+            <Search className='text-gray-400' size={18} />
             <input
               type='text'
+              placeholder='Search by name or email...'
+              className='w-full p-2.5 bg-transparent outline-none text-gray-700 placeholder-gray-400 text-sm'
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder='Search cadets...'
-              className='w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all outline-none text-sm'
+              onKeyDown={(e) => e.key === 'Enter' && executeSearch()}
             />
           </div>
-          <button
-            onClick={handleRefresh}
-            className='flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors'
-          >
-            <RefreshCw size={16} />
-            Refresh
-          </button>
+
+          <div className='flex gap-2 w-full md:w-auto'>
+            <Button
+              onClick={executeSearch}
+              className='flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white'
+            >
+              Search
+            </Button>
+            <Button
+              variant='outline'
+              onClick={handleRefresh}
+              className='flex items-center gap-2 border-gray-200 text-gray-600 hover:bg-gray-50'
+            >
+              <RotateCcw size={16} />
+              <span className='hidden sm:inline'>Refresh</span>
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Cadet Table */}
-      <div className='bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden'>
-        {loading ? (
-          <div className='p-12 text-center'>
-            <div className='w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto'></div>
-            <p className='mt-4 text-gray-500'>Loading shortlisted cadets...</p>
-          </div>
-        ) : cadets.length === 0 ? (
-          <div className='p-12 text-center'>
-            <ListChecks className='mx-auto mb-4 text-gray-300' size={48} />
-            <p className='text-gray-500 text-lg'>No shortlisted cadets found</p>
-            <p className='text-gray-400 text-sm mt-1'>
-              No cadets from your institute meet the shortlisting criteria yet.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className='overflow-x-auto'>
-              <table className='w-full'>
-                <thead>
-                  <tr className='bg-gray-50 border-b border-gray-200'>
-                    <th className='text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider'>
-                      #
-                    </th>
-                    <th className='text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider'>
-                      Name
-                    </th>
-                    <th className='text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider'>
-                      Email
-                    </th>
-                    <th className='text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider'>
-                      Phone
-                    </th>
-                    <th className='text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider'>
-                      Course Type
-                    </th>
-                    <th className='text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider'>
-                      10th %
-                    </th>
-                    <th className='text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider'>
-                      12th %
-                    </th>
-                    <th className='text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider'>
-                      IMU Rank
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className='divide-y divide-gray-100'>
-                  {cadets.map((cadet, index) => (
-                    <tr
-                      key={cadet.id}
-                      className='hover:bg-gray-50 transition-colors'
-                    >
-                      <td className='px-6 py-4 text-sm text-gray-500'>
-                        {(pagination.current_page - 1) * pagination.per_page +
-                          index +
-                          1}
-                      </td>
-                      <td className='px-6 py-4'>
-                        <div className='text-sm font-medium text-gray-900'>
-                          {cadet.first_name} {cadet.last_name}
-                        </div>
-                      </td>
-                      <td className='px-6 py-4 text-sm text-gray-600'>
-                        {cadet.email || '-'}
-                      </td>
-                      <td className='px-6 py-4 text-sm text-gray-600'>
-                        {cadet.phone || cadet.mobile_number || '-'}
-                      </td>
-                      <td className='px-6 py-4'>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            cadet.course_type === 'Engine'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {cadet.course_type || '-'}
-                        </span>
-                      </td>
-                      <td className='px-6 py-4 text-sm text-gray-600'>
-                        {cadet.tenth_avg_percentage
-                          ? `${cadet.tenth_avg_percentage}%`
-                          : '-'}
-                      </td>
-                      <td className='px-6 py-4 text-sm text-gray-600'>
-                        {cadet.twelfth_pcm_avg_percentage
-                          ? `${cadet.twelfth_pcm_avg_percentage}%`
-                          : '-'}
-                      </td>
-                      <td className='px-6 py-4 text-sm text-gray-600'>
-                        {cadet.imu_rank || '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {pagination.last_page > 1 && (
-              <div className='flex items-center justify-between px-6 py-4 border-t border-gray-200'>
-                <p className='text-sm text-gray-500'>
-                  Showing{' '}
-                  {(pagination.current_page - 1) * pagination.per_page + 1} to{' '}
-                  {Math.min(
-                    pagination.current_page * pagination.per_page,
-                    pagination.total,
-                  )}{' '}
-                  of {pagination.total} cadets
-                </p>
-                <div className='flex gap-2'>
-                  <button
-                    onClick={() =>
-                      handlePageChange(pagination.current_page - 1)
-                    }
-                    disabled={pagination.current_page === 1}
-                    className='px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-                  >
-                    Previous
-                  </button>
-                  <span className='px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg font-medium'>
-                    {pagination.current_page}
-                  </span>
-                  <button
-                    onClick={() =>
-                      handlePageChange(pagination.current_page + 1)
-                    }
-                    disabled={pagination.current_page === pagination.last_page}
-                    className='px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+      {/* Reusable Data Table */}
+      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden'>
+        <ReusableDataTable
+          columns={columns}
+          rows={cadets}
+          loading={loading}
+          pagination={pagination}
+          handlePageChange={handlePageChange}
+          handlePerPageChange={handlePerPageChange}
+          sortConfig={sortConfig}
+          handleSortChange={handleSortChange}
+          emptyMessage={
+            searchTerm
+              ? `No cadets found matching "${searchTerm}"`
+              : 'No shortlisted cadets available for your institute'
+          }
+        />
       </div>
+
+      <TextModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalContent.title}
+        content={modalContent.content}
+      />
     </div>
   );
 };

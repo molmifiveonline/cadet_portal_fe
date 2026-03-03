@@ -33,11 +33,14 @@ import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import SectionTitle from '../../components/common/SectionTitle';
 import SharedDetailItem from '../../components/common/DetailItem';
+import { useAuth } from '../../context/AuthContext';
+import { getPrefixRoute } from '../../lib/utils/routeUtils';
 
 const CadetDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [cadet, setCadet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -48,6 +51,9 @@ const CadetDetails = () => {
 
   const [returnPath] = useState(location.state?.returnPath || null);
   const [returnStatePayload] = useState(location.state?.returnState || null);
+
+  // Default back path based on user role/intent
+  const defaultBackPath = getPrefixRoute(user) || '/cadets';
 
   const {
     register,
@@ -107,7 +113,7 @@ const CadetDetails = () => {
         if (returnPath) {
           navigate(returnPath, { state: { returnState: returnStatePayload } });
         } else {
-          navigate('/cadets');
+          navigate(defaultBackPath);
         }
       } finally {
         setLoading(false);

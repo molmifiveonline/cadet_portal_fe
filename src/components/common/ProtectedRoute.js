@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getPrefixRoute } from '../../lib/utils/routeUtils';
+import { getPrefixRoute, isAllowedRoute } from '../../lib/utils/routeUtils';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -22,9 +22,14 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to='/login' replace />;
   }
 
-  const prefixRoute = getPrefixRoute(user);
-  if (prefixRoute && location.pathname !== prefixRoute) {
-    return <Navigate to={prefixRoute} replace />;
+  // For intent-based users (e.g. Institute temp logins):
+  // Check if the current route is allowed for their intent.
+  // If not, redirect them to their primary route.
+  if (!isAllowedRoute(user, location.pathname)) {
+    const prefixRoute = getPrefixRoute(user);
+    if (prefixRoute) {
+      return <Navigate to={prefixRoute} replace />;
+    }
   }
 
   return children;

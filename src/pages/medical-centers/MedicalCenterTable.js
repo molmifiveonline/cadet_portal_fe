@@ -53,6 +53,7 @@ const MedicalCenterTable = ({
     {
       field: 'center_name',
       headerName: 'Center Name',
+      sortable: true,
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2'>
           <Stethoscope size={16} className='text-blue-500 flex-shrink-0' />
@@ -63,6 +64,7 @@ const MedicalCenterTable = ({
     {
       field: 'location',
       headerName: 'Location',
+      sortable: true,
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2 text-sm text-gray-600'>
           <MapPin size={14} className='flex-shrink-0 text-gray-400' />
@@ -73,6 +75,7 @@ const MedicalCenterTable = ({
     {
       field: 'tests_offered',
       headerName: 'Tests Offered',
+      sortable: true,
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2 text-sm text-gray-600'>
           <Activity size={14} className='flex-shrink-0 text-gray-400' />
@@ -83,6 +86,7 @@ const MedicalCenterTable = ({
     {
       field: 'contact_person',
       headerName: 'Contact Person',
+      sortable: true,
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2 text-sm text-gray-600'>
           <User size={14} className='flex-shrink-0 text-gray-400' />
@@ -93,6 +97,7 @@ const MedicalCenterTable = ({
     {
       field: 'email',
       headerName: 'Email',
+      sortable: true,
       renderCell: ({ row }) => (
         <div
           className='flex items-center gap-2 text-sm text-gray-600'
@@ -107,6 +112,7 @@ const MedicalCenterTable = ({
       field: 'status',
       headerName: 'Status',
       width: '100px',
+      sortable: true,
       renderCell: ({ value }) => (
         <span
           className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap

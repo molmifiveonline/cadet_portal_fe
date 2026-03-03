@@ -53,6 +53,7 @@ const VesselTable = ({
       field: 'name',
       headerName: 'Vessel Name',
       width: '250px',
+      sortable: true,
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2'>
           <Ship size={16} className='text-blue-500 flex-shrink-0' />
@@ -64,6 +65,7 @@ const VesselTable = ({
       field: 'imo_number',
       headerName: 'IMO Number',
       width: '150px',
+      sortable: true,
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2 text-sm text-gray-600'>
           <Hash size={14} className='flex-shrink-0 text-gray-400' />
@@ -75,6 +77,7 @@ const VesselTable = ({
       field: 'vessel_type',
       headerName: 'Type',
       width: '200px',
+      sortable: true,
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2 text-sm text-gray-600'>
           <Anchor size={14} className='flex-shrink-0 text-gray-400' />
@@ -86,6 +89,7 @@ const VesselTable = ({
       field: 'flag',
       headerName: 'Flag',
       width: '150px',
+      sortable: true,
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2 text-sm text-gray-600'>
           <Navigation size={14} className='flex-shrink-0 text-gray-400' />
@@ -97,6 +101,7 @@ const VesselTable = ({
       field: 'status',
       headerName: 'Status',
       width: '120px',
+      sortable: true,
       renderCell: ({ value }) => (
         <span
           className={`px-2.5 py-1 rounded-full text-xs font-semibold

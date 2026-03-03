@@ -40,8 +40,8 @@ const MedicalCenterList = () => {
         params: {
           page,
           limit,
-          sortBy: sortBy || undefined,
-          sortOrder: sortOrder || undefined,
+          sort_key: sortBy || undefined,
+          sort_dir: sortOrder ? sortOrder.toLowerCase() : undefined,
           search: search || undefined,
         },
       });
