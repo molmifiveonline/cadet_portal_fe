@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+} from 'react';
 
 const AuthContext = createContext();
 
@@ -13,6 +19,43 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const logoutTimerRef = useRef(null);
+
+  // Schedule auto-logout based on temp_expiry from DB
+  const scheduleAutoLogout = (userData) => {
+    // Clear any existing timer
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
+
+    // Only for institute users with temp_expiry
+    if (!userData?.temp_expiry) return;
+
+    const expiryTime = new Date(userData.temp_expiry).getTime();
+    const now = Date.now();
+    const remainingMs = expiryTime - now;
+
+    if (remainingMs <= 0) {
+      // Already expired — logout immediately
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      window.location.href = '/login';
+      return;
+    }
+
+    console.log(
+      `[Auth] Auto-logout scheduled in ${Math.round(remainingMs / 1000)}s`,
+    );
+    logoutTimerRef.current = setTimeout(() => {
+      console.log('[Auth] Credentials expired — auto-logging out');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      window.location.href = '/login';
+    }, remainingMs);
+  };
 
   useEffect(() => {
     // Check if user is logged in
@@ -20,7 +63,9 @@ export const AuthProvider = ({ children }) => {
     const userData = localStorage.getItem('user');
 
     if (token && userData) {
-      setUser(JSON.parse(userData));
+      const parsed = JSON.parse(userData);
+      setUser(parsed);
+      scheduleAutoLogout(parsed);
     }
     setLoading(false);
   }, []);
@@ -29,9 +74,14 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
+    scheduleAutoLogout(userData);
   };
 
   const logout = () => {
+    if (logoutTimerRef.current) {
+      clearTimeout(logoutTimerRef.current);
+      logoutTimerRef.current = null;
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);

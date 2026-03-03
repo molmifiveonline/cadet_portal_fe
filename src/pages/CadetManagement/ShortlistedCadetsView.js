@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, ListChecks } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import CadetTable from './CadetTable';
 import { Button } from '../../components/ui/button';
@@ -15,13 +15,12 @@ import {
 
 const ShortlistedCadetsView = () => {
   const navigate = useNavigate();
-  const [institutes, setInstitutes] = useState([]);
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedInstitute, setSelectedInstitute] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [shortlistStats, setShortlistStats] = useState(null);
-  const [sending, setSending] = useState(false);
+  const [sendingShortlist, setSendingShortlist] = useState(false);
 
   const [pagination, setPagination] = useState({
     current_page: 1,
@@ -38,21 +37,10 @@ const ShortlistedCadetsView = () => {
   const [selectedCadets, setSelectedCadets] = useState([]);
 
   useEffect(() => {
-    fetchInstitutes();
     fetchShortlistStats();
     fetchShortlistedCadets(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const fetchInstitutes = async () => {
-    try {
-      const response = await api.get('/institutes');
-      setInstitutes(response.data.data || []);
-    } catch (error) {
-      console.error('Error fetching institutes:', error);
-      toast.error('Failed to load institutes');
-    }
-  };
 
   const fetchShortlistStats = async () => {
     try {
@@ -156,38 +144,40 @@ const ShortlistedCadetsView = () => {
     toast.success('Data refreshed');
   };
 
-  const handleSendCVFormEmail = async () => {
+  const handleSendShortlistEmail = async () => {
     if (!selectedInstitute || selectedInstitute === 'all') {
-      toast.error('Please select a specific institute to send CV form emails');
+      toast.error('Please select a specific institute to send shortlist email');
       return;
     }
 
     try {
-      setSending(true);
-      const response = await api.post('/cv/send-email', {
-        instituteId: selectedInstitute,
+      setSendingShortlist(true);
+      const response = await api.post('/institutes/send-shortlist-email', {
+        instituteIds: [selectedInstitute],
       });
 
-      toast.success(
-        response.data.message || 'CV form emails sent successfully',
-      );
+      const results = response.data.results || [];
+      const success = results.filter((r) => r.status === 'success');
+      const skipped = results.filter((r) => r.status === 'skipped');
 
-      // Optionally show details
-      if (response.data.data) {
-        const { institute_name, cadet_count } = response.data.data;
-        setTimeout(() => {
-          toast.info(
-            `Sent CV form links for ${cadet_count} cadet${cadet_count !== 1 ? 's' : ''} to ${institute_name}`,
-          );
-        }, 500);
+      if (success.length > 0) {
+        toast.success(
+          `Shortlist email sent to ${success[0].email} (${success[0].cadetCount} cadets)`,
+        );
+      } else if (skipped.length > 0) {
+        toast.warning(
+          skipped[0].reason || 'No shortlisted cadets for this institute',
+        );
+      } else {
+        toast.error('Failed to send shortlist email');
       }
     } catch (error) {
-      console.error('Error sending CV form emails:', error);
+      console.error('Error sending shortlist email:', error);
       toast.error(
-        error.response?.data?.message || 'Failed to send CV form emails',
+        error.response?.data?.message || 'Failed to send shortlist email',
       );
     } finally {
-      setSending(false);
+      setSendingShortlist(false);
     }
   };
 
@@ -266,12 +256,12 @@ const ShortlistedCadetsView = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value='all'>All Institutes</SelectItem>
-                {institutes.map((institute) => (
+                {(shortlistStats?.institutes || []).map((inst) => (
                   <SelectItem
-                    key={institute.id}
-                    value={institute.id.toString()}
+                    key={inst.institute_id}
+                    value={inst.institute_id.toString()}
                   >
-                    {institute.institute_name || institute.name}
+                    {inst.institute_name} ({inst.count})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -290,14 +280,16 @@ const ShortlistedCadetsView = () => {
           <div className='flex gap-2'>
             <Button
               variant='outline'
-              onClick={handleSendCVFormEmail}
+              onClick={handleSendShortlistEmail}
               disabled={
-                sending || !selectedInstitute || selectedInstitute === 'all'
+                sendingShortlist ||
+                !selectedInstitute ||
+                selectedInstitute === 'all'
               }
-              className='flex items-center gap-2 border-blue-300 text-blue-600 hover:bg-blue-50'
+              className='flex items-center gap-2 border-green-300 text-green-600 hover:bg-green-50'
             >
-              <Mail size={18} />
-              {sending ? 'Sending...' : 'Send CV Form Email'}
+              <ListChecks size={18} />
+              {sendingShortlist ? 'Sending...' : 'Send Shortlist Email'}
             </Button>
           </div>
         </div>
@@ -317,7 +309,10 @@ const ShortlistedCadetsView = () => {
         handleRefresh={handleRefresh}
         selectedInstitute={selectedInstitute}
         handleInstituteChange={handleInstituteChange}
-        institutes={institutes}
+        institutes={(shortlistStats?.institutes || []).map((inst) => ({
+          id: inst.institute_id,
+          institute_name: inst.institute_name,
+        }))}
         selectedCadets={selectedCadets}
         onSelectionChange={setSelectedCadets}
         showShortlistedOnly={true}

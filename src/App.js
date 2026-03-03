@@ -22,9 +22,9 @@ import UserForm from './pages/Users/UserForm';
 import InstitutesManagement from 'pages/institutes';
 import InstituteForm from 'pages/institutes/InstituteForm';
 import SubmitExcel from 'pages/institutes/SubmitExcel';
+import InstituteShortlistedCadets from 'pages/institutes/InstituteShortlistedCadets';
 import InstituteSubmissions from 'pages/institutes/InstituteSubmissions';
 import RolePermissions from './pages/RolePermissions';
-import CVForm from './pages/CVForm';
 import VesselList from './pages/vessels';
 import VesselForm from './pages/vessels/VesselForm';
 import MedicalCenterList from './pages/medical-centers';
@@ -53,7 +53,6 @@ function App() {
               }
             />
             <Route path='/' element={<HomeRedirect />} />
-            <Route path='/cv-form/:token' element={<CVForm />} />
 
             {/* Protected Routes with Layout */}
             <Route
@@ -74,9 +73,18 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <PermissionRoute module='submit-excel' action='view'>
-                      <SubmitExcel />
-                    </PermissionRoute>
+                    <SubmitExcel />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/institute/shortlisted-cadets'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <InstituteShortlistedCadets />
                   </MainLayout>
                 </ProtectedRoute>
               }

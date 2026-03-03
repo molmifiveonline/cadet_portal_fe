@@ -156,13 +156,25 @@ const InstitutesManagement = () => {
     try {
       await api.delete(`/institutes/${id}`);
       toast.success('Institute deleted successfully');
-      fetchInstitutes(
-        pagination.current_page,
-        pagination.per_page,
-        sortConfig.sortBy,
-        sortConfig.sortOrder,
-        searchTerm,
-      );
+
+      // If deleting the last item on current page (and not on first page), go to previous page
+      if (institutes.length === 1 && pagination.current_page > 1) {
+        fetchInstitutes(
+          pagination.current_page - 1,
+          pagination.per_page,
+          sortConfig.sortBy,
+          sortConfig.sortOrder,
+          searchTerm,
+        );
+      } else {
+        fetchInstitutes(
+          pagination.current_page,
+          pagination.per_page,
+          sortConfig.sortBy,
+          sortConfig.sortOrder,
+          searchTerm,
+        );
+      }
     } catch (error) {
       console.error('Error deleting institute:', error);
       toast.error('Failed to delete institute');

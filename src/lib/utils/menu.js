@@ -108,6 +108,14 @@ export const MenuItems = [
     allowedRoles: ['Institute'],
   },
   {
+    title: 'Shortlisted Cadets',
+    icon: ListChecks,
+    url: '/institute/shortlisted-cadets',
+    module: 'shortlisted-cadets',
+    action: 'view',
+    allowedRoles: ['Institute'],
+  },
+  {
     title: 'Screening',
     icon: ClipboardCheck,
     url: '/screening',

@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePermissionContext } from '../../context/PermissionContext';
 import { MenuItems } from '../../lib/utils/menu';
+import { getPrefixRoute } from '../../lib/utils/routeUtils';
 
 const HomeRedirect = () => {
   const { user, loading: authLoading } = useAuth();
@@ -23,6 +24,11 @@ const HomeRedirect = () => {
 
   if (!user) {
     return <Navigate to='/login' replace />;
+  }
+
+  const prefixRoute = getPrefixRoute(user);
+  if (prefixRoute) {
+    return <Navigate to={prefixRoute} replace />;
   }
 
   // Find the first menu item the user has permission to access

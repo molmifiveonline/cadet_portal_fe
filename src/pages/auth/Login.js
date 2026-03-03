@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/utils/apiConfig';
+import { getPrefixRoute } from '../../lib/utils/routeUtils';
 import ForgotPasswordModal from './ForgotPasswordModal';
 
 const Login = () => {
@@ -39,7 +40,15 @@ const Login = () => {
       login(response.data.user, response.data.token);
 
       toast.success('Login successful! Welcome back.');
-      const redirectUrl = searchParams.get('redirect') || '/';
+
+      const user = response.data.user;
+      let redirectUrl = searchParams.get('redirect') || '/';
+
+      const prefixRoute = getPrefixRoute(user);
+      if (prefixRoute) {
+        redirectUrl = prefixRoute;
+      }
+
       navigate(redirectUrl);
     } catch (err) {
       const message =

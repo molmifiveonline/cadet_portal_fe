@@ -7,6 +7,7 @@ import { MenuItems } from '../../lib/utils/menu';
 import { useAuth } from '../../context/AuthContext';
 import { useLayout } from '../../context/LayoutContext';
 import { useUserPermissions } from '../../hooks/usePermission';
+import { getPrefixRoute } from '../../lib/utils/routeUtils';
 
 const Sidebar = () => {
   const { isOpen, setIsOpen } = useLayout();
@@ -25,8 +26,16 @@ const Sidebar = () => {
     }));
   };
 
+  // Check if user is an intent-restricted user (e.g. SUB- prefix institute user)
+  const intentRoute = getPrefixRoute(user);
+
   // Filter menu items based on dynamic permissions
   const visibleItems = MenuItems.filter((item) => {
+    // If the user has an intent, only show the menu item that matches their allowed route
+    if (intentRoute) {
+      return item.url === intentRoute;
+    }
+
     // If item has module and action, check database permission
     if (item.module && item.action) {
       return hasPermission(item.module, item.action);

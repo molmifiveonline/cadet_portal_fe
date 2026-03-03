@@ -160,12 +160,27 @@ const InstituteSubmissions = () => {
       } else if (type === 'delete') {
         await api.delete(`/institutes/submissions/${id}`);
         toast.success('Submission deleted');
+
+        // If deleting the last item on current page (and not on first page), go to previous page
+        if (submissions.length === 1 && pagination.current_page > 1) {
+          fetchSubmissions(pagination.current_page - 1);
+        } else {
+          fetchSubmissions(pagination.current_page);
+        }
       } else if (type === 'bulk-delete') {
         const response = await api.delete('/institutes/submissions/bulk', {
           data: { ids: data },
         });
         toast.success(response.data.message);
         setSelectedSubmissions([]);
+
+        // Adjust pagination for bulk delete
+        const remainingItems = submissions.length - data.length;
+        if (remainingItems <= 0 && pagination.current_page > 1) {
+          fetchSubmissions(pagination.current_page - 1);
+        } else {
+          fetchSubmissions(pagination.current_page);
+        }
       } else if (type === 'bulk-import') {
         const response = await api.post('/institutes/submissions/bulk-import', {
           ids: data,
@@ -195,7 +210,9 @@ const InstituteSubmissions = () => {
         setSelectedSubmissions([]);
       }
 
-      fetchSubmissions();
+      if (type !== 'delete' && type !== 'bulk-delete') {
+        fetchSubmissions(pagination.current_page);
+      }
       setConfirmationModal({ isOpen: false, type: null, id: null, data: null });
     } catch (error) {
       console.error(`Error in ${type}:`, error);

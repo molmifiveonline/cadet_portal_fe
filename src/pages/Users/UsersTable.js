@@ -69,23 +69,24 @@ const UsersTable = ({
       ),
     },
     {
-      field: 'role',
-      headerName: 'Role',
-      width: '150px',
-      renderCell: ({ value }) => (
-        <span
-          className={`px-2.5 py-1 rounded-full text-xs font-semibold
-                    ${
-                      value === 'SuperAdmin'
-                        ? 'bg-purple-100 text-purple-700'
-                        : value === 'Institute'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-green-100 text-green-700'
-                    }`}
-        >
-          {value}
-        </span>
-      ),
+      field: 'status',
+      headerName: 'Status',
+      width: '130px',
+      sortable: false,
+      renderCell: ({ row }) => {
+        const isActive = row.status !== 'inactive';
+        return (
+          <span
+            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
+              isActive
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-500'
+            }`}
+          >
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
+        );
+      },
     },
     {
       field: 'created_at',

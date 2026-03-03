@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, User, Mail, Shield, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, User, Mail, Lock } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import {
@@ -26,7 +26,7 @@ const UserForm = () => {
     last_name: '',
     email: '',
     password: '',
-    role: '',
+    status: 'active',
   });
 
   useEffect(() => {
@@ -46,8 +46,8 @@ const UserForm = () => {
         first_name: user.first_name || '',
         last_name: user.last_name || '',
         email: user.email || '',
-        password: '', // Leave blank for edit
-        role: user.role || '',
+        password: '',
+        status: user.status || 'active',
       });
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -63,10 +63,6 @@ const UserForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleRoleChange = (val) => {
-    setFormData((prev) => ({ ...prev, role: val }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -74,7 +70,6 @@ const UserForm = () => {
       !formData.first_name ||
       !formData.last_name ||
       !formData.email ||
-      !formData.role ||
       (!isEdit && !formData.password)
     ) {
       toast.error('Please fill in all required fields');
@@ -88,7 +83,7 @@ const UserForm = () => {
           first_name: formData.first_name,
           last_name: formData.last_name,
           email: formData.email,
-          role: formData.role,
+          status: formData.status,
         };
 
         if (formData.password && formData.password.trim() !== '') {
@@ -137,7 +132,7 @@ const UserForm = () => {
           </h1>
           <p className='text-gray-500 text-sm mt-1'>
             {isEdit
-              ? 'Update user details and permissions'
+              ? 'Update user details'
               : 'Create a new user account in the system'}
           </p>
         </div>
@@ -202,25 +197,6 @@ const UserForm = () => {
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Role <span className='text-red-500 ml-1'>*</span>
-              </label>
-              <div className='relative'>
-                <Shield className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10' />
-                <Select onValueChange={handleRoleChange} value={formData.role}>
-                  <SelectTrigger className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
-                    <SelectValue placeholder='Select a role' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='SuperAdmin'>SuperAdmin</SelectItem>
-                    <SelectItem value='Institute'>Institute</SelectItem>
-                    <SelectItem value='Cadet'>Cadet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
                 {isEdit ? 'Password (leave blank to keep current)' : 'Password'}
                 {!isEdit && <span className='text-red-500 ml-1'> *</span>}
               </label>
@@ -242,6 +218,28 @@ const UserForm = () => {
                 </p>
               )}
             </div>
+
+            {isEdit && (
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  Status <span className='text-red-500 ml-1'>*</span>
+                </label>
+                <Select
+                  onValueChange={(val) =>
+                    setFormData((prev) => ({ ...prev, status: val }))
+                  }
+                  value={formData.status}
+                >
+                  <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                    <SelectValue placeholder='Select status' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='active'>Active</SelectItem>
+                    <SelectItem value='inactive'>Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-100 mt-8'>
