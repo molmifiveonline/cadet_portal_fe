@@ -125,12 +125,13 @@ const CadetDetails = () => {
 
       if (selectedFile) {
         const formData = new FormData();
-        // Append all data fields
-        Object.keys(data).forEach((key) => {
-          if (data[key] !== null && data[key] !== undefined) {
-            formData.append(key, data[key]);
+        // Append all data fields from sanitized payload
+        Object.keys(payload).forEach((key) => {
+          if (payload[key] !== null && payload[key] !== undefined) {
+            formData.append(key, payload[key]);
           }
         });
+
         formData.append('photo', selectedFile);
         payload = formData;
         headers = { 'Content-Type': 'multipart/form-data' };
@@ -275,7 +276,16 @@ const CadetDetails = () => {
               >
                 {(previewUrl || cadet.photo_path) && !imageError ? (
                   <img
-                    src={previewUrl || cadet.photo_path}
+                    src={
+                      previewUrl ||
+                      (cadet.photo_path
+                        ? `${
+                            cadet.photo_path.includes('?')
+                              ? cadet.photo_path + '&'
+                              : cadet.photo_path + '?'
+                          }t=${new Date().getTime()}`
+                        : '')
+                    }
                     alt={cadet.name_as_in_indos_cert}
                     className='w-full h-full object-cover'
                     onError={() => {
