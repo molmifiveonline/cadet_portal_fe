@@ -19,6 +19,10 @@ const ActivityLogs = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState({
+    sortBy: 'created_at',
+    sortOrder: 'DESC',
+  });
 
   const columns = [
     {
@@ -91,7 +95,13 @@ const ActivityLogs = () => {
     },
   ];
 
-  const fetchLogs = async (page = 1, limit = 10, search = '') => {
+  const fetchLogs = async (
+    page = 1,
+    limit = 10,
+    search = '',
+    sortBy = sortConfig.sortBy,
+    sortOrder = sortConfig.sortOrder,
+  ) => {
     setLoading(true);
     try {
       const response = await api.get('/activity-logs/recent', {
@@ -99,6 +109,8 @@ const ActivityLogs = () => {
           page,
           limit,
           search: search.trim() !== '' ? search : undefined,
+          sortBy,
+          sortOrder,
         },
       });
 
@@ -134,8 +146,20 @@ const ActivityLogs = () => {
   }, [searchInput]);
 
   useEffect(() => {
-    fetchLogs(currentPage, rowsPerPage, searchTerm);
-  }, [currentPage, rowsPerPage, searchTerm]);
+    fetchLogs(
+      currentPage,
+      rowsPerPage,
+      searchTerm,
+      sortConfig.sortBy,
+      sortConfig.sortOrder,
+    );
+  }, [
+    currentPage,
+    rowsPerPage,
+    searchTerm,
+    sortConfig.sortBy,
+    sortConfig.sortOrder,
+  ]);
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -144,6 +168,12 @@ const ActivityLogs = () => {
   const handlePerPageChange = (newPerPage) => {
     setRowsPerPage(newPerPage);
     setCurrentPage(1);
+  };
+
+  const handleSortChange = (field, order) => {
+    const newSortOrder = order.toUpperCase();
+    setSortConfig({ sortBy: field, sortOrder: newSortOrder });
+    setCurrentPage(1); // Optionally reset to page 1 on sort
   };
 
   const handleRefresh = () => {
@@ -195,6 +225,8 @@ const ActivityLogs = () => {
           rows={logs}
           loading={loading}
           pagination={pagination}
+          sortConfig={sortConfig}
+          handleSortChange={handleSortChange}
           handlePageChange={handlePageChange}
           handlePerPageChange={handlePerPageChange}
           pageSize={rowsPerPage}

@@ -3,35 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   ArrowLeft,
-  Mail,
-  Phone,
-  Calendar,
-  User,
-  MapPin,
-  Hash,
-  School,
-  Percent,
-  Book,
-  Activity,
-  Award,
-  Ruler,
-  Weight,
-  Eye,
-  Syringe,
-  Home,
-  Briefcase,
-  Globe,
-  Image as ImageIcon,
-  FileText,
   Save,
   X,
   Loader2,
   Camera,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
-import SectionTitle from '../../components/common/SectionTitle';
-import SharedDetailItem from '../../components/common/DetailItem';
+import CadetFormFields from '../../components/cadet/CadetFormFields';
 import api from '../../lib/utils/apiConfig';
 
 const AddCadetForm = () => {
@@ -45,6 +25,8 @@ const AddCadetForm = () => {
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm();
 
@@ -66,18 +48,20 @@ const AddCadetForm = () => {
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      let payload = data;
+      let payload = { ...data };
+      delete payload.declaration_accepted;
+
       let headers = {};
 
       if (selectedFile) {
         const formData = new FormData();
-        Object.keys(data).forEach((key) => {
+        Object.keys(payload).forEach((key) => {
           if (
-            data[key] !== null &&
-            data[key] !== undefined &&
-            data[key] !== ''
+            payload[key] !== null &&
+            payload[key] !== undefined &&
+            payload[key] !== ''
           ) {
-            formData.append(key, data[key]);
+            formData.append(key, payload[key]);
           }
         });
         formData.append('photo', selectedFile);
@@ -95,15 +79,6 @@ const AddCadetForm = () => {
       setLoading(false);
     }
   };
-
-  const DetailItem = (props) => (
-    <SharedDetailItem
-      {...props}
-      isEditing={true} // Always in edit mode for new form
-      register={register}
-      errors={errors}
-    />
-  );
 
   return (
     <form
@@ -201,475 +176,15 @@ const AddCadetForm = () => {
             </div>
           </div>
 
-          {/* Personal Information */}
-          <div>
-            <SectionTitle title='Personal Information' icon={User} />
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem
-                label='Full Name'
-                name='name_as_in_indos_cert'
-                required
-                icon={User}
-              />
-              <DetailItem
-                label='Email'
-                name='email_id'
-                type='email_id'
-                required
-                icon={Mail}
-              />
-              <DetailItem
-                label='Phone'
-                name='contact_number'
-                required
-                icon={Phone}
-              />
-              <DetailItem label='Gender' name='gender' icon={User} />
-              <DetailItem
-                label='Date of Birth'
-                name='date_of_birth'
-                type='date'
-                icon={Calendar}
-              />
-              <DetailItem
-                label='Hometown'
-                name='home_town_or_nearby_airport'
-                icon={MapPin}
-              />
-              <DetailItem label='Nationality' name='nationality' icon={Globe} />
-              <DetailItem
-                label='Blood Group'
-                name='blood_group'
-                icon={Activity}
-              />
-            </div>
-          </div>
-
-          {/* Physical Details */}
-          <div>
-            <SectionTitle title='Physical Details' icon={Activity} />
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem
-                label='Height (cm)'
-                name='height_in_cms'
-                type='float'
-                icon={Ruler}
-              />
-              <DetailItem
-                label='Weight (kg)'
-                name='weight_in_kgs'
-                type='float'
-                icon={Weight}
-              />
-              <DetailItem
-                label='Waist (cm)'
-                name='waist_in_cm'
-                type='float'
-                icon={Ruler}
-              />
-              <DetailItem label='BMI' name='bmi' type='float' icon={Activity} />
-              <DetailItem label='Eye Color' name='eye_color' icon={Eye} />
-              <DetailItem label='Eye Vision' name='eye_vision' icon={Eye} />
-            </div>
-          </div>
-
-          {/* Medical Information */}
-          <div>
-            <SectionTitle title='Medical Information' icon={Syringe} />
-            <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-              <DetailItem
-                label='COVID Vaccination'
-                name='covid_vaccination'
-                icon={Syringe}
-              />
-              <DetailItem label='COVID Dose' name='covid_dose' icon={Syringe} />
-              <DetailItem
-                label='Medical History'
-                name='medical_history'
-                icon={Activity}
-              />
-              <DetailItem
-                label='Family Medical History'
-                name='family_medical_history'
-                icon={Activity}
-              />
-            </div>
-          </div>
-
-          {/* Documents */}
-          <div>
-            <SectionTitle title='Documents & IDs' icon={Hash} />
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem
-                label='INDoS Number'
-                name='indos_number'
-                icon={Hash}
-              />
-              <DetailItem label='CDC Number' name='cdc_number' icon={Hash} />
-              <DetailItem
-                label='Passport Number'
-                name='passport_number'
-                icon={Hash}
-              />
-            </div>
-          </div>
-
-          {/* Academic Information */}
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
-            {/* 10th Standard */}
-            <div>
-              <SectionTitle title='10th Standard' icon={School} />
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <DetailItem
-                  label='Board'
-                  name='tenth_std_board'
-                  icon={School}
-                />
-                <DetailItem
-                  label='Year'
-                  name='tenth_std_pass_out_year'
-                  type='number'
-                  icon={Calendar}
-                />
-                <DetailItem
-                  label='Percentage'
-                  name='tenth_avg_percentage'
-                  type='text'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Maths'
-                  name='tenth_std_maths'
-                  type='text'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Science'
-                  name='tenth_std_science'
-                  type='text'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='English'
-                  name='tenth_std_english'
-                  type='text'
-                  icon={Percent}
-                />
-              </div>
-            </div>
-
-            {/* 12th Standard */}
-            <div>
-              <SectionTitle title='12th Standard' icon={School} />
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <DetailItem
-                  label='Board'
-                  name='twelfth_std_board'
-                  icon={School}
-                />
-                <DetailItem
-                  label='Year'
-                  name='twelfth_std_pass_out_year'
-                  type='text'
-                  icon={Calendar}
-                />
-                <DetailItem
-                  label='PCM %'
-                  name='twelfth_pcm_avg_percentage'
-                  type='text'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Maths'
-                  name='twelfth_std_maths'
-                  type='text'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Physics'
-                  name='twelfth_std_physics'
-                  type='text'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Chemistry'
-                  name='twelfth_std_chemistry'
-                  type='text'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='English'
-                  name='twelfth_std_english'
-                  type='text'
-                  icon={Percent}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Education & IMU */}
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
-            {/* Graduation */}
-            <div>
-              <SectionTitle title='Graduation / Degree' icon={Book} />
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <DetailItem
-                  label='University'
-                  name='graduation_university'
-                  icon={School}
-                />
-              </div>
-            </div>
-
-            {/* IMU Details */}
-            <div>
-              <SectionTitle title='IMU Performance' icon={Award} />
-              <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                <DetailItem
-                  label='IMU Rank'
-                  name='imu_rank'
-                  type='text'
-                  icon={Award}
-                />
-                <DetailItem
-                  label='Avg %'
-                  name='imu_avg_all_semester_percentage'
-                  type='text'
-                  icon={Percent}
-                />
-                {/* Semester Wise */}
-                <DetailItem
-                  label='Sem 1'
-                  name='imu_sem_1_percentage'
-                  type='float'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Sem 2'
-                  name='imu_sem_2_percentage'
-                  type='float'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Sem 3'
-                  name='imu_sem_3_percentage'
-                  type='float'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Sem 4'
-                  name='imu_sem_4_percentage'
-                  type='float'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Sem 5'
-                  name='imu_sem_5_percentage'
-                  type='float'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Sem 6'
-                  name='imu_sem_6_percentage'
-                  type='float'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Sem 7'
-                  name='imu_sem_7_percentage'
-                  type='float'
-                  icon={Percent}
-                />
-                <DetailItem
-                  label='Sem 8'
-                  name='imu_sem_8_percentage'
-                  type='float'
-                  icon={Percent}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Course & Training */}
-          <div>
-            <SectionTitle title='Course & Training Details' icon={Briefcase} />
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem
-                label='Batch Rank'
-                name='batch_rank_out_of_72_cadets'
-                icon={Award}
-              />
-              <DetailItem
-                label='Arrears'
-                name='no_of_arrears'
-                type='number'
-                icon={Book}
-              />
-              <DetailItem
-                label='Passing Out Year'
-                name='passing_out_date'
-                type='date'
-                icon={Calendar}
-              />
-              <DetailItem
-                label='Age at Passing'
-                name='age_when_passing_out'
-                type='number'
-                icon={User}
-              />
-            </div>
-          </div>
-
-          {/* Family & Additional */}
-          <div>
-            <SectionTitle title='Family & Additional Info' icon={Home} />
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem
-                label="Father's Occupation"
-                name='father_occupation'
-                icon={Briefcase}
-              />
-              <DetailItem
-                label="Mother's Occupation"
-                name='mother_occupation'
-                icon={Briefcase}
-              />
-              <DetailItem
-                label='Any Relative in Marine Field'
-                name='marine_relative'
-                icon={User}
-              />
-              <DetailItem
-                label='Languages'
-                name='language_known'
-                icon={Globe}
-              />
-              <DetailItem
-                label='Loan'
-                name='educational_loan'
-                icon={FileText}
-              />
-              <DetailItem
-                label='Extra Curricular'
-                name='any_extra_curricular_achievement'
-                icon={Activity}
-              />
-            </div>
-          </div>
-
-          {/* STCW Courses */}
-          <div>
-            <SectionTitle title='STCW Courses' icon={Book} />
-            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-              <DetailItem
-                label='Elementary/Medical First Aid/Medicare'
-                name='stcw_elementary_first_aid'
-                type='select'
-                options={[
-                  { label: 'Not Done', value: 'Not Done' },
-                  { label: 'Done', value: 'Done' },
-                ]}
-                icon={Syringe}
-              />
-              <DetailItem
-                label='Security Training for Sea Farers'
-                name='stcw_security_training'
-                type='select'
-                options={[
-                  { label: 'Not Done', value: 'Not Done' },
-                  { label: 'Done', value: 'Done' },
-                ]}
-                icon={Book}
-              />
-              <DetailItem
-                label='Personal Safety & Social Responsibility'
-                name='stcw_personal_safety'
-                type='select'
-                options={[
-                  { label: 'Not Done', value: 'Not Done' },
-                  { label: 'Done', value: 'Done' },
-                ]}
-                icon={User}
-              />
-              <DetailItem
-                label='Petrol Tanker Familiarization'
-                name='stcw_petrol_tanker'
-                type='select'
-                options={[
-                  { label: 'Not Done', value: 'Not Done' },
-                  { label: 'Done', value: 'Done' },
-                ]}
-                icon={Book}
-              />
-              <DetailItem
-                label='Fire Prevention and Fire Fighting'
-                name='stcw_fire_prevention'
-                type='select'
-                options={[
-                  { label: 'Not Done', value: 'Not Done' },
-                  { label: 'Done', value: 'Done' },
-                ]}
-                icon={Activity}
-              />
-              <DetailItem
-                label='Chemical Tanker Familiarization'
-                name='stcw_chemical_tanker'
-                type='select'
-                options={[
-                  { label: 'Not Done', value: 'Not Done' },
-                  { label: 'Done', value: 'Done' },
-                ]}
-                icon={Book}
-              />
-              <DetailItem
-                label='Personal Survival Techniques'
-                name='stcw_personal_survival'
-                type='select'
-                options={[
-                  { label: 'Not Done', value: 'Not Done' },
-                  { label: 'Done', value: 'Done' },
-                ]}
-                icon={Activity}
-              />
-              <DetailItem
-                label='Gas Tanker Familiarization'
-                name='stcw_gas_tanker'
-                type='select'
-                options={[
-                  { label: 'Not Done', value: 'Not Done' },
-                  { label: 'Done', value: 'Done' },
-                ]}
-                icon={Book}
-              />
-            </div>
-          </div>
-
-          {/* Address */}
-          <div>
-            <SectionTitle title='Address' icon={MapPin} />
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-              <div className='p-4 bg-gray-50 rounded-lg border border-gray-100'>
-                <h4 className='font-semibold text-gray-700 mb-2'>
-                  Current Address
-                </h4>
-                <textarea
-                  {...register('address')}
-                  className='w-full p-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all'
-                  rows={3}
-                />
-              </div>
-              <div className='p-4 bg-gray-50 rounded-lg border border-gray-100'>
-                <h4 className='font-semibold text-gray-700 mb-2'>
-                  Permanent Address
-                </h4>
-                <textarea
-                  {...register('permanent_address')}
-                  className='w-full p-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all'
-                  rows={3}
-                />
-              </div>
-            </div>
-          </div>
+          {/* Common Fields */}
+          <CadetFormFields
+            isEditing={true}
+            register={register}
+            errors={errors}
+            watch={watch}
+            setValue={setValue}
+            isSubmitting={loading}
+          />
         </div>
       </div>
     </form>

@@ -194,6 +194,11 @@ const CadetTable = ({
       },
     },
     {
+      field: 'place_of_birth',
+      headerName: 'POB',
+      width: '150px',
+    },
+    {
       field: 'home_town_or_nearby_airport',
       headerName: 'Hometown',
       width: '150px',
@@ -385,7 +390,6 @@ const CadetTable = ({
       ),
     },
   ];
-
   return (
     <>
       <div className='bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6'>
@@ -481,7 +485,7 @@ const CadetTable = ({
           handlePerPageChange={handlePerPageChange}
           sortConfig={sortConfig}
           handleSortChange={handleSortChange}
-          checkboxSelection={true}
+          // checkboxSelection={true}
           rowSelectionModel={selectedCadets}
           onRowSelectionModelChange={onSelectionChange}
           rowClassName={(row) => (isShortlisted(row) ? 'bg-green-50/50' : '')}

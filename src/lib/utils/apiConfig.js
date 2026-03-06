@@ -43,8 +43,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Clear local storage and redirect to login if token is invalid
+    if (error.response && [401, 403].includes(error.response.status)) {
+      // Clear local storage and redirect to login if token is invalid or access is forbidden (e.g., inactive user)
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       if (window.location.pathname !== '/login') {

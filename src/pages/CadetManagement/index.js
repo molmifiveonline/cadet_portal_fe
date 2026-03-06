@@ -302,14 +302,6 @@ const CadetManagement = ({ courseType }) => {
               Add Cadet
             </Button>
             <Button
-              variant='default'
-              onClick={() => navigate('/cadets/add-basic')}
-              className='gap-2 bg-emerald-600 hover:bg-emerald-700'
-            >
-              <Plus size={18} />
-              Basic Form
-            </Button>
-            <Button
               variant='outline'
               onClick={() => navigate('/institute/submit-excel')}
               className='gap-2'

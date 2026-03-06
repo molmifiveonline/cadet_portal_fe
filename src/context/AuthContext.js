@@ -68,6 +68,35 @@ export const AuthProvider = ({ children }) => {
       scheduleAutoLogout(parsed);
     }
     setLoading(false);
+
+    // Sync auth state across browser tabs
+    const handleStorageChange = (e) => {
+      if (e.key === 'token' || e.key === 'user') {
+        const newToken = localStorage.getItem('token');
+        const newUser = localStorage.getItem('user');
+
+        if (!newToken || !newUser) {
+          // Another tab logged out → logout this tab too
+          if (logoutTimerRef.current) {
+            clearTimeout(logoutTimerRef.current);
+            logoutTimerRef.current = null;
+          }
+          setUser(null);
+        } else {
+          // Another tab logged in → update this tab
+          try {
+            const parsed = JSON.parse(newUser);
+            setUser(parsed);
+            scheduleAutoLogout(parsed);
+          } catch (err) {
+            console.error('[Auth] Error parsing user from storage event', err);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const login = (userData, token) => {
