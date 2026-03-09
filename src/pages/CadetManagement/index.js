@@ -14,7 +14,6 @@ const CadetManagement = ({ courseType }) => {
   const location = useLocation();
   const returnState = location.state?.returnState || null;
 
-  const [institutes, setInstitutes] = useState([]);
   const [filteredInstitutes, setFilteredInstitutes] = useState([]);
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -86,12 +85,8 @@ const CadetManagement = ({ courseType }) => {
 
   const fetchInstitutes = async () => {
     try {
-      const [allResponse, filteredResponse] = await Promise.all([
-        api.get('/institutes'),
-        api.get('/institutes?hasSubmissions=true'),
-      ]);
-      setInstitutes(allResponse.data.data || []);
-      setFilteredInstitutes(filteredResponse.data.data || []);
+      const response = await api.get('/institutes?hasSubmissions=true');
+      setFilteredInstitutes(response.data.data || []);
     } catch (error) {
       console.error('Error fetching institutes:', error);
       toast.error('Failed to load institutes');
@@ -206,22 +201,6 @@ const CadetManagement = ({ courseType }) => {
     );
   };
 
-  const handleRefresh = () => {
-    setSearchTerm('');
-    setSortConfig({ sortBy: '', sortOrder: '' });
-    fetchCadets(
-      1,
-      pagination.per_page,
-      '',
-      '',
-      '',
-      selectedInstitute,
-      showShortlistedOnly,
-      selectedYear,
-    );
-    toast.success('Data refreshed');
-  };
-
   const handleToggleShortlisted = () => {
     const newValue = !showShortlistedOnly;
     setShowShortlistedOnly(newValue);
@@ -254,7 +233,7 @@ const CadetManagement = ({ courseType }) => {
       if (cadets.length === 1 && pagination.current_page > 1) {
         fetchCadets(pagination.current_page - 1);
       } else {
-        fetchCadets(pagination.current_page); // Refresh list
+        fetchCadets(pagination.current_page); 
       }
     } catch (error) {
       console.error('Error deleting cadet:', error);
@@ -334,7 +313,6 @@ const CadetManagement = ({ courseType }) => {
           handleSortChange={handleSortChange}
           searchTerm={searchTerm}
           handleSearch={handleSearch}
-          handleRefresh={handleRefresh}
           selectedInstitute={selectedInstitute}
           handleInstituteChange={handleInstituteChange}
           institutes={filteredInstitutes}

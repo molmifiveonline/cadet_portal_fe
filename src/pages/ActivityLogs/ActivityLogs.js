@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
-import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 
 const ActivityLogs = () => {
@@ -79,7 +78,7 @@ const ActivityLogs = () => {
         const date = new Date(value);
         return (
           <div className='flex flex-col'>
-            <span className='text-sm'>{date.toLocaleDateString()}</span>
+            <span className='text-sm'>{date.toLocaleDateString('en-GB')}</span>
             <span className='text-xs text-gray-500'>
               {date.toLocaleTimeString()}
             </span>
@@ -95,45 +94,48 @@ const ActivityLogs = () => {
     },
   ];
 
-  const fetchLogs = async (
-    page = 1,
-    limit = 10,
-    search = '',
-    sortBy = sortConfig.sortBy,
-    sortOrder = sortConfig.sortOrder,
-  ) => {
-    setLoading(true);
-    try {
-      const response = await api.get('/activity-logs/recent', {
-        params: {
-          page,
-          limit,
-          search: search.trim() !== '' ? search : undefined,
-          sortBy,
-          sortOrder,
-        },
-      });
+  const fetchLogs = React.useCallback(
+    async (
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = sortConfig.sortBy,
+      sortOrder = sortConfig.sortOrder,
+    ) => {
+      setLoading(true);
+      try {
+        const response = await api.get('/activity-logs/recent', {
+          params: {
+            page,
+            limit,
+            search: search.trim() !== '' ? search : undefined,
+            sortBy,
+            sortOrder,
+          },
+        });
 
-      const data = response.data;
-      setLogs(data.data || []);
-      setPagination({
-        current_page: data.pagination?.page || page,
-        per_page: data.pagination?.limit || limit,
-        total: data.pagination?.total || 0,
-        last_page: data.pagination?.totalPages || 1,
-      });
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          'Could not load activity logs.',
-      );
-      setLogs([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const data = response.data;
+        setLogs(data.data || []);
+        setPagination({
+          current_page: data.pagination?.page || page,
+          per_page: data.pagination?.limit || limit,
+          total: data.pagination?.total || 0,
+          last_page: data.pagination?.totalPages || 1,
+        });
+      } catch (error) {
+        console.error('Error fetching logs:', error);
+        toast.error(
+          error.response?.data?.message ||
+            error.message ||
+            'Could not load activity logs.',
+        );
+        setLogs([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [sortConfig.sortBy, sortConfig.sortOrder],
+  );
 
   // Debounced search effect
   useEffect(() => {
@@ -159,6 +161,7 @@ const ActivityLogs = () => {
     searchTerm,
     sortConfig.sortBy,
     sortConfig.sortOrder,
+    fetchLogs,
   ]);
 
   const handlePageChange = (newPage) => {
@@ -176,11 +179,6 @@ const ActivityLogs = () => {
     setCurrentPage(1); // Optionally reset to page 1 on sort
   };
 
-  const handleRefresh = () => {
-    fetchLogs(currentPage, rowsPerPage, searchTerm);
-    toast.success('Activity logs refreshed');
-  };
-
   return (
     <div className='py-6 space-y-6'>
       <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
@@ -190,14 +188,6 @@ const ActivityLogs = () => {
             View system activities from the last 3 months
           </p>
         </div>
-        <Button
-          onClick={handleRefresh}
-          variant='outline'
-          className='flex items-center gap-2'
-        >
-          <RefreshCw className='w-4 h-4' />
-          Refresh
-        </Button>
       </div>
 
       {/* Search Bar */}

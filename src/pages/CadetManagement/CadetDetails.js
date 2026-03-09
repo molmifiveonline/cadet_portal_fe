@@ -3,8 +3,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
   ArrowLeft,
-  Edit2,
-  FileDown,
   Camera,
   Image as ImageIcon,
   FileText,
@@ -114,7 +112,7 @@ const CadetDetails = () => {
     if (id) {
       fetchCadetDetails();
     }
-  }, [id, navigate, reset]);
+  }, [id, navigate, reset, returnPath, returnStatePayload, defaultBackPath]);
 
   const onSubmit = async (data) => {
     try {

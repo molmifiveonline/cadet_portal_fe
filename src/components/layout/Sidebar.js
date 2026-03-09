@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLayout } from '../../context/LayoutContext';
 import { useUserPermissions } from '../../hooks/usePermission';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
+import { Button } from 'components/ui/button';
 
 const Sidebar = () => {
   const { isOpen, setIsOpen } = useLayout();
@@ -248,7 +249,8 @@ const Sidebar = () => {
 
         {/* Logout Button */}
         <div className='p-4 border-t border-slate-100 mt-auto'>
-          <button
+          <Button
+            variant='ghost'
             onClick={handleLogout}
             className={cn(
               'flex items-center py-2.5 rounded-lg transition-all duration-200 w-full group',
@@ -265,7 +267,7 @@ const Sidebar = () => {
                 Log Out
               </span>
             )}
-          </button>
+          </Button>
         </div>
       </aside>
 

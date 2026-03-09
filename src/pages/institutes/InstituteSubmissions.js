@@ -7,7 +7,6 @@ import {
   Search,
   Trash2,
   Upload,
-  RotateCcw,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
@@ -90,12 +89,6 @@ const InstituteSubmissions = () => {
 
   const handlePerPageChange = (newLimit) => {
     fetchSubmissions(1, newLimit);
-  };
-
-  const handleRefresh = () => {
-    setSearchTerm('');
-    fetchSubmissions(1, pagination.per_page, '');
-    toast.success('Refreshed');
   };
 
   // Actions
@@ -423,10 +416,6 @@ const InstituteSubmissions = () => {
                   Delete ({selectedSubmissions.length})
                 </Button>
               </Permission>
-
-              <Button variant='outline' onClick={handleRefresh} title='Refresh'>
-                <RotateCcw className='w-4 h-4' />
-              </Button>
             </div>
           </div>
         </div>

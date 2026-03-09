@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Shield, AlertCircle, Loader2 } from 'lucide-react';
 import RoleSelector from './RoleSelector';
 import PermissionMatrix from './PermissionMatrix';
 import { toast } from 'sonner';
@@ -136,15 +136,6 @@ const RolePermissions = () => {
     setSelectedRole(role);
   };
 
-  /* Handle refresh */
-  const handleRefresh = () => {
-    if (selectedRole) {
-      fetchRolePermissions(selectedRole.id);
-    } else {
-      fetchRoles();
-    }
-  };
-
   return (
     <div className='min-h-screen bg-[#F8FAFC] p-6'>
       {/* Header */}
@@ -164,14 +155,6 @@ const RolePermissions = () => {
             </div>
           </div>
           <div className='flex items-center gap-4'>
-            <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className='px-5 py-2.5 text-[14px] font-semibold text-[#475569] bg-white border border-[#E2E8F0] rounded-xl hover:bg-gray-50 transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-2'
-            >
-              <RefreshCw className='w-4 h-4' />
-              Refresh
-            </button>
             <button
               onClick={handleSaveChanges}
               disabled={!selectedRole || saving || loading}
@@ -208,12 +191,6 @@ const RolePermissions = () => {
                   Error Loading Permissions
                 </h3>
                 <p className='text-gray-500 mb-8'>{error}</p>
-                <button
-                  onClick={handleRefresh}
-                  className='w-full py-3 text-sm font-bold text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-200'
-                >
-                  Try Again
-                </button>
               </div>
             </div>
           ) : !selectedRole ? (

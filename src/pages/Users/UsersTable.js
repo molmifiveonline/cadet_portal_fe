@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, Search, RotateCcw, Mail } from 'lucide-react';
+import { Edit, Trash2, Search, Mail } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import Permission from '../../components/common/Permission';
@@ -17,7 +17,6 @@ const UsersTable = ({
   handlePerPageChange,
   handleSortChange,
   handleSearch,
-  handleRefresh,
   selectedUsers,
   onSelectionChange,
 }) => {
@@ -107,22 +106,26 @@ const UsersTable = ({
       renderCell: ({ row }) => (
         <div className='flex items-center justify-end gap-2'>
           <Permission module='users' action='edit'>
-            <button
+            <Button
+              variant='ghosy'
+              size='icon'
               onClick={() => handleEdit(row)}
               className='p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors'
               title='Edit user'
             >
               <Edit size={16} />
-            </button>
+            </Button>
           </Permission>
           <Permission module='users' action='delete'>
-            <button
+            <Button
+              variant='ghosy'
+              size='icon'
               onClick={() => setDeleteUser(row)}
               className='p-2 rounded-lg text-red-600 hover:bg-red-100 transition-colors'
               title='Delete user'
             >
               <Trash2 size={16} />
-            </button>
+            </Button>
           </Permission>
         </div>
       ),
@@ -142,18 +145,6 @@ const UsersTable = ({
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
             />
-          </div>
-
-          <div className='flex gap-2'>
-            <Button
-              variant='outline'
-              onClick={handleRefresh}
-              className='flex items-center gap-2 h-10'
-              title='Refresh data'
-            >
-              <RotateCcw size={16} />
-              <span className='hidden sm:inline'>Refresh</span>
-            </Button>
           </div>
         </div>
       </div>

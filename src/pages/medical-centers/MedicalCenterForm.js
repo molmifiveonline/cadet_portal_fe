@@ -129,7 +129,7 @@ const MedicalCenterForm = () => {
         </div>
       </div>
 
-      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8'>
+      <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
         <form onSubmit={handleSubmit} className='space-y-6'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             {/* Center Name */}
@@ -145,7 +145,7 @@ const MedicalCenterForm = () => {
                   placeholder='e.g., Balaji Medical Clinic'
                   value={formData.center_name}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                   required
                 />
               </div>
@@ -164,7 +164,7 @@ const MedicalCenterForm = () => {
                   placeholder='e.g., Andheri, Mumbai'
                   value={formData.location}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                   required
                 />
               </div>
@@ -183,7 +183,7 @@ const MedicalCenterForm = () => {
                   placeholder='e.g., Blood, X-Ray, General Physical'
                   value={formData.tests_offered}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
               </div>
             </div>
@@ -201,7 +201,7 @@ const MedicalCenterForm = () => {
                   placeholder='e.g., Dr. Sharma'
                   value={formData.contact_person}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
               </div>
             </div>
@@ -219,7 +219,7 @@ const MedicalCenterForm = () => {
                   placeholder='clinic@example.com'
                   value={formData.email}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
               </div>
             </div>
@@ -235,7 +235,7 @@ const MedicalCenterForm = () => {
                   onValueChange={(val) => handleSelectChange('status', val)}
                   value={formData.status}
                 >
-                  <SelectTrigger className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                  <SelectTrigger className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
                     <SelectValue placeholder='Status' />
                   </SelectTrigger>
                   <SelectContent>
@@ -247,7 +247,7 @@ const MedicalCenterForm = () => {
             </div>
           </div>
 
-          <div className='pt-6 flex justify-end gap-3 border-t border-gray-100 mt-8'>
+          <div className='pt-6 flex justify-end gap-3 border-t border-gray-200 mt-8'>
             <Button
               variant='outline'
               type='button'

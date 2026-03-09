@@ -115,13 +115,6 @@ const MedicalCenterList = () => {
     }, 300);
   };
 
-  const handleRefresh = () => {
-    setSearchTerm('');
-    setSortConfig({ sortBy: '', sortOrder: '' });
-    fetchCenters(1, pagination.limit, '', '', '');
-    toast.success('Data refreshed');
-  };
-
   const handleEditClick = (center) => {
     navigate(`/medical-centers/edit/${center.id}`);
   };
@@ -176,7 +169,6 @@ const MedicalCenterList = () => {
         handlePerPageChange={handleLimitChange}
         handleSortChange={handleSortChange}
         handleSearch={handleSearch}
-        handleRefresh={handleRefresh}
       />
     </div>
   );

@@ -131,13 +131,6 @@ const UserManagement = () => {
     }, 300);
   };
 
-  const handleRefresh = () => {
-    setSearchTerm('');
-    setSortConfig({ sortBy: '', sortOrder: '' });
-    fetchUsers(1, pagination.per_page, '', '', '');
-    toast.success('Data refreshed');
-  };
-
   const handleEditClick = (user) => {
     navigate(`/users/edit/${user.id}`);
   };
@@ -216,7 +209,6 @@ const UserManagement = () => {
         handlePerPageChange={handleLimitChange}
         handleSortChange={handleSortChange}
         handleSearch={handleSearch}
-        handleRefresh={handleRefresh}
         selectedUsers={selectedUsers}
         onSelectionChange={setSelectedUsers}
       />

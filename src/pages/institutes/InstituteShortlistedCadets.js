@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ListChecks, Search, RotateCcw, Eye, Edit } from 'lucide-react';
+import { ListChecks, Search, Eye, Edit } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { useAuth } from '../../context/AuthContext';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import { Button } from '../../components/ui/button';
-import TextModal from '../../components/common/TextModal';
 
 const InstituteShortlistedCadets = () => {
   const { user } = useAuth();
@@ -14,9 +13,6 @@ const InstituteShortlistedCadets = () => {
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState({ title: '', content: '' });
-
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 10,
@@ -30,9 +26,13 @@ const InstituteShortlistedCadets = () => {
   });
 
   useEffect(() => {
-    fetchShortlistedCadets(1);
+    const delayDebounceFn = setTimeout(() => {
+      fetchShortlistedCadets(1);
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchTerm]);
 
   const fetchShortlistedCadets = async (
     page = pagination.current_page,
@@ -99,22 +99,6 @@ const InstituteShortlistedCadets = () => {
 
   const handleSearch = (value) => {
     setSearchTerm(value);
-    // Simple debounce if needed, but fetchShortlistedCadets is called from input onChange
-  };
-
-  const executeSearch = () => {
-    fetchShortlistedCadets(1, pagination.per_page, searchTerm);
-  };
-
-  const handleRefresh = () => {
-    setSearchTerm('');
-    fetchShortlistedCadets(1, pagination.per_page, '');
-    toast.success('Data refreshed');
-  };
-
-  const handleReadMore = (title, content) => {
-    setModalContent({ title, content });
-    setModalOpen(true);
   };
 
   const columns = [
@@ -212,12 +196,6 @@ const InstituteShortlistedCadets = () => {
             <span className='truncate mr-1 text-gray-600' title={value}>
               {value.substring(0, maxLength)}...
             </span>
-            <button
-              onClick={() => handleReadMore('Extra Curricular', value)}
-              className='text-green-600 hover:text-green-800 text-xs font-medium whitespace-nowrap'
-            >
-              Read More
-            </button>
           </div>
         );
       },
@@ -303,7 +281,7 @@ const InstituteShortlistedCadets = () => {
         </div>
       </div>
 
-      {/* Search and Refresh */}
+      {/* Search */}
       <div className='bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6'>
         <div className='flex flex-col md:flex-row justify-between items-center gap-4'>
           <div className='flex items-center bg-gray-50 rounded-xl px-3 border border-gray-200 w-full md:w-96 focus-within:ring-2 focus-within:ring-green-100 focus-within:border-green-300 transition-all'>
@@ -314,25 +292,7 @@ const InstituteShortlistedCadets = () => {
               className='w-full p-2.5 bg-transparent outline-none text-gray-700 placeholder-gray-400 text-sm'
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && executeSearch()}
             />
-          </div>
-
-          <div className='flex gap-2 w-full md:w-auto'>
-            <Button
-              onClick={executeSearch}
-              className='flex-1 md:flex-none bg-green-600 hover:bg-green-700 text-white'
-            >
-              Search
-            </Button>
-            <Button
-              variant='outline'
-              onClick={handleRefresh}
-              className='flex items-center gap-2 border-gray-200 text-gray-600 hover:bg-gray-50'
-            >
-              <RotateCcw size={16} />
-              <span className='hidden sm:inline'>Refresh</span>
-            </Button>
           </div>
         </div>
       </div>
@@ -355,13 +315,6 @@ const InstituteShortlistedCadets = () => {
           }
         />
       </div>
-
-      <TextModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={modalContent.title}
-        content={modalContent.content}
-      />
     </div>
   );
 };

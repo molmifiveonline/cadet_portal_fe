@@ -1,14 +1,11 @@
 import React from 'react';
 import {
   Mail,
-  Phone,
   MapPin,
   Edit,
   Trash2,
   Search,
-  RotateCcw,
   Clock,
-  CheckCircle2,
   XCircle,
   User,
 } from 'lucide-react';
@@ -30,7 +27,6 @@ const InstitutesTable = ({
   handlePerPageChange,
   handleSortChange,
   handleSearch,
-  handleRefresh,
   selectedInstitutes,
   onSelectionChange,
 }) => {
@@ -72,18 +68,6 @@ const InstitutesTable = ({
               onChange={(e) => handleSearch(e.target.value)}
             />
           </div>
-
-          <div className='flex gap-3'>
-            <Button
-              variant='outline'
-              onClick={handleRefresh}
-              className='flex items-center gap-2'
-              title='Refresh data'
-            >
-              <RotateCcw size={16} />
-              <span>Refresh</span>
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -117,23 +101,49 @@ const InstitutesTable = ({
               ),
             },
             {
-              field: 'institute_email',
+              field: 'contact_emails',
               headerName: 'Email Address',
-              width: '190px',
-              renderCell: ({ row }) => (
-                <div
-                  className='flex items-center gap-2 text-sm text-gray-600 truncate'
-                  title={row.institute_email}
-                >
-                  <Mail size={14} className='flex-shrink-0 text-gray-400' />
-                  <span className='truncate'>{row.institute_email}</span>
-                </div>
-              ),
+              width: '230px',
+              sortable: false,
+              renderCell: ({ row }) => {
+                let contacts = row.contact_emails || [];
+                if (typeof contacts === 'string') {
+                  try {
+                    contacts = JSON.parse(contacts);
+                  } catch (e) {
+                    contacts = [];
+                  }
+                }
+                const hasExtraContacts = contacts && contacts.length > 1;
+                const extraCount = hasExtraContacts ? contacts.length - 1 : 0;
+                const defaultContact =
+                  contacts.find((c) => c.isDefault) || contacts[0];
+                const displayEmail = defaultContact
+                  ? defaultContact.email
+                  : '—';
+
+                return (
+                  <div className='flex items-center justify-between w-full h-full pr-4'>
+                    <div
+                      className='flex items-center gap-2 text-sm text-gray-600 truncate max-w-[150px]'
+                      title={displayEmail}
+                    >
+                      <Mail size={14} className='flex-shrink-0 text-gray-400' />
+                      <span className='truncate'>{displayEmail}</span>
+                    </div>
+                    {hasExtraContacts && (
+                      <span className='inline-flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2 shrink-0'>
+                        +{extraCount}
+                      </span>
+                    )}
+                  </div>
+                );
+              },
             },
             {
-              field: 'email_sent',
-              headerName: 'Email Sent',
-              width: '120px',
+              field: 'temp_expiry',
+              headerName: 'Token Expires',
+              width: '140px',
               sortable: false,
               renderCell: ({ row }) => {
                 if (!row.temp_expiry) {
@@ -146,34 +156,17 @@ const InstitutesTable = ({
                 }
                 const expired = isExpired(row.temp_expiry);
                 return expired ? (
-                  <span className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700'>
-                    <Clock size={12} />
-                    Expired
+                  <span
+                    className='text-xs font-medium text-red-600 flex items-center gap-1 cursor-pointer'
+                    title='Token Expired'
+                  >
+                    ⚠ {formatDate(row.temp_expiry)}
                   </span>
                 ) : (
-                  <span className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700'>
-                    <CheckCircle2 size={12} />
-                    Active
-                  </span>
-                );
-              },
-            },
-            {
-              field: 'temp_expiry',
-              headerName: 'Token Expires',
-              width: '120px',
-              sortable: false,
-              renderCell: ({ row }) => {
-                if (!row.temp_expiry) {
-                  return <span className='text-sm text-gray-400'>—</span>;
-                }
-                const expired = isExpired(row.temp_expiry);
-                return (
                   <span
-                    className={`text-xs font-medium ${expired ? 'text-red-600' : 'text-blue-600'}`}
+                    className='text-xs font-medium text-blue-600 flex items-center gap-1'
                     title={row.temp_expiry}
                   >
-                    {expired ? '⚠ ' : ''}
                     {formatDate(row.temp_expiry)}
                   </span>
                 );
@@ -184,7 +177,7 @@ const InstitutesTable = ({
               headerName: 'Type',
               width: '90px',
               sortable: false,
-             renderCell: ({ row }) => (
+              renderCell: ({ row }) => (
                 <div className='truncate' title={row.institute_type}>
                   <p className='font-semibold text-gray-900 truncate'>
                     {row.institute_type}
@@ -193,32 +186,58 @@ const InstitutesTable = ({
               ),
             },
             {
+              field: 'status',
+              headerName: 'Status',
+              width: '100px',
+              renderCell: ({ row }) => {
+                const isActive = row.status !== 'inactive';
+                return (
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                      isActive
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-red-500'}`}
+                    ></span>
+                    {isActive ? 'Active' : 'Inactive'}
+                  </span>
+                );
+              },
+            },
+            {
               field: 'contact_person',
               headerName: 'Contact Person',
               width: '150px',
-              renderCell: ({ row }) => (
-                <div className='flex items-center gap-2 text-sm text-gray-600 truncate'>
-                  <User size={14} className='flex-shrink-0 text-gray-400' />
-                  {row.contact_person ? (
-                    <span className='truncate' title={row.contact_person}>
-                      {row.contact_person}
+              renderCell: ({ row }) => {
+                let contacts = row.contact_emails || [];
+                if (typeof contacts === 'string') {
+                  try {
+                    contacts = JSON.parse(contacts);
+                  } catch (e) {
+                    contacts = [];
+                  }
+                }
+                const defaultContact =
+                  contacts.find((c) => c.isDefault) || contacts[0];
+                const displayName =
+                  defaultContact && defaultContact.name
+                    ? defaultContact.name
+                    : '—';
+                return (
+                  <div className='flex items-center gap-2 text-sm text-gray-600 truncate'>
+                    <User size={14} className='flex-shrink-0 text-gray-400' />
+                    <span
+                      className={`truncate ${displayName === '—' ? 'text-gray-400' : ''}`}
+                      title={displayName !== '—' ? displayName : ''}
+                    >
+                      {displayName}
                     </span>
-                  ) : (
-                    <span className='text-gray-400'>—</span>
-                  )}
-                </div>
-              ),
-            },
-            {
-              field: 'mobile_number',
-              headerName: 'Mobile Number',
-              width: '140px',
-              renderCell: ({ row }) => (
-                <div className='flex items-center gap-2 text-sm text-gray-600'>
-                  <Phone size={14} className='flex-shrink-0 text-gray-400' />
-                  {row.mobile_number}
-                </div>
-              ),
+                  </div>
+                );
+              },
             },
             {
               field: 'location',
@@ -261,32 +280,38 @@ const InstitutesTable = ({
                   {/* Extend token – only if email has been sent */}
                   {row.temp_expiry && (
                     <Permission module='institutes' action='edit'>
-                      <button
+                      <Button
+                        variant='ghosy'
+                        size='icon'
                         onClick={() => handleExtendToken(row)}
                         className='p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors'
                         title='Extend Token Expiry'
                       >
                         <Clock size={16} />
-                      </button>
+                      </Button>
                     </Permission>
                   )}
                   <Permission module='institutes' action='edit'>
-                    <button
+                    <Button
+                      variant='ghosy'
+                      size='icon'
                       onClick={() => handleEdit(row)}
                       className='p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors'
                       title='Edit'
                     >
                       <Edit size={16} />
-                    </button>
+                    </Button>
                   </Permission>
                   <Permission module='institutes' action='delete'>
-                    <button
+                    <Button
+                      variant='ghosy'
+                      size='icon'
                       onClick={() => setDeleteId(row.id)}
                       className='p-2 rounded-lg text-red-600 hover:bg-red-100 transition-colors'
                       title='Delete'
                     >
                       <Trash2 size={16} />
-                    </button>
+                    </Button>
                   </Permission>
                 </div>
               ),

@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import {
   Loader2,
   ArrowLeft,
   Building2,
-  Mail,
-  Phone,
   MapPin,
+  Plus,
+  Trash2,
+  Mail,
   User,
+  CheckCircle2,
 } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
@@ -35,19 +37,56 @@ const InstituteForm = () => {
     reset,
     setValue,
     control,
+    watch,
     formState: { errors, isSubmitting },
-  } = useForm();
+  } = useForm({
+    defaultValues: {
+      contact_emails: [{ name: '', email: '', isDefault: true }],
+      status: 'active',
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'contact_emails',
+  });
+
+  // Watch contacts to enforce exactly one default
+  const contactEmails = watch('contact_emails');
+
+  const setDefaultContact = (index) => {
+    const updatedContacts = contactEmails.map((contact, i) => ({
+      ...contact,
+      isDefault: i === index,
+    }));
+    setValue('contact_emails', updatedContacts, { shouldDirty: true });
+  };
 
   useEffect(() => {
     if (location.state?.instituteData) {
       const data = location.state.instituteData;
       setValue('institute_name', data.institute_name);
-      setValue('institute_email', data.institute_email);
-      setValue('mobile_number', data.mobile_number);
       setValue('address', data.address);
       setValue('location', data.location);
-      setValue('contact_person', data.contact_person || '');
       setValue('institute_type', data.institute_type || '');
+      setValue('status', data.status || 'active');
+      
+      let initialContacts = [];
+      let contacts = data.contact_emails;
+      if (typeof contacts === 'string') {
+        try { contacts = JSON.parse(contacts); } catch(e) { contacts = []; }
+      }
+      if (contacts && Array.isArray(contacts) && contacts.length > 0) {
+        initialContacts = contacts;
+      } else {
+        initialContacts = [{
+          name: '',
+          email: '',
+          isDefault: true
+        }];
+      }
+      setValue('contact_emails', initialContacts);
+
     } else if (id) {
       const fetchInstitute = async () => {
         try {
@@ -57,12 +96,27 @@ const InstituteForm = () => {
           const data = response.data.data || response.data;
 
           setValue('institute_name', data.institute_name);
-          setValue('institute_email', data.institute_email);
-          setValue('mobile_number', data.mobile_number);
           setValue('address', data.address);
           setValue('location', data.location);
-          setValue('contact_person', data.contact_person || '');
           setValue('institute_type', data.institute_type || '');
+          setValue('status', data.status || 'active');
+
+          let initialContacts = [];
+          let contacts = data.contact_emails;
+          if (typeof contacts === 'string') {
+            try { contacts = JSON.parse(contacts); } catch(e) { contacts = []; }
+          }
+          if (contacts && Array.isArray(contacts) && contacts.length > 0) {
+            initialContacts = contacts;
+          } else {
+            initialContacts = [{
+              name: '',
+              email: '',
+              isDefault: true
+            }];
+          }
+          setValue('contact_emails', initialContacts);
+
         } catch (error) {
           console.error('Error fetching institute:', error);
           toast.error('Failed to fetch institute data');
@@ -83,6 +137,17 @@ const InstituteForm = () => {
   }, [id, setValue, reset, navigate, location.state]);
 
   const onSubmit = async (data) => {
+    // Ensure at least one default is selected
+    if (!data.contact_emails || data.contact_emails.length === 0) {
+      toast.error('Please add at least one contact');
+      return;
+    }
+    
+    // Auto-select the first one as default if somehow none are
+    if (!data.contact_emails.some(c => c.isDefault)) {
+      data.contact_emails[0].isDefault = true;
+    }
+
     try {
       setLoading(true);
       if (id) {
@@ -146,7 +211,7 @@ const InstituteForm = () => {
         </div>
       </div>
 
-      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500'>
+      <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500'>
         <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='space-y-2'>
@@ -159,7 +224,7 @@ const InstituteForm = () => {
                   {...register('institute_name', {
                     required: 'Name is required',
                   })}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                   placeholder='Enter institute name'
                 />
               </div>
@@ -172,59 +237,7 @@ const InstituteForm = () => {
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700 ml-1'>
-                Email Address <span className='text-red-500'>*</span>
-              </label>
-              <div className='relative group'>
-                <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
-                <Input
-                  type='email'
-                  {...register('institute_email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^\S+@\S+$/i,
-                      message: 'Invalid email address',
-                    },
-                  })}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  placeholder='contact@institute.com'
-                />
-              </div>
-              {errors.institute_email && (
-                <span className='text-red-500 text-xs ml-1'>
-                  {errors.institute_email.message}
-                </span>
-              )}
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700 ml-1'>
-                Mobile Number <span className='text-red-500'>*</span>
-              </label>
-              <div className='relative group'>
-                <Phone className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
-                <Input
-                  {...register('mobile_number', {
-                    required: 'Mobile number is required',
-                    pattern: {
-                      value: /^\d{10}$/,
-                      message: 'Must be exactly 10 digits',
-                    },
-                  })}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  placeholder='1234567890'
-                  maxLength={10}
-                />
-              </div>
-              {errors.mobile_number && (
-                <span className='text-red-500 text-xs ml-1'>
-                  {errors.mobile_number.message}
-                </span>
-              )}
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700 ml-1'>
-                Location/City <span className='text-red-500'>*</span>
+                Location <span className='text-red-500'>*</span>
               </label>
               <div className='relative group'>
                 <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
@@ -232,8 +245,8 @@ const InstituteForm = () => {
                   {...register('location', {
                     required: 'Location is required',
                   })}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  placeholder='e.g. Mumbai'
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  placeholder='e.g. Mumbai, Maharashtra'
                 />
               </div>
               {errors.location && (
@@ -243,49 +256,160 @@ const InstituteForm = () => {
               )}
             </div>
 
-            {/* Contact Person — optional */}
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700 ml-1'>
-                Contact Person Name
-              </label>
-              <div className='relative group'>
-                <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 transition-colors group-focus-within:text-[#3a5f9e]' />
-                <Input
-                  {...register('contact_person')}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  placeholder='e.g. John Doe'
-                />
+            {/* Contacts Area */}
+            <div className='col-span-1 md:col-span-2 space-y-4 rounded-xl border border-gray-200 p-5 bg-gray-50/30'>
+              <div className='flex items-center justify-between'>
+                <h3 className='text-[15px] font-semibold text-gray-800 flex items-center gap-2'>
+                  <Mail className='w-4 h-4 text-[#3a5f9e]' />
+                  Institute Contacts <span className='text-red-500 font-normal ml-0.5 mt-0.5 text-xs'>*Primary required</span>
+                </h3>
+                <Button
+                  type='button'
+                  size='sm'
+                  onClick={() => append({ name: '', email: '', isDefault: false })}
+                  className='h-8 text-xs bg-[#3a5f9e] text-white hover:bg-[#325186] border-none shadow-sm'
+                >
+                  <Plus className='w-3 h-3 mr-1' /> Add Contact
+                </Button>
+              </div>
+
+              <div className='space-y-3'>
+                {fields.map((field, index) => (
+                  <div key={field.id} className='relative flex flex-col md:flex-row gap-3 p-4 bg-white rounded-xl border border-gray-300 transition-all hover:border-gray-400'>
+                    {/* Default Contact Selector (Radio Behavior) */}
+                    <div className='flex md:flex-col items-center justify-center gap-2 pr-2 border-b md:border-b-0 md:border-r border-gray-200 pb-3 md:pb-0 md:w-24 shrink-0'>
+                      <button
+                        type='button'
+                        onClick={() => setDefaultContact(index)}
+                        className={`group flex items-center justify-center gap-1.5 transition-colors w-full py-2 px-2 rounded-lg ${
+                          contactEmails?.[index]?.isDefault 
+                            ? 'bg-green-100 text-green-700 border border-green-300 shadow-sm' 
+                            : 'bg-gray-50 text-gray-500 border border-gray-300 hover:bg-green-50 hover:text-green-600 hover:border-green-300'
+                        }`}
+                      >
+                        <CheckCircle2 className={`w-4 h-4 ${contactEmails?.[index]?.isDefault ? 'fill-green-100' : ''}`} />
+                        <span className='text-xs uppercase tracking-wider font-bold whitespace-nowrap mx-auto'>
+                          {contactEmails?.[index]?.isDefault ? 'Primary' : 'Set Primary'}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 pl-0 md:pl-2'>
+                      <div className='space-y-1.5'>
+                        <label className='text-xs font-medium text-gray-500 ml-1'>Contact Person</label>
+                        <div className='relative'>
+                          <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-3.5 w-3.5' />
+                          <Input
+                            {...register(`contact_emails.${index}.name`)}
+                            className='w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 bg-gray-50/50 focus:bg-white h-9'
+                            placeholder='e.g. John Doe'
+                          />
+                        </div>
+                      </div>
+
+                      <div className='space-y-1.5'>
+                        <label className='text-xs font-medium text-gray-500 ml-1'>Email Address <span className='text-red-500'>*</span></label>
+                        <div className='relative'>
+                          <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-3.5 w-3.5' />
+                          <Input
+                            {...register(`contact_emails.${index}.email`, {
+                              required: 'Email is required',
+                              pattern: {
+                                value: /^\S+@\S+$/i,
+                                message: 'Invalid email',
+                              },
+                            })}
+                            className={`w-full pl-9 pr-3 py-2 text-sm rounded-lg border bg-gray-50/50 focus:bg-white h-9 ${errors?.contact_emails?.[index]?.email ? 'border-red-400 ring-1 ring-red-400/30' : 'border-gray-300'}`}
+                            placeholder='contact@institute.com'
+                          />
+                        </div>
+                         {errors?.contact_emails?.[index]?.email && (
+                          <span className='text-red-500 text-[10px] ml-1 absolute -bottom-4 left-0'>
+                            {errors.contact_emails[index].email.message}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {fields.length > 1 && (
+                      <button
+                        type='button'
+                        onClick={() => remove(index)}
+                        className='absolute -top-2.5 -right-2.5 md:relative md:top-auto md:right-auto md:self-center bg-red-50 p-1.5 rounded-full text-red-500 hover:bg-red-100 hover:text-red-600 transition-colors shadow-sm md:shadow-none border border-red-100'
+                      >
+                        <Trash2 className='w-4 h-4' />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Institute Type — optional */}
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700 ml-1'>
-                Institute Type
-              </label>
-              <Controller
-                name='institute_type'
-                control={control}
-                defaultValue=''
-                render={({ field }) => (
-                  <Select
-                    value={field.value || ''}
-                    onValueChange={(val) =>
-                      field.onChange(val === 'none' ? '' : val)
-                    }
-                  >
-                    <SelectTrigger className='w-full rounded-xl border border-gray-200 bg-gray-50/50 h-[42px]'>
-                      <SelectValue placeholder='Select type...' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='none'>— None —</SelectItem>
-                      <SelectItem value='IMU'>IMU</SelectItem>
-                      <SelectItem value='B.Tech'>B.Tech</SelectItem>
-                      <SelectItem value='Both'>Both</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+            {/* Institute Type and Status Row */}
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6 lg:col-span-2'>
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700 ml-1'>
+                  Institute Type
+                </label>
+                <Controller
+                  name='institute_type'
+                  control={control}
+                  defaultValue=''
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={(val) =>
+                        field.onChange(val === 'none' ? '' : val)
+                      }
+                    >
+                      <SelectTrigger className='w-full rounded-xl border border-gray-300 bg-gray-50/50 h-[42px]'>
+                        <SelectValue placeholder='Select type...' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='none'>— None —</SelectItem>
+                        <SelectItem value='IMU'>IMU</SelectItem>
+                        <SelectItem value='B.Tech'>B.Tech</SelectItem>
+                        <SelectItem value='Both'>Both</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700 ml-1'>
+                  Status <span className='text-red-500'>*</span>
+                </label>
+                <Controller
+                  name='status'
+                  control={control}
+                  defaultValue='active'
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className='w-full rounded-xl border border-gray-300 bg-gray-50/50 h-[42px]'>
+                        <SelectValue placeholder='Select status...' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='active'>
+                          <div className='flex items-center gap-2'>
+                            <div className='w-2 h-2 rounded-full bg-green-500' />
+                            Active
+                          </div>
+                        </SelectItem>
+                        <SelectItem value='inactive'>
+                          <div className='flex items-center gap-2'>
+                            <div className='w-2 h-2 rounded-full bg-red-500' />
+                            Inactive
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
             </div>
           </div>
 
@@ -298,7 +422,7 @@ const InstituteForm = () => {
               <textarea
                 {...register('address', { required: 'Address is required' })}
                 rows={3}
-                className='w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none resize-none'
+                className='w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none resize-none'
                 placeholder='Enter full address...'
               />
             </div>

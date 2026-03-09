@@ -6,33 +6,42 @@ import { toast } from 'sonner';
 import api from '../../lib/utils/apiConfig';
 
 const ExtendTokenModal = ({ isOpen, onClose, institute, onSuccess }) => {
-  const [additionalDays, setAdditionalDays] = useState('7');
+  const [newExpiryDate, setNewExpiryDate] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Reset to default when modal opens
   React.useEffect(() => {
-    if (isOpen) {
-      setAdditionalDays('7');
+    if (isOpen && institute) {
+      const baseDate = institute.temp_expiry && new Date(institute.temp_expiry) > new Date() 
+        ? new Date(institute.temp_expiry) 
+        : new Date();
+      baseDate.setDate(baseDate.getDate() + 7);
+      setNewExpiryDate(baseDate.toISOString().split('T')[0]);
     }
-  }, [isOpen]);
+  }, [isOpen, institute]);
 
   if (!isOpen || !institute) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const days = parseInt(additionalDays, 10);
-    if (!days || days <= 0 || days > 365) {
-      toast.error('Please enter a valid number of days (1 – 365)');
+    if (!newExpiryDate) {
+      toast.error('Please select an expiry date');
       return;
+    }
+
+    const selectedDate = new Date(newExpiryDate);
+    if (selectedDate <= new Date()) {
+       toast.error('The new expiry date must be in the future');
+       return;
     }
 
     setLoading(true);
     try {
       await api.put(`/institutes/${institute.id}/extend-token`, {
-        additionalDays: days,
+        newExpiryDate: newExpiryDate,
       });
       toast.success(
-        `Token expiry extended by ${days} day${days !== 1 ? 's' : ''} for ${institute.institute_name}`,
+        `Token expiry extended to ${new Date(newExpiryDate).toLocaleDateString()} for ${institute.institute_name}`,
       );
       onSuccess?.();
       onClose();
@@ -88,27 +97,26 @@ const ExtendTokenModal = ({ isOpen, onClose, institute, onSuccess }) => {
         </div>
 
         {/* Current expiry info */}
-        <div className='mb-5 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800'>
-          Current expiry: <span className='font-semibold'>{currentExpiry}</span>
+        <div className='mb-5 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex justify-between items-center'>
+          <span>Current expiry:</span>
+          <span className='font-semibold'>{currentExpiry}</span>
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
           <div className='space-y-2'>
             <label className='text-sm font-medium text-gray-700'>
-              Extend by (days) <span className='text-red-500'>*</span>
+              New Expiry Date <span className='text-red-500'>*</span>
             </label>
             <Input
-              type='number'
-              min={1}
-              max={365}
-              value={additionalDays}
-              onChange={(e) => setAdditionalDays(e.target.value)}
-              placeholder='Enter number of days'
+              type='date'
+              min={new Date().toISOString().split('T')[0]} // Prevents selecting past dates
+              value={newExpiryDate}
+              onChange={(e) => setNewExpiryDate(e.target.value)}
               required
+              className='cursor-pointer text-gray-700'
             />
             <p className='text-xs text-gray-400'>
-              Extension is calculated from the current expiry date (or today if
-              already expired).
+              The token will expire at the end of the selected day.
             </p>
           </div>
 
@@ -129,10 +137,10 @@ const ExtendTokenModal = ({ isOpen, onClose, institute, onSuccess }) => {
               {loading ? (
                 <>
                   <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                  Extending…
+                  Saving…
                 </>
               ) : (
-                'Extend Token'
+                'Save Expiry'
               )}
             </Button>
           </div>

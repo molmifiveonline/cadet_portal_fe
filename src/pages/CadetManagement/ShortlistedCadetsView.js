@@ -136,14 +136,6 @@ const ShortlistedCadetsView = () => {
     fetchShortlistedCadets(1, pagination.per_page, value, searchTerm);
   };
 
-  const handleRefresh = () => {
-    setSearchTerm('');
-    setSortConfig({ sortBy: '', sortOrder: '' });
-    fetchShortlistedCadets(1, pagination.per_page, selectedInstitute, '');
-    fetchShortlistStats();
-    toast.success('Data refreshed');
-  };
-
   const handleSendShortlistEmail = async () => {
     if (!selectedInstitute || selectedInstitute === 'all') {
       toast.error('Please select a specific institute to send shortlist email');
@@ -306,7 +298,6 @@ const ShortlistedCadetsView = () => {
         handleSortChange={handleSortChange}
         searchTerm={searchTerm}
         handleSearch={handleSearch}
-        handleRefresh={handleRefresh}
         selectedInstitute={selectedInstitute}
         handleInstituteChange={handleInstituteChange}
         institutes={(shortlistStats?.institutes || []).map((inst) => ({

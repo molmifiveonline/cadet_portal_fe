@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, RotateCcw, Edit, Eye, Filter, Trash2 } from 'lucide-react';
+import { Search, Edit, Eye, Filter, Trash2 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import { Button } from '../../components/ui/button';
 import {
@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import TextModal from '../../components/common/TextModal';
 
 const CadetTable = ({
   cadets,
@@ -22,7 +21,6 @@ const CadetTable = ({
   handleSortChange,
   searchTerm,
   handleSearch,
-  handleRefresh,
   selectedInstitute,
   handleInstituteChange,
   institutes,
@@ -37,19 +35,9 @@ const CadetTable = ({
   onStatusChange,
 }) => {
   const navigate = useNavigate();
-  const [modalOpen, setModalOpen] = React.useState(false);
-  const [modalContent, setModalContent] = React.useState({
-    title: '',
-    content: '',
-  });
 
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i);
-
-  const handleReadMore = (title, content) => {
-    setModalContent({ title, content });
-    setModalOpen(true);
-  };
 
   const getCurrentStageLabel = (stage) => {
     const stageLabels = {
@@ -300,15 +288,6 @@ const CadetTable = ({
             <span className='truncate mr-1' title={value}>
               {value.substring(0, maxLength)}...
             </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleReadMore('Extra Curricular', value);
-              }}
-              className='text-blue-600 hover:text-blue-800 text-xs font-medium whitespace-nowrap'
-            >
-              Read More
-            </button>
           </div>
         );
       },
@@ -462,15 +441,6 @@ const CadetTable = ({
                 </span>
               )}
             </Button>
-            <Button
-              variant='outline'
-              onClick={handleRefresh}
-              className='flex items-center gap-2 h-10'
-              title='Refresh data'
-            >
-              <RotateCcw size={16} />
-              <span className='hidden sm:inline'>Refresh</span>
-            </Button>
           </div>
         </div>
       </div>
@@ -498,13 +468,6 @@ const CadetTable = ({
           }
         />
       </div>
-
-      <TextModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={modalContent.title}
-        content={modalContent.content}
-      />
     </>
   );
 };

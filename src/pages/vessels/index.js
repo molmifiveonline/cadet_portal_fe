@@ -110,13 +110,6 @@ const VesselList = () => {
     }, 300);
   };
 
-  const handleRefresh = () => {
-    setSearchTerm('');
-    setSortConfig({ sortBy: '', sortOrder: '' });
-    fetchVessels(1, pagination.limit, '', '', '');
-    toast.success('Data refreshed');
-  };
-
   const handleEditClick = (vessel) => {
     navigate(`/vessels/edit/${vessel.id}`);
   };
@@ -168,7 +161,6 @@ const VesselList = () => {
         handlePerPageChange={handleLimitChange}
         handleSortChange={handleSortChange}
         handleSearch={handleSearch}
-        handleRefresh={handleRefresh}
       />
     </div>
   );

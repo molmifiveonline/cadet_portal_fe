@@ -132,13 +132,6 @@ const InstitutesManagement = () => {
     }, 300);
   };
 
-  const handleRefresh = () => {
-    setSearchTerm('');
-    setSortConfig({ sortBy: '', sortOrder: '' });
-    fetchInstitutes(1, pagination.per_page, '', '', '');
-    toast.success('Data refreshed');
-  };
-
   const handleEdit = (institute) => {
     navigate(`/institutes/edit/${institute.id}`, {
       state: {
@@ -271,7 +264,6 @@ const InstitutesManagement = () => {
         handlePerPageChange={handleLimitChange}
         handleSortChange={handleSortChange}
         handleSearch={handleSearch}
-        handleRefresh={handleRefresh}
         selectedInstitutes={selectedInstitutes}
         onSelectionChange={setSelectedInstitutes}
       />
