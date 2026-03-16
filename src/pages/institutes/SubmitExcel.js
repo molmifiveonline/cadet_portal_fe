@@ -287,12 +287,12 @@ const SubmitExcel = () => {
   }
 
   return (
-    <div className='max-w-6xl mx-auto py-8 px-4'>
+    <div className='mx-auto py-6'>
       <div className='mb-8'>
         <h2 className='text-2xl font-bold text-slate-900'>Submit Cadet Data</h2>
         <p className='mt-1 text-slate-600'>
           Welcome,{' '}
-          <span className='font-medium text-blue-600'>{instituteName}</span>.
+          <span className='font-medium text-blue-[#3a5f9e] capitalize'>{instituteName}</span>.
           Please upload the requested Excel sheet containing cadet details.
         </p>
       </div>

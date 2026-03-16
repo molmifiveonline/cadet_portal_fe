@@ -368,7 +368,7 @@ const InstituteSubmissions = () => {
   const modalContent = getModalContent();
 
   return (
-    <div className='p-6'>
+    <div className='py-6'>
       <div className='space-y-6'>
         <div className='flex flex-col '>
           <h1 className='text-2xl font-bold text-gray-800'>

@@ -1,6 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Edit, Eye, Filter, Trash2 } from 'lucide-react';
+import {
+  Search,
+  Edit,
+  Eye,
+  Filter,
+  Trash2,
+  ClipboardCheck,
+} from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import { Button } from '../../components/ui/button';
 import {
@@ -275,24 +282,6 @@ const CadetTable = ({
     { field: 'imu_sem_8_percentage', headerName: 'Sem 8', width: '80px' },
 
     {
-      field: 'any_extra_curricular_achievement',
-      headerName: 'Extra Curricular',
-      width: '200px',
-      renderCell: ({ value }) => {
-        if (!value) return '-';
-        const maxLength = 30; // Truncate after 30 characters
-        if (value.length <= maxLength)
-          return <span title={value}>{value}</span>;
-        return (
-          <div className='flex items-center'>
-            <span className='truncate mr-1' title={value}>
-              {value.substring(0, maxLength)}...
-            </span>
-          </div>
-        );
-      },
-    },
-    {
       field: 'created_at',
       headerName: 'Created At',
       width: '150px',
@@ -355,6 +344,15 @@ const CadetTable = ({
             title='Edit'
           >
             <Edit size={16} />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+            onClick={() => navigate(`/cadets/assess/${row.id}`)}
+            title='Assess Cadet'
+          >
+            <ClipboardCheck size={16} />
           </Button>
           <Button
             variant='ghost'

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ListChecks } from 'lucide-react';
+import { ListChecks } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import CadetTable from './CadetTable';
 import { Button } from '../../components/ui/button';
@@ -14,7 +13,6 @@ import {
 } from '../../components/ui/select';
 
 const ShortlistedCadetsView = () => {
-  const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedInstitute, setSelectedInstitute] = useState('all');
@@ -194,20 +192,11 @@ const ShortlistedCadetsView = () => {
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 ml-2'>
         <div>
           <div className='flex items-center gap-3'>
-            <Button
-              variant='ghost'
-              size='sm'
-              onClick={() => navigate('/cadets')}
-              className='flex items-center gap-2'
-            >
-              <ArrowLeft size={16} />
-              Back
-            </Button>
             <h1 className='text-2xl font-bold text-gray-800'>
               Shortlisted Cadets
             </h1>
           </div>
-          <p className='text-gray-500 text-sm mt-1 ml-12'>
+          <p className='text-gray-500 text-sm mt-1'>
             View cadets who meet shortlisting criteria
           </p>
         </div>

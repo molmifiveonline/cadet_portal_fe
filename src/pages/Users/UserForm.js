@@ -34,7 +34,7 @@ const UserForm = () => {
       fetchUser();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, isEdit]);
 
   const fetchUser = async () => {
     setFetching(true);

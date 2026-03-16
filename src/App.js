@@ -29,6 +29,8 @@ import VesselList from './pages/vessels';
 import VesselForm from './pages/vessels/VesselForm';
 import MedicalCenterList from './pages/medical-centers';
 import MedicalCenterForm from './pages/medical-centers/MedicalCenterForm';
+import AssessmentForm from './pages/Assessments/AssessmentForm';
+import AssessmentManagement from './pages/Assessments';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
@@ -201,6 +203,32 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='cadets' action='view'>
                       <CadetDetails />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/assessments'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='tests' action='view'>
+                      <AssessmentManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/assess/:cadet_id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='edit'>
+                      <AssessmentForm />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>

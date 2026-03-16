@@ -9,7 +9,10 @@ import { Button } from '../../components/ui/button';
 import Permission from '../../components/common/Permission';
 
 // Single-table logic with courseType parameter
-const CadetManagement = ({ courseType }) => {
+const CadetManagement = ({
+  courseType,
+  showShortlistedOnlyDefault = false,
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const returnState = location.state?.returnState || null;
@@ -44,7 +47,7 @@ const CadetManagement = ({ courseType }) => {
 
   const [selectedCadets, setSelectedCadets] = useState([]);
   const [showShortlistedOnly, setShowShortlistedOnly] = useState(
-    returnState?.showShortlistedOnly || false,
+    returnState?.showShortlistedOnly ?? showShortlistedOnlyDefault,
   );
   const [shortlistStats, setShortlistStats] = useState(null);
 
@@ -233,7 +236,7 @@ const CadetManagement = ({ courseType }) => {
       if (cadets.length === 1 && pagination.current_page > 1) {
         fetchCadets(pagination.current_page - 1);
       } else {
-        fetchCadets(pagination.current_page); 
+        fetchCadets(pagination.current_page);
       }
     } catch (error) {
       console.error('Error deleting cadet:', error);

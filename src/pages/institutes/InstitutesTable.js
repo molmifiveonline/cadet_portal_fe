@@ -199,9 +199,6 @@ const InstitutesTable = ({
                         : 'bg-red-100 text-red-700'
                     }`}
                   >
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-red-500'}`}
-                    ></span>
                     {isActive ? 'Active' : 'Inactive'}
                   </span>
                 );

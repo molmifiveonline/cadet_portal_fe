@@ -126,7 +126,7 @@ export const MenuItems = [
   {
     title: 'Tests & Interviews',
     icon: ListChecks,
-    url: '/tests',
+    url: '/assessments',
     module: 'tests',
     action: 'view',
     allowedRoles: ['SuperAdmin', 'Institute'],

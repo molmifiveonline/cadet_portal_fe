@@ -41,8 +41,12 @@ const InstituteForm = () => {
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      contact_emails: [{ name: '', email: '', isDefault: true }],
+      institute_name: '',
+      location: '',
+      address: '',
+      institute_type: 'none',
       status: 'active',
+      contact_emails: [{ name: '', email: '', isDefault: true }],
     },
   });
 
@@ -63,60 +67,49 @@ const InstituteForm = () => {
   };
 
   useEffect(() => {
-    if (location.state?.instituteData) {
-      const data = location.state.instituteData;
-      setValue('institute_name', data.institute_name);
-      setValue('address', data.address);
-      setValue('location', data.location);
-      setValue('institute_type', data.institute_type || '');
-      setValue('status', data.status || 'active');
-      
+    const processInstituteData = (data) => {
       let initialContacts = [];
       let contacts = data.contact_emails;
       if (typeof contacts === 'string') {
-        try { contacts = JSON.parse(contacts); } catch(e) { contacts = []; }
+        try {
+          contacts = JSON.parse(contacts);
+        } catch (e) {
+          contacts = [];
+        }
       }
+
       if (contacts && Array.isArray(contacts) && contacts.length > 0) {
         initialContacts = contacts;
       } else {
-        initialContacts = [{
-          name: '',
-          email: '',
-          isDefault: true
-        }];
+        initialContacts = [{ name: '', email: '', isDefault: true }];
       }
-      setValue('contact_emails', initialContacts);
 
+      return {
+        institute_name: data.institute_name || '',
+        location: data.location || '',
+        address: data.address || '',
+        institute_type:
+          data.institute_type === null || data.institute_type === ''
+            ? 'none'
+            : data.institute_type,
+        status: data.status
+          ? String(data.status).toLowerCase().trim()
+          : 'active',
+        contact_emails: initialContacts,
+      };
+    };
+
+    if (location.state?.instituteData) {
+      const cleanData = processInstituteData(location.state.instituteData);
+      reset(cleanData);
     } else if (id) {
       const fetchInstitute = async () => {
         try {
           setFetching(true);
           const response = await api.get(`/institutes/${id}`);
-          // Handle both wrapped { data: ... } and direct response formats
           const data = response.data.data || response.data;
-
-          setValue('institute_name', data.institute_name);
-          setValue('address', data.address);
-          setValue('location', data.location);
-          setValue('institute_type', data.institute_type || '');
-          setValue('status', data.status || 'active');
-
-          let initialContacts = [];
-          let contacts = data.contact_emails;
-          if (typeof contacts === 'string') {
-            try { contacts = JSON.parse(contacts); } catch(e) { contacts = []; }
-          }
-          if (contacts && Array.isArray(contacts) && contacts.length > 0) {
-            initialContacts = contacts;
-          } else {
-            initialContacts = [{
-              name: '',
-              email: '',
-              isDefault: true
-            }];
-          }
-          setValue('contact_emails', initialContacts);
-
+          const cleanData = processInstituteData(data);
+          reset(cleanData);
         } catch (error) {
           console.error('Error fetching institute:', error);
           toast.error('Failed to fetch institute data');
@@ -132,9 +125,16 @@ const InstituteForm = () => {
       };
       fetchInstitute();
     } else {
-      reset();
+      reset({
+        institute_name: '',
+        location: '',
+        address: '',
+        institute_type: '',
+        status: 'active',
+        contact_emails: [{ name: '', email: '', isDefault: true }],
+      });
     }
-  }, [id, setValue, reset, navigate, location.state]);
+  }, [id, reset, navigate, location.state]);
 
   const onSubmit = async (data) => {
     // Ensure at least one default is selected
@@ -142,9 +142,9 @@ const InstituteForm = () => {
       toast.error('Please add at least one contact');
       return;
     }
-    
+
     // Auto-select the first one as default if somehow none are
-    if (!data.contact_emails.some(c => c.isDefault)) {
+    if (!data.contact_emails.some((c) => c.isDefault)) {
       data.contact_emails[0].isDefault = true;
     }
 
@@ -282,14 +282,16 @@ const InstituteForm = () => {
                         type='button'
                         onClick={() => setDefaultContact(index)}
                         className={`group flex items-center justify-center gap-1.5 transition-colors w-full py-2 px-2 rounded-lg ${
-                          contactEmails?.[index]?.isDefault 
-                            ? 'bg-green-100 text-green-700 border border-green-300 shadow-sm' 
+                          contactEmails?.[index]?.isDefault
+                            ? 'bg-green-100 text-green-700 border border-green-300 shadow-sm'
                             : 'bg-gray-50 text-gray-500 border border-gray-300 hover:bg-green-50 hover:text-green-600 hover:border-green-300'
                         }`}
                       >
                         <CheckCircle2 className={`w-4 h-4 ${contactEmails?.[index]?.isDefault ? 'fill-green-100' : ''}`} />
                         <span className='text-xs uppercase tracking-wider font-bold whitespace-nowrap mx-auto'>
-                          {contactEmails?.[index]?.isDefault ? 'Primary' : 'Set Primary'}
+                          {contactEmails?.[index]?.isDefault
+                            ? 'Primary'
+                            : 'Set Primary'}
                         </span>
                       </button>
                     </div>
@@ -323,7 +325,7 @@ const InstituteForm = () => {
                             placeholder='contact@institute.com'
                           />
                         </div>
-                         {errors?.contact_emails?.[index]?.email && (
+                        {errors?.contact_emails?.[index]?.email && (
                           <span className='text-red-500 text-[10px] ml-1 absolute -bottom-4 left-0'>
                             {errors.contact_emails[index].email.message}
                           </span>
@@ -383,14 +385,14 @@ const InstituteForm = () => {
                 <Controller
                   name='status'
                   control={control}
-                  defaultValue='active'
                   render={({ field }) => (
                     <Select
+                      key={`status-${field.value}`}
                       value={field.value}
                       onValueChange={field.onChange}
                     >
-                      <SelectTrigger className='w-full rounded-xl border border-gray-300 bg-gray-50/50 h-[42px]'>
-                        <SelectValue placeholder='Select status...' />
+                      <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                        <SelectValue placeholder='Select status' />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value='active'>

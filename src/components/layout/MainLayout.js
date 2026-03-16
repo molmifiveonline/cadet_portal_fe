@@ -3,6 +3,7 @@ import { LayoutProvider, useLayout } from '../../context/LayoutContext';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { cn } from '../../lib/utils/utils';
+import TitleManager from '../common/TitleManager';
 
 const MainLayoutInner = ({ children }) => {
   const { isOpen } = useLayout();
@@ -25,6 +26,7 @@ const MainLayoutInner = ({ children }) => {
         }}
       />
 
+      <TitleManager />
       <Sidebar />
 
       <main
