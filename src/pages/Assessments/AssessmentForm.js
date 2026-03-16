@@ -32,14 +32,16 @@ const AssessmentForm = () => {
   const [saving, setSaving] = useState(false);
   const [cadet, setCadet] = useState(null);
   const [essayFile, setEssayFile] = useState(null);
-
   const [formData, setFormData] = useState({
     ces_test: '',
+    ces_test_2: '',
     qa_test: '',
     english_test: '',
     essay_writing_mark: '',
     remarks: '',
     status: 'pass',
+    mark_for_interview: false,
+    calculated_score: null,
   });
   const [existingEssay, setExistingEssay] = useState(null);
 
@@ -62,11 +64,14 @@ const AssessmentForm = () => {
           const data = assessmentRes.data.data;
           setFormData({
             ces_test: data.ces_test || '',
+            ces_test_2: data.ces_test_2 || '',
             qa_test: data.qa_test || '',
             english_test: data.english_test || '',
             essay_writing_mark: data.essay_writing_mark || '',
             remarks: data.remarks || '',
             status: data.status || 'pass',
+            mark_for_interview: !!data.mark_for_interview,
+            calculated_score: data.calculated_score || null,
           });
           if (data.essay_name) {
             setExistingEssay(data.essay_name);
@@ -110,11 +115,13 @@ const AssessmentForm = () => {
     try {
       const data = new FormData();
       data.append('ces_test', formData.ces_test);
+      data.append('ces_test_2', formData.ces_test_2);
       data.append('qa_test', formData.qa_test);
       data.append('english_test', formData.english_test);
       data.append('essay_writing_mark', formData.essay_writing_mark);
       data.append('remarks', formData.remarks);
       data.append('status', formData.status);
+      data.append('mark_for_interview', formData.mark_for_interview ? 1 : 0);
 
       if (essayFile) {
         data.append('essay', essayFile);
@@ -201,7 +208,7 @@ const AssessmentForm = () => {
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700'>
-                  CES Test Score
+                  CES Test (Attempt 1)
                 </label>
                 <div className='relative'>
                   <Target className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -209,7 +216,23 @@ const AssessmentForm = () => {
                     name='ces_test'
                     value={formData.ces_test}
                     onChange={handleInputChange}
-                    placeholder='Enter score'
+                    placeholder='Score 1'
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  CES Test (Attempt 2)
+                </label>
+                <div className='relative'>
+                  <Target className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                  <Input
+                    name='ces_test_2'
+                    value={formData.ces_test_2}
+                    onChange={handleInputChange}
+                    placeholder='Score 2'
                     className={inputClass}
                   />
                 </div>
@@ -310,34 +333,65 @@ const AssessmentForm = () => {
                 </p>
               </div>
 
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-700'>
-                  Overall Assessment Status
-                </label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(val) =>
-                    setFormData((prev) => ({ ...prev, status: val }))
-                  }
-                >
-                  <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
-                    <SelectValue placeholder='Select outcome' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='pass'>
-                      <div className='flex items-center gap-2 text-green-600'>
-                        <CheckCircle size={16} />
-                        <span>Pass</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value='fail'>
-                      <div className='flex items-center gap-2 text-red-600'>
-                        <XCircle size={16} />
-                        <span>Fail</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className='space-y-4'>
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium text-gray-700'>
+                    Overall Assessment Status
+                  </label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(val) =>
+                      setFormData((prev) => ({ ...prev, status: val }))
+                    }
+                  >
+                    <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                      <SelectValue placeholder='Select outcome' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='pass'>
+                        <div className='flex items-center gap-2 text-green-600'>
+                          <CheckCircle size={16} />
+                          <span>Pass</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value='fail'>
+                        <div className='flex items-center gap-2 text-red-600'>
+                          <XCircle size={16} />
+                          <span>Fail</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className='flex items-center gap-2 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100'>
+                  <input
+                    type='checkbox'
+                    id='mark_for_interview'
+                    checked={formData.mark_for_interview}
+                    onChange={(e) => setFormData(prev => ({ ...prev, mark_for_interview: e.target.checked }))}
+                    className='h-4 w-4 text-[#3a5f9e] focus:ring-[#3a5f9e] border-gray-300 rounded'
+                  />
+                  <label htmlFor='mark_for_interview' className='text-sm font-medium text-indigo-900 cursor-pointer'>
+                    Mark for Interview
+                  </label>
+                </div>
+
+                {formData.mark_for_interview && formData.status === 'pass' && (
+                  <div className='p-3 bg-green-50 rounded-xl border border-green-100 flex items-start gap-2'>
+                    <CheckCircle className='text-green-600 mt-0.5' size={14} />
+                    <p className='text-[11px] text-green-700 leading-tight'>
+                      <strong>Stage Transition:</strong> On saving, this cadet will automatically move to the <strong>'Interview'</strong> stage and will appear in the Interview Management list.
+                    </p>
+                  </div>
+                )}
+
+                {formData.calculated_score !== null && (
+                  <div className='p-3 bg-gray-50 rounded-xl border border-gray-200'>
+                    <p className='text-xs text-gray-500 uppercase font-bold tracking-wider'>Calculated Total Score</p>
+                    <p className='text-xl font-bold text-gray-800'>{parseFloat(formData.calculated_score).toFixed(2)}</p>
+                  </div>
+                )}
               </div>
             </div>
 

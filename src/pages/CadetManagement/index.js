@@ -12,6 +12,8 @@ import Permission from '../../components/common/Permission';
 const CadetManagement = ({
   courseType,
   showShortlistedOnlyDefault = false,
+  initialStatus = 'all',
+  pageTitle = null,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -124,6 +126,7 @@ const CadetManagement = ({
         ...(sortOrder && { sortOrder }),
         ...(search && { search }),
         ...(courseType && { course_type: courseType }),
+        ...(initialStatus && initialStatus !== 'all' && { status: initialStatus }),
       };
 
       if (instituteId !== 'all') params.instituteId = instituteId;
@@ -266,7 +269,7 @@ const CadetManagement = ({
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 ml-2'>
         <div>
           <h1 className='text-2xl font-bold text-gray-800'>
-            {courseType ? `${courseType} Cadets` : 'Cadet Management'}
+            {pageTitle || (courseType ? `${courseType} Cadets` : 'Cadet Management')}
           </h1>
           <p className='text-gray-500 text-sm mt-1'>
             Manage, track, and monitor{' '}

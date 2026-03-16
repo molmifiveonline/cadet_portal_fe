@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ListChecks, Search, Eye, Edit } from 'lucide-react';
+import { ListChecks, Search, Edit } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { useAuth } from '../../context/AuthContext';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
@@ -103,29 +103,15 @@ const InstituteShortlistedCadets = () => {
 
   const columns = [
     {
-      field: 'id',
-      headerName: 'Sr. No',
-      width: '70px',
+      field: 'cadet_unique_id',
+      headerName: 'Cadet ID',
+      width: 'auto',
       sortable: false,
-      renderCell: ({ index }) => (
+      renderCell: ({ value }) => (
         <span className='text-sm text-gray-500 font-medium'>
-          {(pagination?.current_page - 1) * pagination?.per_page + index + 1}
+          {value || '-'}
         </span>
       ),
-    },
-    {
-      field: 'status',
-      headerName: 'Status',
-      width: '130px',
-      sortable: true,
-      renderCell: ({ row }) => {
-        const status = row.status || 'Shortlisted';
-        return (
-          <span className='px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800'>
-            {status}
-          </span>
-        );
-      },
     },
     {
       field: 'name_as_in_indos_cert',
@@ -214,20 +200,10 @@ const InstituteShortlistedCadets = () => {
           <Button
             variant='ghost'
             size='icon'
-            className='h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50'
-            onClick={() => navigate(`/cadets/view/${row.id}`)}
-            title='View Details'
-          >
-            <Eye size={16} />
-          </Button>
-          <Button
-            variant='ghost'
-            size='icon'
             className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
             onClick={() =>
-              navigate(`/cadets/view/${row.id}`, {
+              navigate(`/cadets/fill-details/${row.id}`, {
                 state: {
-                  editMode: true,
                   returnPath: '/institute/shortlisted-cadets',
                 },
               })

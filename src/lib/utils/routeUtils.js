@@ -14,7 +14,7 @@ const INTENT_ROUTE_CONFIG = {
   },
   institute_shortlist: {
     primary: '/institute/shortlisted-cadets',
-    allowed: ['/cadets/view/*', '/cadets/edit/*'],
+    allowed: ['/cadets/fill-details/*'],
   },
 };
 

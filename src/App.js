@@ -12,6 +12,7 @@ import Login from './pages/auth/Login';
 import Dashboard from './pages/Dashboard';
 import CadetManagement from './pages/CadetManagement';
 import CadetDetails from './pages/CadetManagement/CadetDetails';
+import CadetPendingDetails from './pages/CadetManagement/CadetPendingDetails';
 import AddCadetForm from './pages/CadetManagement/AddCadetForm';
 import ShortlistedCadetsView from './pages/CadetManagement/ShortlistedCadetsView';
 import MainLayout from './components/layout/MainLayout';
@@ -31,6 +32,10 @@ import MedicalCenterList from './pages/medical-centers';
 import MedicalCenterForm from './pages/medical-centers/MedicalCenterForm';
 import AssessmentForm from './pages/Assessments/AssessmentForm';
 import AssessmentManagement from './pages/Assessments';
+import InterviewForm from './pages/Assessments/InterviewForm';
+import MedicalResultForm from './pages/Assessments/MedicalResultForm';
+import InterviewManagement from './pages/Assessments/InterviewManagement';
+import MedicalManagement from './pages/Assessments/MedicalManagement';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
@@ -210,6 +215,17 @@ function App() {
             />
 
             <Route
+              path='/cadets/fill-details/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <CadetPendingDetails />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path='/assessments'
               element={
                 <ProtectedRoute>
@@ -229,6 +245,58 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='cadets' action='edit'>
                       <AssessmentForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/interview/:cadet_id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='edit'>
+                      <InterviewForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/interviews'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='tests' action='view'>
+                      <InterviewManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical' action='view'>
+                      <MedicalManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/medical/:cadet_id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='edit'>
+                      <MedicalResultForm />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>

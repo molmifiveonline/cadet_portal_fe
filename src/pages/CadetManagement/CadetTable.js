@@ -98,14 +98,25 @@ const CadetTable = ({
   };
 
   const columns = [
+    // {
+    //   field: 'id',
+    //   headerName: 'Sr. No',
+    //   width: '70px',
+    //   sortable: false,
+    //   renderCell: ({ index }) => (
+    //     <span className='text-sm text-gray-500 font-medium'>
+    //       {(pagination?.current_page - 1) * pagination?.per_page + index + 1}
+    //     </span>
+    //   ),
+    // },
     {
-      field: 'id',
-      headerName: 'Sr. No',
-      width: '70px',
-      sortable: false,
-      renderCell: ({ index }) => (
-        <span className='text-sm text-gray-500 font-medium'>
-          {(pagination?.current_page - 1) * pagination?.per_page + index + 1}
+      field: 'cadet_unique_id',
+      headerName: 'Cadet ID',
+      width: '120px',
+      sortable: true,
+      renderCell: ({ value }) => (
+        <span className='px-2 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded border border-indigo-100 uppercase'>
+          {value || '-'}
         </span>
       ),
     },

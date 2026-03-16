@@ -68,6 +68,16 @@ const UsersTable = ({
       ),
     },
     {
+      field: 'role',
+      headerName: 'Role',
+      width: '150px',
+      renderCell: ({ value }) => (
+        <span className='px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium'>
+          {value || 'Admin'}
+        </span>
+      ),
+    },
+    {
       field: 'status',
       headerName: 'Status',
       width: '130px',

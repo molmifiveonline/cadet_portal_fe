@@ -20,21 +20,44 @@ const UserForm = () => {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [roles, setRoles] = useState([]);
 
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
     email: '',
     password: '',
+    role: '',
     status: 'active',
   });
 
   useEffect(() => {
+    fetchRoles();
     if (isEdit) {
       fetchUser();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isEdit]);
+
+  const fetchRoles = async () => {
+    try {
+      const response = await api.get('/role-permissions/roles');
+      if (response.data.success) {
+        // Filter out Cadet and Institute roles for regular users
+        const filteredRoles = response.data.data.filter(
+          (role) => !['Cadet', 'Institute'].includes(role.name),
+        );
+        setRoles(filteredRoles);
+        // Set default role for new users if not set
+        if (!isEdit && !formData.role && filteredRoles.length > 0) {
+          setFormData((prev) => ({ ...prev, role: filteredRoles[0].name }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      toast.error('Failed to load roles');
+    }
+  };
 
   const fetchUser = async () => {
     setFetching(true);
@@ -47,6 +70,7 @@ const UserForm = () => {
         last_name: user.last_name || '',
         email: user.email || '',
         password: '',
+        role: user.role || '',
         status: user.status || 'active',
       });
     } catch (error) {
@@ -70,6 +94,7 @@ const UserForm = () => {
       !formData.first_name ||
       !formData.last_name ||
       !formData.email ||
+      !formData.role ||
       (!isEdit && !formData.password)
     ) {
       toast.error('Please fill in all required fields');
@@ -84,6 +109,7 @@ const UserForm = () => {
           last_name: formData.last_name,
           email: formData.email,
           status: formData.status,
+          role: formData.role,
         };
 
         if (formData.password && formData.password.trim() !== '') {
@@ -219,27 +245,28 @@ const UserForm = () => {
               )}
             </div>
 
-            {isEdit && (
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-700'>
-                  Status <span className='text-red-500 ml-1'>*</span>
-                </label>
-                <Select
-                  onValueChange={(val) =>
-                    setFormData((prev) => ({ ...prev, status: val }))
-                  }
-                  value={formData.status}
-                >
-                  <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
-                    <SelectValue placeholder='Select status' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='active'>Active</SelectItem>
-                    <SelectItem value='inactive'>Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Role <span className='text-red-500 ml-1'>*</span>
+              </label>
+              <Select
+                onValueChange={(val) =>
+                  setFormData((prev) => ({ ...prev, role: val }))
+                }
+                value={formData.role}
+              >
+                <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                  <SelectValue placeholder='Select role' />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.name}>
+                      {role.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200 mt-8'>

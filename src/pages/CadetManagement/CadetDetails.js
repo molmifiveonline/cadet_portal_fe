@@ -17,6 +17,8 @@ import CadetFormFields from '../../components/cadet/CadetFormFields';
 import { useAuth } from '../../context/AuthContext';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
 
+import StageTracker from '../../components/common/StageTracker';
+
 const CadetDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,6 +31,9 @@ const CadetDetails = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [photoError, setPhotoError] = useState(null);
   const [imageError, setImageError] = useState(false);
+  const [interviewData, setInterviewData] = useState(null);
+  const [medicalData, setMedicalData] = useState(null);
+  const [assessmentData, setAssessmentData] = useState(null);
   const fileInputRef = React.useRef(null);
 
   const [returnPath] = useState(location.state?.returnPath || null);
@@ -73,6 +78,20 @@ const CadetDetails = () => {
         const data = response.data.data || response.data;
         setCadet(data);
         setImageError(false);
+
+        // Fetch additional stage data
+        try {
+          const [intRes, medRes, assRes] = await Promise.all([
+            api.get(`/interviews/${id}`).catch(() => ({ data: { data: null } })),
+            api.get(`/medical-results/${id}`).catch(() => ({ data: { data: null } })),
+            api.get(`/assessments/${id}`).catch(() => ({ data: { data: null } }))
+          ]);
+          setInterviewData(intRes.data.data);
+          setMedicalData(medRes.data.data);
+          setAssessmentData(assRes.data.data);
+        } catch (err) {
+          console.error('Error fetching stage data:', err);
+        }
 
         // Format dates for form
         const formData = { ...data };
@@ -210,7 +229,14 @@ const CadetDetails = () => {
           <ArrowLeft size={24} className='text-gray-600' />
         </Button>
         <div>
-          <h1 className='text-2xl font-bold text-gray-900'>Cadet Details</h1>
+          <div className='flex items-center gap-3'>
+            <h1 className='text-2xl font-bold text-gray-900'>Cadet Details</h1>
+            {cadet.cadet_unique_id && (
+              <span className='px-3 py-1 bg-indigo-50 text-indigo-700 text-sm font-bold rounded-lg border border-indigo-100'>
+                ID: {cadet.cadet_unique_id}
+              </span>
+            )}
+          </div>
           <p className='text-gray-500 text-sm'>
             {isEditing
               ? `Editing ${cadet.name_as_in_indos_cert}`
@@ -253,6 +279,14 @@ const CadetDetails = () => {
           )}
         </div>
       </div>
+
+      {/* Stage Tracker - Only for Admins */}
+      {user?.role?.toLowerCase() === 'superadmin' && (
+        <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-6'>
+          <h2 className='text-lg font-bold text-gray-800 mb-2 px-4'>Recruitment Stage Progress</h2>
+          <StageTracker currentStage={cadet.status} />
+        </div>
+      )}
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8'>
         <div className='space-y-8'>
@@ -339,6 +373,10 @@ const CadetDetails = () => {
             watch={watch}
             setValue={setValue}
             isSubmitting={isSubmitting}
+            interviewData={interviewData}
+            medicalData={medicalData}
+            assessmentData={assessmentData}
+            user={user}
           />
         </div>
       </div>
