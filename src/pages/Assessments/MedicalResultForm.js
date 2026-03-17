@@ -30,10 +30,13 @@ const MedicalResultForm = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cadet, setCadet] = useState(null);
+  const [medicalCenters, setMedicalCenters] = useState([]);
+  const [reportFile, setReportFile] = useState(null);
 
   const [formData, setFormData] = useState({
     medical_date: new Date().toISOString().split('T')[0],
-    medical_center: '',
+    medical_time: '',
+    medical_center_id: '',
     fit_status: 'fit',
     remarks: '',
   });
@@ -48,13 +51,20 @@ const MedicalResultForm = () => {
       const cadetRes = await api.get(`/cadets/${cadet_id}`);
       setCadet(cadetRes.data);
 
+      // Fetch medical centers
+      const centersRes = await api.get('/medical-centers');
+      if (centersRes.data.success) {
+        setMedicalCenters(centersRes.data.data);
+      }
+
       try {
         const medicalRes = await api.get(`/medical-results/${cadet_id}`);
         if (medicalRes.data.success && medicalRes.data.data) {
           const data = medicalRes.data.data;
           setFormData({
             medical_date: data.medical_date ? data.medical_date.split('T')[0] : new Date().toISOString().split('T')[0],
-            medical_center: data.medical_center || '',
+            medical_time: data.medical_time || '',
+            medical_center_id: data.medical_center_id || '',
             fit_status: data.fit_status || 'fit',
             remarks: data.remarks || '',
           });
@@ -75,11 +85,39 @@ const MedicalResultForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File is too large. Maximum size is 10MB.');
+        e.target.value = '';
+        setReportFile(null);
+        return;
+      }
+      setReportFile(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post(`/medical-results/${cadet_id}`, formData);
+      const data = new FormData();
+      data.append('medical_date', formData.medical_date);
+      data.append('medical_time', formData.medical_time);
+      data.append('medical_center_id', formData.medical_center_id);
+      data.append('fit_status', formData.fit_status);
+      data.append('remarks', formData.remarks);
+
+      if (reportFile) {
+        data.append('report', reportFile);
+      }
+
+      await api.post(`/medical-results/${cadet_id}`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       toast.success('Medical result recorded successfully');
       navigate(-1);
     } catch (error) {
@@ -121,11 +159,25 @@ const MedicalResultForm = () => {
             </div>
 
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>Medical Center Name</label>
+              <label className='text-sm font-medium text-gray-700'>Examination Time</label>
               <div className='relative'>
                 <Activity className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
-                <Input name='medical_center' value={formData.medical_center} onChange={handleInputChange} placeholder='Enter medical center' className='pl-10' />
+                <Input type='time' name='medical_time' value={formData.medical_time} onChange={handleInputChange} className='pl-10' />
               </div>
+            </div>
+
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>Medical Center</label>
+              <Select value={formData.medical_center_id} onValueChange={(val) => setFormData(p => ({ ...p, medical_center_id: val }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder='Select medical center' />
+                </SelectTrigger>
+                <SelectContent>
+                  {medicalCenters.map(center => (
+                    <SelectItem key={center.id} value={center.id}>{center.center_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className='space-y-2'>
@@ -144,8 +196,19 @@ const MedicalResultForm = () => {
             </div>
           </div>
 
-          <div className='space-y-2'>
-            <label className='text-sm font-medium text-gray-700 flex items-center gap-2'>
+          <div className='space-y-2'>            <label className='text-sm font-medium text-gray-700'>Upload Medical Report</label>
+            <Input
+              type='file'
+              onChange={handleFileChange}
+              className='cursor-pointer rounded-xl bg-gray-50'
+              accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
+            />
+            <p className='text-xs text-gray-400 mt-1'>
+              Supported: PDF, Word, Images (Up to 10MB)
+            </p>
+          </div>
+
+          <div className='space-y-2'>            <label className='text-sm font-medium text-gray-700 flex items-center gap-2'>
               <MessageSquare size={16} className='text-gray-400' />
               Medical Remarks / Notes
             </label>

@@ -36,6 +36,9 @@ import InterviewForm from './pages/Assessments/InterviewForm';
 import MedicalResultForm from './pages/Assessments/MedicalResultForm';
 import InterviewManagement from './pages/Assessments/InterviewManagement';
 import MedicalManagement from './pages/Assessments/MedicalManagement';
+import RecruitmentDrives from './pages/RecruitmentDrives';
+import DriveForm from './pages/RecruitmentDrives/DriveForm';
+import DriveDetails from './pages/RecruitmentDrives/DriveDetails';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
@@ -143,6 +146,58 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='institutes' action='edit'>
                       <InstituteForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='view'>
+                      <RecruitmentDrives />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives/new'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='create'>
+                      <DriveForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='edit'>
+                      <DriveForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='view'>
+                      <DriveDetails />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>

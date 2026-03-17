@@ -44,6 +44,16 @@ const AssessmentForm = () => {
     calculated_score: null,
   });
   const [existingEssay, setExistingEssay] = useState(null);
+  const [previewScore, setPreviewScore] = useState(null);
+
+  useEffect(() => {
+    // Calculate preview score: CES1 + English + Essay
+    const ces1 = parseFloat(formData.ces_test) || 0;
+    const eng = parseFloat(formData.english_test) || 0;
+    const essay = parseFloat(formData.essay_writing_mark) || 0;
+    const total = ces1 + eng + essay;
+    setPreviewScore(total > 0 ? total : null);
+  }, [formData.ces_test, formData.english_test, formData.essay_writing_mark]);
 
   useEffect(() => {
     fetchData();
@@ -386,10 +396,30 @@ const AssessmentForm = () => {
                   </div>
                 )}
 
-                {formData.calculated_score !== null && (
-                  <div className='p-3 bg-gray-50 rounded-xl border border-gray-200'>
-                    <p className='text-xs text-gray-500 uppercase font-bold tracking-wider'>Calculated Total Score</p>
-                    <p className='text-xl font-bold text-gray-800'>{parseFloat(formData.calculated_score).toFixed(2)}</p>
+                {previewScore !== null && (
+                  <div className='p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2'>
+                    <p className='text-xs text-gray-500 uppercase font-bold tracking-wider'>Calculated Total Score (Preview)</p>
+                    <p className='text-xl font-bold text-gray-800'>{previewScore.toFixed(2)}</p>
+                    {previewScore >= 50 ? (
+                      <div className='flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200'>
+                        <CheckCircle className='text-green-600' size={14} />
+                        <span className='text-xs font-medium text-green-700'>Recommended for Interview</span>
+                      </div>
+                    ) : (
+                      <div className='flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200'>
+                        <XCircle className='text-red-600' size={14} />
+                        <span className='text-xs font-medium text-red-700'>Not Recommended for Interview</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!formData.mark_for_interview && (
+                  <div className='p-3 bg-yellow-50 rounded-xl border border-yellow-200 flex items-start gap-2'>
+                    <XCircle className='text-yellow-600 mt-0.5' size={14} />
+                    <p className='text-[11px] text-yellow-700 leading-tight'>
+                      <strong>Warning:</strong> This cadet will not proceed to the Interview stage and will be marked as "Assessment Failed".
+                    </p>
                   </div>
                 )}
               </div>

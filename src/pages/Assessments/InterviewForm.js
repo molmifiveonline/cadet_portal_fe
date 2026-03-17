@@ -30,11 +30,13 @@ const InterviewForm = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cadet, setCadet] = useState(null);
+  const [interviewSheetFile, setInterviewSheetFile] = useState(null);
 
   const [formData, setFormData] = useState({
     interview_date: new Date().toISOString().split('T')[0],
     panel_members: '',
     evaluation_score: '',
+    total_score: '',
     remarks: '',
     final_decision: 'selected',
   });
@@ -57,6 +59,7 @@ const InterviewForm = () => {
             interview_date: data.interview_date ? data.interview_date.split('T')[0] : new Date().toISOString().split('T')[0],
             panel_members: data.panel_members || '',
             evaluation_score: data.evaluation_score || '',
+            total_score: data.total_score || '',
             remarks: data.remarks || '',
             final_decision: data.final_decision || 'selected',
           });
@@ -77,11 +80,40 @@ const InterviewForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('File is too large. Maximum size is 10MB.');
+        e.target.value = '';
+        setInterviewSheetFile(null);
+        return;
+      }
+      setInterviewSheetFile(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post(`/interviews/${cadet_id}`, formData);
+      const data = new FormData();
+      data.append('interview_date', formData.interview_date);
+      data.append('panel_members', formData.panel_members);
+      data.append('evaluation_score', formData.evaluation_score);
+      data.append('total_score', formData.total_score);
+      data.append('remarks', formData.remarks);
+      data.append('final_decision', formData.final_decision);
+
+      if (interviewSheetFile) {
+        data.append('interview_sheet', interviewSheetFile);
+      }
+
+      await api.post(`/interviews/${cadet_id}`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       toast.success('Interview recorded successfully');
       navigate(-1);
     } catch (error) {
@@ -139,6 +171,29 @@ const InterviewForm = () => {
             </div>
 
             <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>Total Score</label>
+              <div className='relative'>
+                <Star className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input type='number' step='0.01' name='total_score' value={formData.total_score} onChange={handleInputChange} placeholder='Total score' className='pl-10' />
+              </div>
+              {formData.total_score && (
+                <div className='mt-2'>
+                  {parseFloat(formData.total_score) >= 60 ? (
+                    <div className='flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200'>
+                      <CheckCircle className='text-green-600' size={14} />
+                      <span className='text-xs font-medium text-green-700'>Recommended: Selected</span>
+                    </div>
+                  ) : (
+                    <div className='flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200'>
+                      <XCircle className='text-red-600' size={14} />
+                      <span className='text-xs font-medium text-red-700'>Recommended: Rejected</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>Outcome Status</label>
               <Select value={formData.final_decision} onValueChange={(val) => setFormData(p => ({ ...p, final_decision: val }))}>
                 <SelectTrigger>
@@ -150,7 +205,28 @@ const InterviewForm = () => {
                   <SelectItem value='waitlist'>Waitlist</SelectItem>
                 </SelectContent>
               </Select>
+              {formData.final_decision === 'rejected' && (
+                <div className='mt-2 p-3 bg-yellow-50 rounded-xl border border-yellow-200 flex items-start gap-2'>
+                  <XCircle className='text-yellow-600 mt-0.5' size={14} />
+                  <p className='text-[11px] text-yellow-700 leading-tight'>
+                    <strong>Warning:</strong> This cadet will not proceed to the Medical stage and will be marked as "Interview Failed".
+                  </p>
+                </div>
+              )}
             </div>
+          </div>
+
+          <div className='space-y-2'>
+            <label className='text-sm font-medium text-gray-700'>Upload Interview Sheet</label>
+            <Input
+              type='file'
+              onChange={handleFileChange}
+              className='cursor-pointer rounded-xl bg-gray-50'
+              accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
+            />
+            <p className='text-xs text-gray-400 mt-1'>
+              Supported: PDF, Word, Images (Up to 10MB)
+            </p>
           </div>
 
           <div className='space-y-2'>

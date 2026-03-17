@@ -8,6 +8,11 @@ import {
   Navigation,
   ShieldAlert,
   Loader2,
+  MapPin,
+  Users,
+  FileText,
+  Calendar,
+  MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/button';
@@ -35,6 +40,12 @@ const VesselForm = () => {
     vessel_type: '',
     flag: '',
     status: 'Active',
+    location: '',
+    total_seats: 0,
+    voyage_ref: '',
+    reporting_port: '',
+    joining_date: '',
+    communication_details: '',
   });
 
   const VESSEL_TYPES = [
@@ -243,6 +254,113 @@ const VesselForm = () => {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Location */}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Location
+              </label>
+              <div className='relative'>
+                <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  name='location'
+                  type='text'
+                  placeholder='e.g., Singapore'
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                />
+              </div>
+            </div>
+
+            {/* Total Seats */}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Total Seats
+              </label>
+              <div className='relative'>
+                <Users className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  name='total_seats'
+                  type='number'
+                  placeholder='e.g., 20'
+                  value={formData.total_seats}
+                  onChange={handleInputChange}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                />
+              </div>
+            </div>
+
+            {/* Voyage Ref */}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Voyage Reference
+              </label>
+              <div className='relative'>
+                <FileText className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  name='voyage_ref'
+                  type='text'
+                  placeholder='e.g., V2024-001'
+                  value={formData.voyage_ref}
+                  onChange={handleInputChange}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                />
+              </div>
+            </div>
+
+            {/* Reporting Port */}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Reporting Port
+              </label>
+              <div className='relative'>
+                <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  name='reporting_port'
+                  type='text'
+                  placeholder='e.g., Port Klang'
+                  value={formData.reporting_port}
+                  onChange={handleInputChange}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                />
+              </div>
+            </div>
+
+            {/* Joining Date */}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Joining Date
+              </label>
+              <div className='relative'>
+                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  name='joining_date'
+                  type='date'
+                  value={formData.joining_date}
+                  onChange={handleInputChange}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Communication Details */}
+          <div className='space-y-2'>
+            <label className='text-sm font-medium text-gray-700'>
+              Communication Details
+            </label>
+            <div className='relative'>
+              <MessageSquare className='absolute left-3 top-3 text-gray-400 h-4 w-4' />
+              <textarea
+                name='communication_details'
+                placeholder='Enter communication details, contact information, etc.'
+                value={formData.communication_details}
+                onChange={handleInputChange}
+                rows={4}
+                className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 outline-none resize-vertical'
+              />
             </div>
           </div>
 

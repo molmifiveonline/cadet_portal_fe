@@ -107,7 +107,12 @@ const ShortlistedCadetsView = () => {
   };
 
   const handleLimitChange = (newLimit) => {
-    fetchShortlistedCadets(1, newLimit, selectedInstitute, searchTerm);
+    fetchShortlistedCadets(
+      1,
+      newLimit,
+      selectedInstitute,
+      searchTerm,
+    );
   };
 
   const handleSortChange = (field, order) => {
@@ -125,13 +130,23 @@ const ShortlistedCadetsView = () => {
   const handleSearch = (value) => {
     setSearchTerm(value);
     setTimeout(() => {
-      fetchShortlistedCadets(1, pagination.per_page, selectedInstitute, value);
+      fetchShortlistedCadets(
+        1,
+        pagination.per_page,
+        selectedInstitute,
+        value,
+      );
     }, 500);
   };
 
   const handleInstituteChange = (value) => {
     setSelectedInstitute(value);
-    fetchShortlistedCadets(1, pagination.per_page, value, searchTerm);
+    fetchShortlistedCadets(
+      1,
+      pagination.per_page,
+      value,
+      searchTerm,
+    );
   };
 
   const handleSendShortlistEmail = async () => {

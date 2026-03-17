@@ -28,18 +28,23 @@ const CadetTable = ({
   handleSortChange,
   searchTerm,
   handleSearch,
-  selectedInstitute,
-  handleInstituteChange,
-  institutes,
-  selectedYear,
-  handleYearChange,
-  selectedCadets,
-  onSelectionChange,
-  showShortlistedOnly,
-  onToggleShortlisted,
-  shortlistStats,
-  onDelete,
-  onStatusChange,
+  selectedInstitute = 'all',
+  handleInstituteChange = () => {},
+  institutes = [],
+  selectedDrive = 'all',
+  handleDriveChange = () => {},
+  drives = [],
+  selectedCourse = 'all',
+  handleCourseChange = () => {},
+  selectedYear = 'all',
+  handleYearChange = () => {},
+  selectedCadets = [],
+  onSelectionChange = () => {},
+  showShortlistedOnly = false,
+  onToggleShortlisted = () => {},
+  shortlistStats = null,
+  onDelete = () => {},
+  onStatusChange = () => {},
 }) => {
   const navigate = useNavigate();
 
@@ -413,6 +418,7 @@ const CadetTable = ({
                 ))}
               </SelectContent>
             </Select>
+
 
             <Select value={selectedYear} onValueChange={handleYearChange}>
               <SelectTrigger className='w-[150px] bg-white border-gray-300'>

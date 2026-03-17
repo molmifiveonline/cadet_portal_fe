@@ -70,6 +70,14 @@ export const MenuItems = [
     ],
   },
   {
+    title: 'Recruitment Drives',
+    icon: FileText,
+    url: '/drives',
+    module: 'recruitment_drives',
+    action: 'view',
+    allowedRoles: ['SuperAdmin', 'Institute'],
+  },
+  {
     title: 'Cadet Management',
     icon: Users,
     module: 'cadets',

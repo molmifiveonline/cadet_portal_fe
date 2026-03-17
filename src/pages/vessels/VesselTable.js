@@ -7,6 +7,11 @@ import {
   Hash,
   Ship,
   Edit,
+  MapPin,
+  Users,
+  FileText,
+  Calendar,
+  MessageSquare,
 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
@@ -111,6 +116,80 @@ const VesselTable = ({
         >
           {value}
         </span>
+      ),
+    },
+    {
+      field: 'location',
+      headerName: 'Location',
+      width: '150px',
+      sortable: true,
+      renderCell: ({ row }) => (
+        <div className='flex items-center gap-2 text-sm text-gray-600'>
+          <MapPin size={14} className='flex-shrink-0 text-gray-400' />
+          <span>{row.location || '-'}</span>
+        </div>
+      ),
+    },
+    {
+      field: 'total_seats',
+      headerName: 'Total Seats',
+      width: '120px',
+      sortable: true,
+      renderCell: ({ row }) => (
+        <div className='flex items-center gap-2 text-sm text-gray-600'>
+          <Users size={14} className='flex-shrink-0 text-gray-400' />
+          <span>{row.total_seats || 0}</span>
+        </div>
+      ),
+    },
+    {
+      field: 'voyage_ref',
+      headerName: 'Voyage Ref',
+      width: '150px',
+      sortable: true,
+      renderCell: ({ row }) => (
+        <div className='flex items-center gap-2 text-sm text-gray-600'>
+          <FileText size={14} className='flex-shrink-0 text-gray-400' />
+          <span>{row.voyage_ref || '-'}</span>
+        </div>
+      ),
+    },
+    {
+      field: 'reporting_port',
+      headerName: 'Reporting Port',
+      width: '150px',
+      sortable: true,
+      renderCell: ({ row }) => (
+        <div className='flex items-center gap-2 text-sm text-gray-600'>
+          <MapPin size={14} className='flex-shrink-0 text-gray-400' />
+          <span>{row.reporting_port || '-'}</span>
+        </div>
+      ),
+    },
+    {
+      field: 'joining_date',
+      headerName: 'Joining Date',
+      width: '130px',
+      sortable: true,
+      renderCell: ({ row }) => (
+        <div className='flex items-center gap-2 text-sm text-gray-600'>
+          <Calendar size={14} className='flex-shrink-0 text-gray-400' />
+          <span>{row.joining_date ? new Date(row.joining_date).toLocaleDateString() : '-'}</span>
+        </div>
+      ),
+    },
+    {
+      field: 'communication_details',
+      headerName: 'Communication',
+      width: '200px',
+      sortable: false,
+      renderCell: ({ row }) => (
+        <div className='flex items-start gap-2 text-sm text-gray-600'>
+          <MessageSquare size={14} className='flex-shrink-0 text-gray-400 mt-0.5' />
+          <span className='truncate' title={row.communication_details || '-'}>
+            {row.communication_details || '-'}
+          </span>
+        </div>
       ),
     },
     {
