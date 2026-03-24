@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '../../lib/utils/apiConfig';
-import { ArrowLeft, Edit, Users, FileText, CheckCircle, Clock, XCircle, Mail, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, Users, FileText, CheckCircle, Clock, Mail, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import Permission from '../../components/common/Permission';
 import AssessmentTab from './AssessmentTab';

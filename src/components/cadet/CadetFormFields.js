@@ -15,7 +15,6 @@ import {
   Weight,
   Eye,
   Syringe,
-  Home,
   Briefcase,
   Globe,
   FileText,
@@ -24,7 +23,6 @@ import {
   ClipboardList,
   Target,
   ArrowRight,
-  Clock,
   CheckCircle,
   MessageSquare,
 } from 'lucide-react';
@@ -568,19 +566,28 @@ const CadetFormFields = ({
                 </div>
                 
                 {medicalData ? (
-                  <div className='bg-white p-4 rounded-xl border border-gray-100 shadow-sm'>
-                     <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                  <div className='bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow'>
+                     <div className='grid grid-cols-1 sm:grid-cols-2 gap-6'>
                         <DetailItem label='Examination Date' value={medicalData.medical_date ? new Date(medicalData.medical_date).toLocaleDateString() : 'N/A'} icon={Calendar} />
                         <DetailItem label='Medical Center' value={medicalData.medical_center} icon={MapPin} />
-                        <DetailItem label='Fitness Status' value={medicalData.fit_status} icon={Activity} />
+                        <div className='flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100'>
+                          <Activity size={20} className='text-emerald-600' />
+                          <div>
+                            <p className='text-[10px] text-emerald-600 font-bold uppercase tracking-wider'>Fitness Status</p>
+                            <p className='text-sm font-bold text-emerald-900'>{medicalData.fit_status}</p>
+                          </div>
+                        </div>
                         <div className='sm:col-span-2'>
                           <DetailItem label='Medical Remarks' value={medicalData.remarks} icon={FileText} />
                         </div>
                      </div>
                   </div>
                 ) : (
-                  <div className='p-4 bg-indigo-50/50 rounded-lg border border-dashed border-indigo-200'>
-                    <p className='text-sm text-indigo-600 font-medium italic text-center'>No medical results recorded yet.</p>
+                  <div className='p-8 bg-indigo-50/30 rounded-2xl border border-dashed border-indigo-200 flex flex-col items-center justify-center gap-2'>
+                    <div className='w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-400'>
+                      <Activity size={24} />
+                    </div>
+                    <p className='text-sm text-indigo-600 font-semibold'>No medical results recorded yet.</p>
                   </div>
                 )}
               </div>
@@ -669,23 +676,38 @@ const CadetFormFields = ({
             )}
 
             {interviewData ? (
-               <div className='bg-white p-4 rounded-xl border border-gray-100 shadow-sm'>
-                  <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+               <div className='bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow'>
+                  <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
                     <DetailItem label='Interview Date' value={interviewData.interview_date ? new Date(interviewData.interview_date).toLocaleDateString() : 'N/A'} icon={Calendar} />
                     <DetailItem label='Interviewer' value={interviewData.interviewer_name} icon={User} />
-                    <DetailItem label='Score' value={interviewData.score + '%'} icon={Target} />
-                    <DetailItem label='Status' value={interviewData.status} icon={CheckCircle} />
+                    
+                    <div className='flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100'>
+                      <Target size={20} className='text-blue-600' />
+                      <div>
+                        <p className='text-[10px] text-blue-600 font-bold uppercase tracking-wider'>Interview Score</p>
+                        <p className='text-sm font-bold text-blue-900'>{interviewData.score}%</p>
+                      </div>
+                    </div>
+
+                    <div className='flex items-center gap-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100'>
+                      <CheckCircle size={20} className='text-indigo-600' />
+                      <div>
+                        <p className='text-[10px] text-indigo-600 font-bold uppercase tracking-wider'>Selection Status</p>
+                        <p className='text-sm font-bold text-indigo-900'>{interviewData.status}</p>
+                      </div>
+                    </div>
+
                     <div className='lg:col-span-2'>
                       <DetailItem label='Remarks' value={interviewData.remarks} icon={MessageSquare} />
                     </div>
                   </div>
                </div>
             ) : (
-              <div className='text-center py-6'>
-                <div className='inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 text-gray-400 mb-3'>
-                  <Briefcase size={24} />
+              <div className='p-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-3'>
+                <div className='w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-gray-400'>
+                  <Briefcase size={28} />
                 </div>
-                <p className='text-gray-500 text-sm italic'>Interview details are not available yet.</p>
+                <p className='text-gray-500 font-medium'>Interview details are not available yet.</p>
               </div>
             )}
           </div>

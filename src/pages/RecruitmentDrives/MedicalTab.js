@@ -1,25 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Plus, Eye, Edit, CheckCircle, XCircle, Loader2, Users, FileText, Send } from 'lucide-react';
+import { Plus, Eye, Edit, Loader2, Users, FileText, Send } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../components/ui/select';
+import ReusableDataTable from '../../components/common/ReusableDataTable';
 
 const MedicalTab = ({ drive }) => {
   const { id: driveId } = useParams();
@@ -27,15 +13,14 @@ const MedicalTab = ({ drive }) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  useEffect(() => {
-    fetchCadets();
-  }, [driveId]);
 
-  const fetchCadets = async () => {
+  const fetchCadets = useCallback(async () => {
     try {
       setLoading(true);
       // Fetch cadets eligible for medical in this drive
-      const response = await api.get(`/cadets?course_type=${drive.course_type}&instituteId=${drive.institute_id}&status=Eligible for Medical&limit=1000`);
+      const response = await api.get(
+        `/cadets?course_type=${drive.course_type}&instituteId=${drive.institute_id}&status=Eligible for Medical&limit=1000`,
+      );
       if (response.data && response.data.data) {
         setCadets(response.data.data);
       }
@@ -45,16 +30,126 @@ const MedicalTab = ({ drive }) => {
     } finally {
       setLoading(false);
     }
-  };
-  const filteredCadets = cadets.filter(cadet => {
-    const search = searchTerm.toLowerCase().trim();
-    const matchesSearch = !search || (
-      cadet.name_as_in_indos_cert?.toLowerCase().includes(search) ||
-      cadet.cadet_unique_id?.toLowerCase().includes(search)
-    );
-    
-    return matchesSearch;
-  });
+  }, [drive.course_type, drive.institute_id]);
+
+  useEffect(() => {
+    fetchCadets();
+  }, [fetchCadets]);
+  const filteredCadets = React.useMemo(() => {
+    return cadets.filter(cadet => {
+      const search = searchTerm.toLowerCase().trim();
+      const matchesSearch = !search || (
+        cadet.name_as_in_indos_cert?.toLowerCase().includes(search) ||
+        cadet.cadet_unique_id?.toLowerCase().includes(search)
+      );
+      
+      return matchesSearch;
+    });
+  }, [cadets, searchTerm]);
+
+  const columns = [
+    {
+      field: 'cadet_unique_id',
+      headerName: 'Cadet ID',
+      width: '120px',
+      sortable: true,
+      renderCell: ({ value }) => (
+        <span className='px-2 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded border border-indigo-100 uppercase'>
+          {value || '-'}
+        </span>
+      ),
+    },
+    {
+      field: 'name_as_in_indos_cert',
+      headerName: 'Name',
+      width: '180px',
+      sortable: true,
+      renderCell: ({ row }) => (
+        <span className='font-medium text-gray-900 truncate block w-full' title={row.name_as_in_indos_cert}>
+          {row.name_as_in_indos_cert}
+        </span>
+      ),
+    },
+    {
+      field: 'medical_date',
+      headerName: 'Medical Date',
+      width: '140px',
+      sortable: true,
+      renderCell: ({ row }) => (
+        row.medical_result?.medical_date ? new Date(row.medical_result.medical_date).toLocaleDateString() : '-'
+      ),
+    },
+    {
+      field: 'medical_time',
+      headerName: 'Time',
+      width: '100px',
+      sortable: true,
+      renderCell: ({ row }) => row.medical_result?.medical_time || '-',
+    },
+    {
+      field: 'medical_center_name',
+      headerName: 'Medical Center',
+      width: '180px',
+      sortable: true,
+      renderCell: ({ row }) => row.medical_result?.medical_center_name || '-',
+    },
+    {
+      field: 'fit_status',
+      headerName: 'Fitness Status',
+      width: '140px',
+      sortable: true,
+      renderCell: ({ row }) => {
+        const status = row.medical_result?.fit_status;
+        if (status === 'fit') return <span className='text-green-600 font-medium'>Fit</span>;
+        if (status === 'unfit') return <span className='text-red-600 font-medium'>Unfit</span>;
+        return <span className='text-gray-500'>-</span>;
+      },
+    },
+    {
+      field: 'remarks',
+      headerName: 'Remarks',
+      width: '180px',
+      sortable: true,
+      renderCell: ({ row }) => (
+        <span className='truncate block w-full' title={row.medical_result?.remarks}>
+          {row.medical_result?.remarks || '-'}
+        </span>
+      ),
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: '120px',
+      sortable: false,
+      sticky: 'right',
+      cellClassName: 'bg-white',
+      align: 'right',
+      renderCell: ({ row }) => (
+        <div className='flex items-center gap-2 justify-end'>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={() => window.open(`/medical-results/${row.id}`, '_blank')}
+            className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+            title={row.medical_result ? 'Edit Medical' : 'Start Medical'}
+          >
+            {row.medical_result ? <Edit size={16} /> : <Plus size={16} />}
+          </Button>
+          {row.medical_result && (
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={() => window.open(`/medical-results/${row.id}`, '_blank')}
+              className='h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50'
+              title='View Medical'
+            >
+              <Eye size={16} />
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
   const handleConfirmCandidates = async () => {
     try {
@@ -142,72 +237,18 @@ const MedicalTab = ({ drive }) => {
         </div>
       </div>
 
-      <div className='bg-white rounded-lg border border-gray-200'>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Cadet ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Medical Date</TableHead>
-              <TableHead>Time</TableHead>
-              <TableHead>Medical Center</TableHead>
-              <TableHead>Fitness Status</TableHead>
-              <TableHead>Remarks</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCadets.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className='text-center py-8 text-gray-500'>
-                  No cadets eligible for medical examination
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredCadets.map((cadet) => (
-                <TableRow key={cadet.id}>
-                  <TableCell className='font-medium'>{cadet.cadet_unique_id}</TableCell>
-                  <TableCell>{cadet.name_as_in_indos_cert}</TableCell>
-                  <TableCell>{cadet.medical_result?.medical_date ? new Date(cadet.medical_result.medical_date).toLocaleDateString() : '-'}</TableCell>
-                  <TableCell>{cadet.medical_result?.medical_time || '-'}</TableCell>
-                  <TableCell>{cadet.medical_result?.medical_center_name || '-'}</TableCell>
-                  <TableCell>
-                    {cadet.medical_result?.fit_status === 'fit' ? (
-                      <span className='text-green-600 font-medium'>Fit</span>
-                    ) : cadet.medical_result?.fit_status === 'unfit' ? (
-                      <span className='text-red-600 font-medium'>Unfit</span>
-                    ) : (
-                      <span className='text-gray-500'>-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className='max-w-xs truncate'>{cadet.medical_result?.remarks || '-'}</TableCell>
-                  <TableCell>
-                    <div className='flex items-center gap-2'>
-                      <Button
-                        variant='ghost'
-                        size='sm'
-                        onClick={() => window.open(`/medical-results/${cadet.id}`, '_blank')}
-                        className='h-8 w-8 p-0'
-                      >
-                        {cadet.medical_result ? <Edit size={16} /> : <Plus size={16} />}
-                      </Button>
-                      {cadet.medical_result && (
-                        <Button
-                          variant='ghost'
-                          size='sm'
-                          onClick={() => window.open(`/medical-results/${cadet.id}`, '_blank')}
-                          className='h-8 w-8 p-0'
-                        >
-                          <Eye size={16} />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+      <div className='bg-white shadow-sm overflow-hidden'>
+        <ReusableDataTable
+          columns={columns}
+          rows={filteredCadets}
+          loading={loading}
+          emptyMessage={
+            searchTerm
+              ? `No cadets found matching "${searchTerm}"`
+              : 'No cadets eligible for medical examination'
+          }
+          pageSize={10}
+        />
       </div>
     </div>
   );

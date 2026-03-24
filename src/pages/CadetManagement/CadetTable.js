@@ -51,39 +51,6 @@ const CadetTable = ({
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i);
 
-  const getCurrentStageLabel = (stage) => {
-    const stageLabels = {
-      imported: 'Imported',
-      cv_pending: 'CV Pending',
-      cv_submitted: 'CV Submitted',
-      initial_screening: 'Initial Screening',
-      test_scheduled: 'Test Scheduled',
-      test_completed: 'Test Completed',
-      interview_scheduled: 'Interview Scheduled',
-      interview_completed: 'Interview Completed',
-      final_evaluation: 'Final Evaluation',
-      medical_scheduled: 'Medical Scheduled',
-      medical_completed: 'Medical Completed',
-      selected: 'Selected',
-      standby: 'Standby',
-      rejected: 'Rejected',
-      joined: 'Joined',
-    };
-    return stageLabels[stage] || stage;
-  };
-
-  const getStageBadgeClass = (stage) => {
-    const baseClass =
-      'px-3 py-1 rounded-full text-xs font-semibold inline-block';
-    if (stage === 'selected' || stage === 'joined')
-      return `${baseClass} bg-green-100 text-green-800`;
-    if (stage === 'rejected') return `${baseClass} bg-red-100 text-red-800`;
-    if (stage && stage.includes('completed'))
-      return `${baseClass} bg-cyan-100 text-cyan-800`;
-    if (stage && stage.includes('scheduled'))
-      return `${baseClass} bg-yellow-100 text-yellow-800`;
-    return `${baseClass} bg-gray-200 text-gray-700`;
-  };
 
   // Check if cadet meets shortlisting criteria
   const isShortlisted = (cadet) => {

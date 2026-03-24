@@ -8,14 +8,7 @@ import {
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../components/ui/table';
+import ReusableDataTable from '../../components/common/ReusableDataTable';
 
 const DOCUMENT_TYPES = [
   'Passport',
@@ -31,7 +24,7 @@ const DOCUMENT_TYPES = [
 ];
 
 const DocumentsTab = ({ drive }) => {
-  const { id: driveId } = useParams();
+  useParams();
   const [cadetsWithDocs, setCadetsWithDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -157,6 +150,85 @@ const DocumentsTab = ({ drive }) => {
     const rejected = documents.filter(d => d.status === 'rejected' || d.status === 'reupload_requested').length;
     return { total, accepted, pending, rejected };
   };
+
+  const docColumns = [
+    {
+      field: 'document_name',
+      headerName: 'Document Name',
+      width: '180px',
+      sortable: true,
+      renderCell: ({ value }) => <span className='font-medium text-gray-900'>{value}</span>
+    },
+    { field: 'document_type', headerName: 'Type', width: '150px', sortable: true },
+    { field: 'original_filename', headerName: 'File', width: '180px', sortable: true },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: '140px',
+      sortable: true,
+      renderCell: ({ value }) => getStatusBadge(value)
+    },
+    {
+      field: 'admin_remarks',
+      headerName: 'Remarks',
+      width: '160px',
+      sortable: true,
+      renderCell: ({ value }) => (
+        <span className='truncate block w-full text-xs text-gray-600' title={value}>
+          {value || '-'}
+        </span>
+      )
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: reviewingDoc ? '480px' : '120px',
+      sortable: false,
+      sticky: 'right',
+      cellClassName: 'bg-white',
+      align: 'right',
+      renderCell: ({ row: doc }) => (
+        <div className='flex items-center gap-1 justify-end'>
+          <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50' onClick={() => handleDownload(doc.id)} title='Download'>
+            <Download size={14} />
+          </Button>
+
+          {reviewingDoc === doc.id ? (
+            <div className='flex items-center gap-2 ml-2 bg-blue-50 p-1 rounded border border-blue-100'>
+              <Input
+                placeholder='Remarks...'
+                value={reviewRemarks}
+                onChange={(e) => setReviewRemarks(e.target.value)}
+                className='w-32 h-8 text-[10px]'
+              />
+              <div className='flex gap-1'>
+                <Button size='sm' className='h-7 px-2 bg-green-600 hover:bg-green-700 text-white text-[10px]' onClick={() => handleReview(doc.id, 'accepted')}>
+                  Accept
+                </Button>
+                <Button size='sm' className='h-7 px-2 bg-red-600 hover:bg-red-700 text-white text-[10px]' onClick={() => handleReview(doc.id, 'rejected')}>
+                  Reject
+                </Button>
+                <Button size='sm' className='h-7 px-2 bg-yellow-500 hover:bg-yellow-600 text-white text-[10px]' onClick={() => handleReview(doc.id, 'reupload_requested')}>
+                  Re-upload
+                </Button>
+                <Button size='sm' variant='ghost' className='h-7 w-7 p-0' onClick={() => { setReviewingDoc(null); setReviewRemarks(''); }}>
+                  ✕
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50' onClick={() => setReviewingDoc(doc.id)} title='Review'>
+              <Eye size={14} />
+            </Button>
+          )}
+
+          <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50' onClick={() => handleDelete(doc.id)} title='Delete'>
+            <Trash2 size={14} />
+          </Button>
+        </div>
+      )
+    }
+  ];
 
   const filteredCadets = cadetsWithDocs.filter(cadet => {
     const search = searchTerm.toLowerCase().trim();
@@ -286,73 +358,15 @@ const DocumentsTab = ({ drive }) => {
                     )}
 
                     {/* Documents Table */}
-                    {cadet.documents.length === 0 ? (
-                      <p className='text-sm text-gray-500 italic'>No documents uploaded yet.</p>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Document Name</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>File</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Remarks</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {cadet.documents.map((doc) => (
-                            <TableRow key={doc.id}>
-                              <TableCell className='font-medium'>{doc.document_name}</TableCell>
-                              <TableCell className='text-sm text-gray-600'>{doc.document_type}</TableCell>
-                              <TableCell className='text-sm text-gray-500'>{doc.original_filename}</TableCell>
-                              <TableCell>{getStatusBadge(doc.status)}</TableCell>
-                              <TableCell className='max-w-xs truncate text-sm text-gray-600'>
-                                {doc.admin_remarks || '-'}
-                              </TableCell>
-                              <TableCell>
-                                <div className='flex items-center gap-1'>
-                                  <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-blue-600' onClick={() => handleDownload(doc.id)} title='Download'>
-                                    <Download size={14} />
-                                  </Button>
-
-                                  {reviewingDoc === doc.id ? (
-                                    <div className='flex items-center gap-2 ml-2'>
-                                      <Input
-                                        placeholder='Remarks...'
-                                        value={reviewRemarks}
-                                        onChange={(e) => setReviewRemarks(e.target.value)}
-                                        className='w-40 h-8 text-xs'
-                                      />
-                                      <Button size='sm' className='h-8 px-2 bg-green-600 hover:bg-green-700 text-white text-xs' onClick={() => handleReview(doc.id, 'accepted')}>
-                                        Accept
-                                      </Button>
-                                      <Button size='sm' className='h-8 px-2 bg-red-600 hover:bg-red-700 text-white text-xs' onClick={() => handleReview(doc.id, 'rejected')}>
-                                        Reject
-                                      </Button>
-                                      <Button size='sm' className='h-8 px-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs' onClick={() => handleReview(doc.id, 'reupload_requested')}>
-                                        Re-upload
-                                      </Button>
-                                      <Button size='sm' variant='ghost' className='h-8 px-2 text-xs' onClick={() => { setReviewingDoc(null); setReviewRemarks(''); }}>
-                                        ✕
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-purple-600' onClick={() => setReviewingDoc(doc.id)} title='Review'>
-                                      <Eye size={14} />
-                                    </Button>
-                                  )}
-
-                                  <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-red-600' onClick={() => handleDelete(doc.id)} title='Delete'>
-                                    <Trash2 size={14} />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    )}
+                    <div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
+                      <ReusableDataTable
+                        columns={docColumns}
+                        rows={cadet.documents}
+                        loading={false}
+                        emptyMessage='No documents uploaded yet.'
+                        pageSize={5}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

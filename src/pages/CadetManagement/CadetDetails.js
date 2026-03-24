@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import CadetFormFields from '../../components/cadet/CadetFormFields';
 import { useAuth } from '../../context/AuthContext';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
+import { formatDateForInput } from '../../lib/utils/dateUtils';
 
 import StageTracker from '../../components/common/StageTracker';
 
@@ -31,9 +32,11 @@ const CadetDetails = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [photoError, setPhotoError] = useState(null);
   const [imageError, setImageError] = useState(false);
-  const [interviewData, setInterviewData] = useState(null);
-  const [medicalData, setMedicalData] = useState(null);
-  const [assessmentData, setAssessmentData] = useState(null);
+  const [stageData, setStageData] = useState({
+    interview: null,
+    medical: null,
+    assessment: null
+  });
   const fileInputRef = React.useRef(null);
 
   const [returnPath] = useState(location.state?.returnPath || null);
@@ -86,33 +89,21 @@ const CadetDetails = () => {
             api.get(`/medical-results/${id}`).catch(() => ({ data: { data: null } })),
             api.get(`/assessments/${id}`).catch(() => ({ data: { data: null } }))
           ]);
-          setInterviewData(intRes.data.data);
-          setMedicalData(medRes.data.data);
-          setAssessmentData(assRes.data.data);
+          setStageData({
+            interview: intRes.data.data,
+            medical: medRes.data.data,
+            assessment: assRes.data.data
+          });
         } catch (err) {
           console.error('Error fetching stage data:', err);
         }
 
         // Format dates for form
-        const formData = { ...data };
-        ['date_of_birth', 'passing_out_date'].forEach((field) => {
-          if (formData[field]) {
-            const date = new Date(formData[field]);
-            if (!isNaN(date.getTime())) {
-              // Convert to local YYYY-MM-DD format for HTML date input
-              const localDateString = date.toLocaleDateString('en-GB'); // DD/MM/YYYY
-              const parts = localDateString.split('/');
-              if (parts.length === 3) {
-                formData[field] = `${parts[2]}-${parts[1]}-${parts[0]}`;
-              } else {
-                formData[field] = '';
-              }
-            } else {
-              console.warn(`Invalid date for field ${field}:`, formData[field]);
-              formData[field] = '';
-            }
-          }
-        });
+        const formData = {
+          ...data,
+          date_of_birth: formatDateForInput(data.date_of_birth),
+          passing_out_date: formatDateForInput(data.passing_out_date)
+        };
 
         reset(formData);
       } catch (error) {
@@ -198,8 +189,12 @@ const CadetDetails = () => {
 
   if (loading) {
     return (
-      <div className='flex items-center justify-center min-h-[500px]'>
-        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
+      <div className='flex flex-col items-center justify-center min-h-[500px] space-y-4'>
+        <div className='relative w-16 h-16'>
+          <div className='absolute inset-0 rounded-full border-4 border-indigo-100'></div>
+          <div className='absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin'></div>
+        </div>
+        <p className='text-gray-500 font-medium animate-pulse'>Loading Cadet Profile...</p>
       </div>
     );
   }
@@ -210,7 +205,7 @@ const CadetDetails = () => {
       className='py-6 space-y-6 animate-in fade-in slide-in-from-bottom-4'
     >
       {/* Header */}
-      <div className='flex items-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100'>
+      <div className='flex items-center gap-4 mb-6 bg-white p-5 rounded-2xl shadow-md border border-gray-100 bg-gradient-to-r from-white to-indigo-50/30'>
         <Button
           type='button'
           variant='ghost'
@@ -224,40 +219,40 @@ const CadetDetails = () => {
               navigate(-1);
             }
           }}
-          className='rounded-full hover:bg-gray-100'
+          className='rounded-full hover:bg-white hover:shadow-md transition-all'
         >
           <ArrowLeft size={24} className='text-gray-600' />
         </Button>
         <div>
           <div className='flex items-center gap-3'>
-            <h1 className='text-2xl font-bold text-gray-900'>Cadet Details</h1>
+            <h1 className='text-2xl font-extrabold text-gray-900 tracking-tight'>Cadet Profile</h1>
             {cadet.cadet_unique_id && (
-              <span className='px-3 py-1 bg-indigo-50 text-indigo-700 text-sm font-bold rounded-lg border border-indigo-100'>
-                ID: {cadet.cadet_unique_id}
+              <span className='px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-sm'>
+                {cadet.cadet_unique_id}
               </span>
             )}
           </div>
-          <p className='text-gray-500 text-sm'>
+          <p className='text-gray-500 text-sm font-medium'>
             {isEditing
-              ? `Editing ${cadet.name_as_in_indos_cert}`
-              : `View full information about ${cadet.name_as_in_indos_cert}`}
+              ? `Update details for ${cadet.name_as_in_indos_cert}`
+              : `Viewing comprehensive profile for ${cadet.name_as_in_indos_cert}`}
           </p>
         </div>
-        <div className='ml-auto flex gap-2'>
+        <div className='ml-auto flex gap-3'>
           {isEditing ? (
             <>
               <Button
                 type='button'
                 variant='outline'
                 onClick={cancelEdit}
-                className='gap-2'
+                className='gap-2 rounded-xl border-gray-200 hover:bg-gray-50 font-semibold'
                 disabled={isSubmitting}
               >
                 <X size={16} /> Cancel
               </Button>
               <Button
                 type='submit'
-                className='gap-2 bg-blue-600 hover:bg-blue-700 text-white'
+                className='gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 rounded-xl shadow-lg shadow-indigo-100 font-semibold transition-all'
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -272,9 +267,9 @@ const CadetDetails = () => {
             <Button
               type='button'
               onClick={() => setIsEditing(true)}
-              className='gap-2'
+              className='gap-2 bg-white text-indigo-600 border border-indigo-100 hover:bg-indigo-50 px-6 rounded-xl shadow-sm font-semibold transition-all'
             >
-              <FileText size={16} /> Edit Cadet
+              <FileText size={16} /> Edit Profile
             </Button>
           )}
         </div>
@@ -282,16 +277,16 @@ const CadetDetails = () => {
 
       {/* Stage Tracker - Only for Admins */}
       {user?.role?.toLowerCase() === 'superadmin' && (
-        <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-6'>
-          <h2 className='text-lg font-bold text-gray-800 mb-2 px-4'>Recruitment Stage Progress</h2>
+        <div className='bg-white rounded-[2rem] shadow-md border border-gray-100 p-8 animate-in fade-in slide-in-from-top-4 duration-500'>
+          <h2 className='text-sm font-black text-indigo-400 uppercase tracking-[0.2em] mb-6 px-4'>Profile Progress</h2>
           <StageTracker currentStage={cadet.status} />
         </div>
       )}
 
-      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8'>
+      <div className='bg-white rounded-[2rem] shadow-xl shadow-indigo-100/20 border border-gray-100 p-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150'>
         <div className='space-y-8'>
           {/* Photo Section */}
-          <div className='bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col md:flex-row items-center gap-6'>
+          <div className='bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl border border-gray-100 flex flex-col md:flex-row items-center gap-8 shadow-sm'>
             <div className='relative group'>
               <input
                 type='file'
@@ -301,8 +296,8 @@ const CadetDetails = () => {
                 className='hidden'
               />
               <div
-                className={`w-32 h-32 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-gray-200 flex items-center justify-center relative ${
-                  isEditing ? 'cursor-pointer' : ''
+                className={`w-36 h-36 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gray-100 flex items-center justify-center relative transition-transform duration-300 ${
+                  isEditing ? 'cursor-pointer hover:scale-105 active:scale-95' : ''
                 }`}
                 onClick={() => isEditing && fileInputRef.current?.click()}
               >
@@ -326,7 +321,10 @@ const CadetDetails = () => {
                     }}
                   />
                 ) : (
-                  <ImageIcon size={48} className='text-gray-400' />
+                  <div className='flex flex-col items-center gap-2'>
+                    <ImageIcon size={40} className='text-gray-300' />
+                    <span className='text-[10px] text-gray-400 font-bold uppercase'>No Photo</span>
+                  </div>
                 )}
 
                 {isEditing && (
@@ -341,23 +339,35 @@ const CadetDetails = () => {
                 </p>
               )}
             </div>
-            <div className='flex-1 text-center md:text-left'>
-              <h3 className='text-xl font-bold text-gray-800'>
-                {cadet.name_as_in_indos_cert}
-              </h3>
-              <p className='text-gray-500 font-medium'>
-                {cadet.course || 'Course not specified'}
-              </p>
-              <div className='flex flex-wrap gap-2 mt-3 justify-center md:justify-start'>
+            <div className='flex-1 text-center md:text-left space-y-2'>
+              <div className='space-y-1'>
+                <h3 className='text-2xl font-black text-gray-900 leading-tight'>
+                  {cadet.name_as_in_indos_cert}
+                </h3>
+                <div className='flex items-center justify-center md:justify-start gap-2'>
+                   <span className='px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase rounded tracking-wider'>
+                      {cadet.course || 'Course Not Specified'}
+                   </span>
+                   {cadet.status && (
+                     <span className='px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase rounded tracking-wider border border-emerald-100'>
+                        {cadet.status}
+                     </span>
+                   )}
+                </div>
+              </div>
+              
+              <div className='flex flex-wrap gap-3 mt-4 justify-center md:justify-start'>
                 {cadet.contact_number && (
-                  <span className='px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-100'>
-                    Mobile: {cadet.contact_number}
-                  </span>
+                  <div className='flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-700 text-xs font-semibold rounded-lg border border-gray-100 shadow-sm'>
+                    <div className='w-2 h-2 rounded-full bg-blue-400'></div>
+                    {cadet.contact_number}
+                  </div>
                 )}
                 {cadet.institute_name && (
-                  <span className='px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-full border border-purple-100'>
-                    Institute: {cadet.institute_name}
-                  </span>
+                  <div className='flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-700 text-xs font-semibold rounded-lg border border-gray-100 shadow-sm'>
+                    <div className='w-2 h-2 rounded-full bg-purple-400'></div>
+                    {cadet.institute_name}
+                  </div>
                 )}
               </div>
             </div>
@@ -373,9 +383,9 @@ const CadetDetails = () => {
             watch={watch}
             setValue={setValue}
             isSubmitting={isSubmitting}
-            interviewData={interviewData}
-            medicalData={medicalData}
-            assessmentData={assessmentData}
+            interviewData={stageData.interview}
+            medicalData={stageData.medical}
+            assessmentData={stageData.assessment}
             user={user}
           />
         </div>

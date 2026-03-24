@@ -17,9 +17,9 @@ const DetailItem = ({
   errors,
 }) => {
   return (
-    <div className='flex flex-col gap-1 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors'>
-      <div className='flex items-center gap-2 text-sm text-gray-500 font-medium'>
-        {Icon && <Icon size={14} className='text-blue-500' />}
+    <div className='flex flex-col gap-1.5 p-4 rounded-xl bg-gray-50/50 border border-gray-100/80 hover:bg-white hover:border-indigo-100 hover:shadow-sm transition-all duration-300 group'>
+      <div className='flex items-center gap-2 text-[11px] text-gray-400 font-bold uppercase tracking-wider'>
+        {Icon && <Icon size={14} className='text-gray-400 group-hover:text-indigo-500 transition-colors' />}
         {label}{' '}
         {isEditing && required && <span className='text-red-500'>*</span>}
       </div>

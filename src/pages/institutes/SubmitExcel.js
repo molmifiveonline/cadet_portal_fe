@@ -292,7 +292,7 @@ const SubmitExcel = () => {
         <h2 className='text-2xl font-bold text-slate-900'>Submit Cadet Data</h2>
         <p className='mt-1 text-slate-600'>
           Welcome,{' '}
-          <span className='font-medium text-blue-[#3a5f9e] capitalize'>{instituteName}</span>.
+          <span className='font-medium text-[#3a5f9e] capitalize'>{instituteName}</span>.
           Please upload the requested Excel sheet containing cadet details.
         </p>
       </div>

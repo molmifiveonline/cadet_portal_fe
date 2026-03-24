@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Eye, Edit, Loader2, Search } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
@@ -15,28 +15,52 @@ import {
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 
 const CadetsTab = ({ drive, initialStatus = 'all', onStatusFilterChange }) => {
-  const { id: driveId } = useParams();
-  const navigate = useNavigate();
+  useParams();
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
 
+  // Debounce search
   useEffect(() => {
-    setSelectedStatus(initialStatus);
-  }, [initialStatus]);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  useEffect(() => {
-    fetchCadets();
-  }, [driveId]);
-
-  const fetchCadets = async () => {
+  const fetchCadets = useCallback(async () => {
+    if (!drive?.course_type || !drive?.institute_id) return;
     try {
       setLoading(true);
-      // Fetch all cadets matching the drive's institute and course.
-      const response = await api.get(`/cadets?course_type=${drive.course_type}&instituteId=${drive.institute_id}&limit=1000`);
-      if (response.data && response.data.data) {
-        setCadets(response.data.data);
+      const params = new URLSearchParams({
+        course_type: drive.course_type,
+        instituteId: drive.institute_id,
+        page: currentPage,
+        limit: perPage,
+        status: selectedStatus === 'all' ? '' : selectedStatus,
+        search: debouncedSearch.trim()
+      });
+
+      const response = await api.get(`/cadets?${params.toString()}`);
+      if (response.data) {
+        setCadets(response.data.data || []);
+        if (response.data.pagination) {
+          setTotalItems(response.data.pagination.total || 0);
+          setTotalPages(response.data.pagination.pages || 1);
+        } else if (response.data.total !== undefined) {
+          // Fallback if structured differently (some endpoints in controller use this)
+          setTotalItems(response.data.total);
+          setTotalPages(Math.ceil(response.data.total / perPage));
+        }
       }
     } catch (error) {
       console.error('Error fetching cadets:', error);
@@ -44,7 +68,20 @@ const CadetsTab = ({ drive, initialStatus = 'all', onStatusFilterChange }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [drive?.course_type, drive?.institute_id, currentPage, perPage, selectedStatus, debouncedSearch]);
+
+  useEffect(() => {
+    fetchCadets();
+  }, [fetchCadets]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedStatus, perPage]);
+
+  useEffect(() => {
+    setSelectedStatus(initialStatus);
+  }, [initialStatus]);
 
   const handleStatusChange = (value) => {
     setSelectedStatus(value);
@@ -69,20 +106,14 @@ const CadetsTab = ({ drive, initialStatus = 'all', onStatusFilterChange }) => {
     }
   };
 
-  const filteredCadets = useMemo(() => {
-    return cadets.filter(cadet => {
-      const search = searchTerm.toLowerCase().trim();
-      const matchesSearch = !search || (
-        cadet.name_as_in_indos_cert?.toLowerCase().includes(search) ||
-        cadet.cadet_unique_id?.toLowerCase().includes(search) ||
-        cadet.email_id?.toLowerCase().includes(search)
-      );
-      
-      const matchesStatus = selectedStatus === 'all' || cadet.status === selectedStatus;
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [cadets, searchTerm, selectedStatus]);
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePerPageChange = (newLimit) => {
+    setPerPage(newLimit);
+    setCurrentPage(1);
+  };
 
   const columns = [
     {
@@ -174,6 +205,7 @@ const CadetsTab = ({ drive, initialStatus = 'all', onStatusFilterChange }) => {
       width: '120px',
       sortable: false,
       sticky: 'right',
+      cellClassName: 'bg-white',
       align: 'right',
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2 justify-end'>
@@ -249,22 +281,26 @@ const CadetsTab = ({ drive, initialStatus = 'all', onStatusFilterChange }) => {
         </div>
       </div>
 
-      <div className='bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden'>
+      <div className='bg-white shadow-sm overflow-hidden'>
         <ReusableDataTable
           columns={columns}
-          rows={filteredCadets}
+          rows={cadets}
           loading={loading}
           emptyMessage={
             searchTerm
               ? `No cadets found matching "${searchTerm}"`
               : 'No cadets found for this drive'
           }
-          pageSize={10}
+          pagination={{
+            current_page: currentPage,
+            per_page: perPage,
+            total: totalItems,
+            last_page: totalPages
+          }}
+          handlePageChange={handlePageChange}
+          handlePerPageChange={handlePerPageChange}
+          pageSize={perPage}
         />
-      </div>
-
-      <div className='text-sm text-gray-600'>
-        Total Cadets: {filteredCadets.length}
       </div>
     </div>
   );

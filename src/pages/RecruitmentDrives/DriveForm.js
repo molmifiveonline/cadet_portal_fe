@@ -26,7 +26,6 @@ const DriveForm = () => {
     register,
     handleSubmit,
     reset,
-    setValue,
     control,
     formState: { errors, isSubmitting },
   } = useForm({

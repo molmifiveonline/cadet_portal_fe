@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
-import { Plus, Users, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import Permission from '../../components/common/Permission';
 
@@ -25,45 +25,55 @@ const RecruitmentDrives = () => {
     institute_id: ''
   });
 
-  const fetchDrives = async (
-    page = pagination.current_page,
-    limit = pagination.per_page,
-    search = searchTerm,
-    filterStatus = filters.status,
-    filterCourseType = filters.course_type,
-    filterInstituteId = filters.institute_id
-  ) => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page,
-        limit,
-        search,
-        ...(filterStatus !== 'all' && { status: filterStatus }),
-        ...(filterCourseType !== 'all' && { course_type: filterCourseType }),
-        ...(filterInstituteId && { institute_id: filterInstituteId })
-      });
+  const fetchDrives = useCallback(
+    async (
+      page = pagination.current_page,
+      limit = pagination.per_page,
+      search = searchTerm,
+      filterStatus = filters.status,
+      filterCourseType = filters.course_type,
+      filterInstituteId = filters.institute_id,
+    ) => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams({
+          page,
+          limit,
+          search,
+          ...(filterStatus !== 'all' && { status: filterStatus }),
+          ...(filterCourseType !== 'all' && { course_type: filterCourseType }),
+          ...(filterInstituteId && { institute_id: filterInstituteId }),
+        });
 
-      const response = await api.get(`/recruitment-drives?${params}`);
-      setDrives(response.data.data);
-      setPagination({
-        current_page: response.data.page,
-        per_page: response.data.limit,
-        total: response.data.total,
-        last_page: Math.ceil(response.data.total / response.data.limit)
-      });
-    } catch (error) {
-      console.error('Error fetching recruitment drives:', error);
-      toast.error('Failed to fetch recruitment drives');
-    } finally {
-      setLoading(false);
-    }
-  };
+        const response = await api.get(`/recruitment-drives?${params}`);
+        setDrives(response.data.data);
+        setPagination({
+          current_page: response.data.page,
+          per_page: response.data.limit,
+          total: response.data.total,
+          last_page: Math.ceil(response.data.total / response.data.limit),
+        });
+      } catch (error) {
+        console.error('Error fetching recruitment drives:', error);
+        toast.error('Failed to fetch recruitment drives');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      pagination.current_page,
+      pagination.per_page,
+      searchTerm,
+      filters.status,
+      filters.course_type,
+      filters.institute_id,
+    ],
+  );
 
   useEffect(() => {
     fetchDrives();
     fetchInstitutes();
-  }, []);
+  }, [fetchDrives]);
 
   const fetchInstitutes = async () => {
     try {

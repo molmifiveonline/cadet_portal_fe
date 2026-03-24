@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -6,12 +6,8 @@ import {
   ArrowLeft,
   Calendar,
   Activity,
-  User,
   MessageSquare,
-  CheckCircle,
-  XCircle,
   Loader2,
-  Stethoscope,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
@@ -41,11 +37,8 @@ const MedicalResultForm = () => {
     remarks: '',
   });
 
-  useEffect(() => {
-    fetchData();
-  }, [cadet_id]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const cadetRes = await api.get(`/cadets/${cadet_id}`);
@@ -62,7 +55,9 @@ const MedicalResultForm = () => {
         if (medicalRes.data.success && medicalRes.data.data) {
           const data = medicalRes.data.data;
           setFormData({
-            medical_date: data.medical_date ? data.medical_date.split('T')[0] : new Date().toISOString().split('T')[0],
+            medical_date: data.medical_date
+              ? data.medical_date.split('T')[0]
+              : new Date().toISOString().split('T')[0],
             medical_time: data.medical_time || '',
             medical_center_id: data.medical_center_id || '',
             fit_status: data.fit_status || 'fit',
@@ -78,7 +73,11 @@ const MedicalResultForm = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [cadet_id]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -138,12 +137,19 @@ const MedicalResultForm = () => {
   return (
     <div className='py-6'>
       <div className='flex items-center gap-4 mb-6'>
-        <button onClick={() => navigate(-1)} className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'>
+        <button
+          onClick={() => navigate(-1)}
+          className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
+        >
           <ArrowLeft size={24} />
         </button>
         <div>
-          <h1 className='text-2xl font-bold text-gray-800'>Medical Examination Result</h1>
-          <p className='text-gray-500 text-sm mt-1'>Record outcome for {cadet?.name_as_in_indos_cert}</p>
+          <h1 className='text-2xl font-bold text-gray-800'>
+            Medical Examination Result
+          </h1>
+          <p className='text-gray-500 text-sm mt-1'>
+            Record outcome for {cadet?.name_as_in_indos_cert}
+          </p>
         </div>
       </div>
 
@@ -151,52 +157,91 @@ const MedicalResultForm = () => {
         <form onSubmit={handleSubmit} className='space-y-8'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>Examination Date</label>
+              <label className='text-sm font-medium text-gray-700'>
+                Examination Date
+              </label>
               <div className='relative'>
                 <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
-                <Input type='date' name='medical_date' value={formData.medical_date} onChange={handleInputChange} className='pl-10' required />
+                <Input
+                  type='date'
+                  name='medical_date'
+                  value={formData.medical_date}
+                  onChange={handleInputChange}
+                  className='pl-10'
+                  required
+                />
               </div>
             </div>
 
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>Examination Time</label>
+              <label className='text-sm font-medium text-gray-700'>
+                Examination Time
+              </label>
               <div className='relative'>
                 <Activity className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
-                <Input type='time' name='medical_time' value={formData.medical_time} onChange={handleInputChange} className='pl-10' />
+                <Input
+                  type='time'
+                  name='medical_time'
+                  value={formData.medical_time}
+                  onChange={handleInputChange}
+                  className='pl-10'
+                />
               </div>
             </div>
 
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>Medical Center</label>
-              <Select value={formData.medical_center_id} onValueChange={(val) => setFormData(p => ({ ...p, medical_center_id: val }))}>
+              <label className='text-sm font-medium text-gray-700'>
+                Medical Center
+              </label>
+              <Select
+                value={formData.medical_center_id}
+                onValueChange={(val) =>
+                  setFormData((p) => ({ ...p, medical_center_id: val }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder='Select medical center' />
                 </SelectTrigger>
                 <SelectContent>
-                  {medicalCenters.map(center => (
-                    <SelectItem key={center.id} value={center.id}>{center.center_name}</SelectItem>
+                  {medicalCenters.map((center) => (
+                    <SelectItem key={center.id} value={center.id}>
+                      {center.center_name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>Fitness Outcome</label>
-              <Select value={formData.fit_status} onValueChange={(val) => setFormData(p => ({ ...p, fit_status: val }))}>
+              <label className='text-sm font-medium text-gray-700'>
+                Fitness Outcome
+              </label>
+              <Select
+                value={formData.fit_status}
+                onValueChange={(val) =>
+                  setFormData((p) => ({ ...p, fit_status: val }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder='Select status' />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='fit'>Fit for Sea Service</SelectItem>
                   <SelectItem value='unfit'>Unfit</SelectItem>
-                  <SelectItem value='fit_with_rest'>Fit with Restrictions</SelectItem>
+                  <SelectItem value='fit_with_rest'>
+                    Fit with Restrictions
+                  </SelectItem>
                   <SelectItem value='pending'>Pending Investigation</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className='space-y-2'>            <label className='text-sm font-medium text-gray-700'>Upload Medical Report</label>
+          <div className='space-y-2'>
+            {' '}
+            <label className='text-sm font-medium text-gray-700'>
+              Upload Medical Report
+            </label>
             <Input
               type='file'
               onChange={handleFileChange}
@@ -208,7 +253,9 @@ const MedicalResultForm = () => {
             </p>
           </div>
 
-          <div className='space-y-2'>            <label className='text-sm font-medium text-gray-700 flex items-center gap-2'>
+          <div className='space-y-2'>
+            {' '}
+            <label className='text-sm font-medium text-gray-700 flex items-center gap-2'>
               <MessageSquare size={16} className='text-gray-400' />
               Medical Remarks / Notes
             </label>
@@ -223,9 +270,19 @@ const MedicalResultForm = () => {
           </div>
 
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200'>
-            <Button type='button' variant='ghost' onClick={() => navigate(-1)}>Cancel</Button>
-            <Button type='submit' className='bg-blue-600 hover:bg-blue-700 text-white' disabled={saving}>
-              {saving ? <Loader2 className='w-4 h-4 mr-2 animate-spin' /> : <Save className='w-4 h-4 mr-2' />}
+            <Button type='button' variant='ghost' onClick={() => navigate(-1)}>
+              Cancel
+            </Button>
+            <Button
+              type='submit'
+              className='bg-blue-600 hover:bg-blue-700 text-white'
+              disabled={saving}
+            >
+              {saving ? (
+                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+              ) : (
+                <Save className='w-4 h-4 mr-2' />
+              )}
               Save Medical Result
             </Button>
           </div>
