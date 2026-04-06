@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ListChecks, Search, Edit } from 'lucide-react';
+import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import { useAuth } from '../../context/AuthContext';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
@@ -220,22 +221,11 @@ const InstituteShortlistedCadets = () => {
   return (
     <div className='py-6 px-4 md:px-8 bg-slate-50 min-h-screen'>
       {/* Header */}
-      <div className='mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4'>
-        <div className='flex items-center gap-3'>
-          <div className='p-2 bg-green-600 rounded-lg shadow-sm'>
-            <ListChecks className='text-white' size={24} />
-          </div>
-          <div>
-            <h1 className='text-2xl font-bold text-gray-900'>
-              Shortlisted Cadets
-            </h1>
-            <p className='text-gray-500 text-sm'>
-              {user?.first_name || 'Institute Portal'} — Shortlisted cadets from
-              your institute
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Shortlisted Cadets"
+        subtitle={`${user?.first_name || 'Institute Portal'} — Shortlisted cadets from your institute`}
+        icon={ListChecks}
+      />
 
       {/* Stats Card */}
       <div className='bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center justify-between'>

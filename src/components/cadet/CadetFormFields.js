@@ -30,6 +30,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import SectionTitle from '../common/SectionTitle';
 import SharedDetailItem from '../common/DetailItem';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const CadetFormFields = ({
   cadet = {},
@@ -78,7 +79,7 @@ const CadetFormFields = ({
             <DetailItem label='Email' value={cadet.email_id} name='email_id' type='email' required icon={Mail} />
             <DetailItem label='Phone' value={cadet.contact_number} name='contact_number' required icon={Phone} />
             <DetailItem label='Gender' value={cadet.gender} name='gender' icon={User} />
-            <DetailItem label='Date of Birth' value={cadet.date_of_birth ? new Date(cadet.date_of_birth).toLocaleDateString('en-GB') : '-'} name='date_of_birth' type='date' icon={Calendar} />
+            <DetailItem label='Date of Birth' value={formatDateForDisplay(cadet.date_of_birth)} name='date_of_birth' type='date' icon={Calendar} />
             <DetailItem label='Place of Birth' value={cadet.place_of_birth} name='place_of_birth' icon={MapPin} />
             <DetailItem label='Hometown' value={cadet.home_town_or_nearby_airport} name='home_town_or_nearby_airport' icon={MapPin} />
             <DetailItem label='Nationality' value={cadet.nationality} name='nationality' icon={Globe} />
@@ -341,11 +342,7 @@ const CadetFormFields = ({
               />
               <DetailItem
                 label='Passing Out Year'
-                value={
-                  cadet.passing_out_date
-                    ? new Date(cadet.passing_out_date).toLocaleDateString('en-GB')
-                    : '-'
-                }
+                value={formatDateForDisplay(cadet.passing_out_date)}
                 name='passing_out_date'
                 type='date'
                 icon={Calendar}
@@ -568,7 +565,7 @@ const CadetFormFields = ({
                 {medicalData ? (
                   <div className='bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow'>
                      <div className='grid grid-cols-1 sm:grid-cols-2 gap-6'>
-                        <DetailItem label='Examination Date' value={medicalData.medical_date ? new Date(medicalData.medical_date).toLocaleDateString() : 'N/A'} icon={Calendar} />
+                        <DetailItem label='Examination Date' value={medicalData.medical_date ? formatDateForDisplay(medicalData.medical_date) : 'N/A'} icon={Calendar} />
                         <DetailItem label='Medical Center' value={medicalData.medical_center} icon={MapPin} />
                         <div className='flex items-center gap-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100'>
                           <Activity size={20} className='text-emerald-600' />
@@ -678,7 +675,7 @@ const CadetFormFields = ({
             {interviewData ? (
                <div className='bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow'>
                   <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-                    <DetailItem label='Interview Date' value={interviewData.interview_date ? new Date(interviewData.interview_date).toLocaleDateString() : 'N/A'} icon={Calendar} />
+                    <DetailItem label='Interview Date' value={interviewData.interview_date ? formatDateForDisplay(interviewData.interview_date) : 'N/A'} icon={Calendar} />
                     <DetailItem label='Interviewer' value={interviewData.interviewer_name} icon={User} />
                     
                     <div className='flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100'>

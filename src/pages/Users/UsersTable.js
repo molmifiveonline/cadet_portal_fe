@@ -4,6 +4,7 @@ import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import Permission from '../../components/common/Permission';
 import { Button } from '../../components/ui/button';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const UsersTable = ({
   users,
@@ -101,8 +102,7 @@ const UsersTable = ({
       field: 'created_at',
       headerName: 'Joined Date',
       width: '150px',
-      renderCell: ({ value }) =>
-        value ? new Date(value).toLocaleDateString('en-GB') : '-',
+      renderCell: ({ value }) => formatDateForDisplay(value),
     },
     {
       field: 'actions',

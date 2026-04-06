@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
-import { Plus, Mail, FileText } from 'lucide-react';
+import { Plus, Mail, FileText, School } from 'lucide-react';
 import InstitutesTable from './InstitutesTable';
 import SendEmailModal from './SendEmailModal';
 import ExtendTokenModal from './ExtendTokenModal';
 import { Button } from 'components/ui/button';
 import Permission from 'components/common/Permission';
+import PageHeader from '../../components/common/PageHeader';
 
 const InstitutesManagement = () => {
   const [institutes, setInstitutes] = useState([]);
@@ -177,51 +178,47 @@ const InstitutesManagement = () => {
   return (
     <div className='py-6'>
       {/* Header */}
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 ml-2'>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>Institutes</h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            Manage maritime training institutes and their details
-          </p>
-        </div>
-        <div className='flex gap-2'>
-          <Permission module='institutes' action='view'>
-            <Button
-              variant='outline'
-              onClick={() => navigate('/institutes/submissions')}
-              className='gap-2'
-            >
-              <FileText size={20} />
-              View Submissions
-            </Button>
-          </Permission>
+      <PageHeader
+        title="Institutes"
+        subtitle="Manage maritime training institutes and their details"
+        icon={School}
+      >
+        <Permission module='institutes' action='view'>
+          <Button
+            variant='outline'
+            onClick={() => navigate('/institutes/submissions')}
+            className='gap-2'
+          >
+            <FileText size={20} />
+            View Submissions
+          </Button>
+        </Permission>
 
-          {selectedInstitutes.length === 0 && (
-            <Button
-              variant='outline'
-              onClick={() => {
-                toast.error(
-                  'Please select at least one institute to send an email',
-                );
-              }}
-              className='gap-2'
-            >
-              <Mail size={20} />
-              Send Email
-            </Button>
-          )}
+        {selectedInstitutes.length === 0 && (
+          <Button
+            variant='outline'
+            onClick={() => {
+              toast.error(
+                'Please select at least one institute to send an email',
+              );
+            }}
+            className='gap-2'
+          >
+            <Mail size={20} />
+            Send Email
+          </Button>
+        )}
 
-          <Permission module='institutes' action='create'>
-            <Button
-              variant='default'
-              onClick={() => navigate('/institutes/addNewInstitue')}
-            >
-              <Plus size={20} />
-              Add Institute
-            </Button>
-          </Permission>
-        </div>
-      </div>
+        <Permission module='institutes' action='create'>
+          <Button
+            variant='default'
+            onClick={() => navigate('/institutes/addNewInstitue')}
+          >
+            <Plus size={20} />
+            Add Institute
+          </Button>
+        </Permission>
+      </PageHeader>
 
       {selectedInstitutes.length > 0 && (
         <div className='mb-4 flex items-center gap-4 bg-[#3a5f9e]/10 p-3 rounded-lg border border-[#3a5f9e]/20 animate-in fade-in slide-in-from-top-2'>

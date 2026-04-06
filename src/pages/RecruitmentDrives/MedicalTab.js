@@ -6,6 +6,7 @@ import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const MedicalTab = ({ drive }) => {
   const { id: driveId } = useParams();
@@ -76,7 +77,7 @@ const MedicalTab = ({ drive }) => {
       width: '140px',
       sortable: true,
       renderCell: ({ row }) => (
-        row.medical_result?.medical_date ? new Date(row.medical_result.medical_date).toLocaleDateString() : '-'
+        formatDateForDisplay(row.medical_result?.medical_date)
       ),
     },
     {

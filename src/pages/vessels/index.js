@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Ship } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/button';
+import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import Permission from '../../components/common/Permission';
 import VesselTable from './VesselTable';
@@ -132,22 +133,18 @@ const VesselList = () => {
 
   return (
     <div className='py-6'>
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 ml-2'>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>Vessel Master</h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            Manage all vessels in the fleet
-          </p>
-        </div>
-        <div className='flex gap-2'>
-          <Permission module='vessel-master' action='create'>
-            <Button variant='default' onClick={() => navigate('/vessels/add')}>
-              <Plus size={20} className='mr-2' />
-              Add Vessel
-            </Button>
-          </Permission>
-        </div>
-      </div>
+      <PageHeader
+        title="Vessel Master"
+        subtitle="Manage all vessels in the fleet"
+        icon={Ship}
+      >
+        <Permission module='vessel-master' action='create'>
+          <Button variant='default' onClick={() => navigate('/vessels/add')}>
+            <Plus size={20} className='mr-2' />
+            Add Vessel
+          </Button>
+        </Permission>
+      </PageHeader>
 
       <VesselTable
         vessels={vessels}

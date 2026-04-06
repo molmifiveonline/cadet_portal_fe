@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, Rocket } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import Permission from '../../components/common/Permission';
+import PageHeader from '../../components/common/PageHeader';
 
 const RecruitmentDrives = () => {
   const [drives, setDrives] = useState([]);
@@ -124,15 +125,18 @@ const RecruitmentDrives = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Recruitment Drives</h1>
+      <PageHeader
+        title="Recruitment Drives"
+        subtitle="Manage and track active recruitment campaigns"
+        icon={Rocket}
+      >
         <Permission module="recruitment_drives" action="create">
           <Button onClick={() => navigate('/drives/new')} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             New Drive
           </Button>
         </Permission>
-      </div>
+      </PageHeader>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm border">

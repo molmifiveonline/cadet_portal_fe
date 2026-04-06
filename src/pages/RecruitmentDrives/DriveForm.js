@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Loader2, ArrowLeft, Save } from 'lucide-react';
+import { Loader2, ArrowLeft, Save, Rocket } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import PageHeader from '../../components/common/PageHeader';
 
 const DriveForm = () => {
   const { id } = useParams();
@@ -119,19 +120,21 @@ const DriveForm = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/drives')}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Drives
-        </Button>
-        <h1 className="text-2xl font-bold text-gray-900">
-          {isEdit ? 'Edit Recruitment Drive' : 'Create New Recruitment Drive'}
-        </h1>
-      </div>
+      <PageHeader
+        title={isEdit ? 'Edit Recruitment Drive' : 'Create New Recruitment Drive'}
+        subtitle={isEdit ? 'Update the details of the recruitment drive' : 'Enter the details for the new recruitment drive'}
+        icon={Rocket}
+        backButton={
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/drives')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Drives
+          </Button>
+        }
+      />
 
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

@@ -15,6 +15,7 @@ import {
   Eye,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
+import PageHeader from '../../components/common/PageHeader';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import {
@@ -186,22 +187,19 @@ const InterviewForm = () => {
 
   return (
     <div className='py-6'>
-      <div className='flex items-center gap-4 mb-6'>
-        <button
-          onClick={() => navigate(-1)}
-          className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>
-            Interview Evaluation
-          </h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            Record outcome for {cadet?.name_as_in_indos_cert}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Interview Evaluation"
+        subtitle={`Record outcome for ${cadet?.name_as_in_indos_cert}`}
+        icon={Calendar}
+        backButton={
+          <button
+            onClick={() => navigate(-1)}
+            className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
+          >
+            <ArrowLeft size={24} />
+          </button>
+        }
+      />
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
         <form onSubmit={handleSubmit} className='space-y-8'>

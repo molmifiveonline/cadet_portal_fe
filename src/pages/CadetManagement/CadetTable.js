@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import { Button } from '../../components/ui/button';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 import {
   Select,
   SelectContent,
@@ -166,10 +167,7 @@ const CadetTable = ({
       field: 'date_of_birth',
       headerName: 'DOB',
       width: '120px',
-      valueGetter: (value) => {
-        if (!value) return '-';
-        return new Date(value).toLocaleDateString('en-GB');
-      },
+      valueGetter: (value) => formatDateForDisplay(value),
     },
     {
       field: 'place_of_birth',
@@ -268,7 +266,7 @@ const CadetTable = ({
       field: 'created_at',
       headerName: 'Created At',
       width: '150px',
-      valueGetter: (val) => (val ? new Date(val).toLocaleDateString() : '-'),
+      valueGetter: (val) => formatDateForDisplay(val),
     },
     {
       field: 'actions',

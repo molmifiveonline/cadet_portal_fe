@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
-import { Search } from 'lucide-react';
+import { Search, History } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
+import PageHeader from '../../components/common/PageHeader';
 
 const ActivityLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -78,7 +80,7 @@ const ActivityLogs = () => {
         const date = new Date(value);
         return (
           <div className='flex flex-col'>
-            <span className='text-sm'>{date.toLocaleDateString('en-GB')}</span>
+            <span className='text-sm'>{formatDateForDisplay(value)}</span>
             <span className='text-xs text-gray-500'>
               {date.toLocaleTimeString()}
             </span>
@@ -181,14 +183,11 @@ const ActivityLogs = () => {
 
   return (
     <div className='py-6 space-y-6'>
-      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
-        <div>
-          <h1 className='text-2xl font-bold text-slate-800'>Activity Logs</h1>
-          <p className='text-slate-500 mt-1'>
-            View system activities from the last 3 months
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Activity Logs"
+        subtitle="View system activities from the last 3 months"
+        icon={History}
+      />
 
       {/* Search Bar */}
       <div className='bg-white rounded-lg shadow-sm border border-slate-200 p-4'>

@@ -6,6 +6,7 @@ import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const InterviewTab = ({ drive }) => {
   useParams();
@@ -77,7 +78,7 @@ const InterviewTab = ({ drive }) => {
       width: '140px',
       sortable: true,
       renderCell: ({ row }) => (
-        row.interview?.interview_date ? new Date(row.interview.interview_date).toLocaleDateString() : '-'
+        formatDateForDisplay(row.interview?.interview_date)
       ),
     },
     {

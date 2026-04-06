@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'components/ui/select';
+import PageHeader from '../../components/common/PageHeader';
 
 const InstituteForm = () => {
   const { id } = useParams();
@@ -190,26 +191,19 @@ const InstituteForm = () => {
 
   return (
     <div className='py-6'>
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 ml-2'>
-        <div className='flex items-center gap-4'>
+      <PageHeader
+        title={id ? 'Edit Institute' : 'Add New Institute'}
+        subtitle={id ? 'Update institute details and information' : 'Create a new institute record in the system'}
+        icon={Building2}
+        backButton={
           <button
             onClick={handleCancel}
             className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
           >
             <ArrowLeft size={24} />
           </button>
-          <div>
-            <h1 className='text-2xl font-bold text-gray-800'>
-              {id ? 'Edit Institute' : 'Add New Institute'}
-            </h1>
-            <p className='text-gray-500 text-sm mt-1'>
-              {id
-                ? 'Update institute details and information'
-                : 'Create a new institute record in the system'}
-            </p>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500'>
         <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>

@@ -17,6 +17,7 @@ import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import Permission from '../../components/common/Permission';
 import { Button } from '../../components/ui/button';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const VesselTable = ({
   vessels,
@@ -174,7 +175,7 @@ const VesselTable = ({
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2 text-sm text-gray-600'>
           <Calendar size={14} className='flex-shrink-0 text-gray-400' />
-          <span>{row.joining_date ? new Date(row.joining_date).toLocaleDateString() : '-'}</span>
+          <span>{formatDateForDisplay(row.joining_date)}</span>
         </div>
       ),
     },

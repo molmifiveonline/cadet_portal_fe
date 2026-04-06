@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { ListChecks } from 'lucide-react';
+import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import CadetTable from './CadetTable';
 import { Button } from '../../components/ui/button';
@@ -204,18 +205,11 @@ const ShortlistedCadetsView = () => {
   return (
     <div className='py-6'>
       {/* Header */}
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 ml-2'>
-        <div>
-          <div className='flex items-center gap-3'>
-            <h1 className='text-2xl font-bold text-gray-800'>
-              Shortlisted Cadets
-            </h1>
-          </div>
-          <p className='text-gray-500 text-sm mt-1'>
-            View cadets who meet shortlisting criteria
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Shortlisted Cadets"
+        subtitle="View cadets who meet shortlisting criteria"
+        icon={ListChecks}
+      />
 
       {/* Stats Card */}
       {shortlistStats && (

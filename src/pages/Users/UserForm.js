@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import api from '../../lib/utils/apiConfig';
+import PageHeader from '../../components/common/PageHeader';
 
 const UserForm = () => {
   const navigate = useNavigate();
@@ -145,24 +146,19 @@ const UserForm = () => {
 
   return (
     <div className='py-6'>
-      <div className='flex items-center gap-4 mb-6'>
-        <button
-          onClick={() => navigate('/users')}
-          className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>
-            {isEdit ? 'Edit User' : 'Add New User'}
-          </h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            {isEdit
-              ? 'Update user details'
-              : 'Create a new user account in the system'}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={isEdit ? 'Edit User' : 'Add New User'}
+        subtitle={isEdit ? 'Update user details' : 'Create a new user account in the system'}
+        icon={User}
+        backButton={
+          <button
+            onClick={() => navigate('/users')}
+            className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
+          >
+            <ArrowLeft size={24} />
+          </button>
+        }
+      />
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
         <form onSubmit={handleSubmit} className='space-y-6'>

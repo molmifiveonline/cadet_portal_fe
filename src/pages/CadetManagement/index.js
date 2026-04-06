@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Upload, ListFilter, Plus } from 'lucide-react';
+import { Upload, ListFilter, Plus, GraduationCap } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import CadetTable from './CadetTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import { Button } from '../../components/ui/button';
 import Permission from '../../components/common/Permission';
+import PageHeader from '../../components/common/PageHeader';
 
 // Single-table logic with courseType parameter
 const CadetManagement = ({
@@ -265,48 +266,40 @@ const CadetManagement = ({
   return (
     <div className='py-6'>
       {/* Header */}
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 ml-2'>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>
-            {pageTitle ||
-              (courseType ? `${courseType} Cadets` : 'Cadet Management')}
-          </h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            Manage, track, and monitor{' '}
-            {courseType ? courseType.toLowerCase() : 'all'} cadets
-          </p>
-        </div>
-        <div className='flex gap-2'>
-          <Permission module='cadets' action='create'>
-            <Button
-              variant='default'
-              onClick={() => navigate('/cadets/add')}
-              className='gap-2 bg-indigo-600 hover:bg-indigo-700'
-            >
-              <Plus size={18} />
-              Add Cadet
-            </Button>
-            <Button
-              variant='outline'
-              onClick={() => navigate('/institute/submit-excel')}
-              className='gap-2'
-            >
-              <Upload size={18} />
-              Import Cadets
-            </Button>
-          </Permission>
-          <Permission module='cadets' action='view'>
-            <Button
-              variant='outline'
-              onClick={() => navigate('/cadets/shortlist')}
-              className='gap-2'
-            >
-              <ListFilter size={18} />
-              View Shortlist
-            </Button>
-          </Permission>
-        </div>
-      </div>
+      <PageHeader
+        title={pageTitle || (courseType ? `${courseType} Cadets` : 'Cadet Management')}
+        subtitle={`Manage, track, and monitor ${courseType ? courseType.toLowerCase() : 'all'} cadets`}
+        icon={GraduationCap}
+      >
+        <Permission module='cadets' action='create'>
+          <Button
+            variant='default'
+            onClick={() => navigate('/cadets/add')}
+            className='gap-2 bg-indigo-600 hover:bg-indigo-700'
+          >
+            <Plus size={18} />
+            Add Cadet
+          </Button>
+          <Button
+            variant='outline'
+            onClick={() => navigate('/institute/submit-excel')}
+            className='gap-2'
+          >
+            <Upload size={18} />
+            Import Cadets
+          </Button>
+        </Permission>
+        <Permission module='cadets' action='view'>
+          <Button
+            variant='outline'
+            onClick={() => navigate('/cadets/shortlist')}
+            className='gap-2'
+          >
+            <ListFilter size={18} />
+            View Shortlist
+          </Button>
+        </Permission>
+      </PageHeader>
 
       <div className='mt-6'>
         <CadetTable

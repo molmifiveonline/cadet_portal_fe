@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import * as xlsx from 'xlsx';
 import {
@@ -268,13 +269,12 @@ const SubmitExcel = () => {
           <div className='w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6'>
             <CheckCircle className='w-8 h-8 text-green-500' />
           </div>
-          <h1 className='text-2xl font-bold text-gray-900 mb-2'>
-            Submission Successful!
-          </h1>
-          <p className='text-gray-500 mb-6'>
-            Thank you, {instituteName}. Your Excel file has been successfully
-            uploaded and sent for processing.
-          </p>
+          <PageHeader
+            title="Submission Successful!"
+            subtitle={`Thank you, ${instituteName}. Your Excel file has been successfully uploaded and sent for processing.`}
+            icon={CheckCircle}
+            className="mb-6 shadow-none border-none bg-transparent backdrop-blur-none"
+          />
           <Button
             onClick={() => setSubmitted(false)}
             className='bg-[#3a5f9e] hover:bg-[#325186] text-white'
@@ -288,14 +288,16 @@ const SubmitExcel = () => {
 
   return (
     <div className='mx-auto py-6'>
-      <div className='mb-8'>
-        <h2 className='text-2xl font-bold text-slate-900'>Submit Cadet Data</h2>
-        <p className='mt-1 text-slate-600'>
-          Welcome,{' '}
-          <span className='font-medium text-[#3a5f9e] capitalize'>{instituteName}</span>.
-          Please upload the requested Excel sheet containing cadet details.
-        </p>
-      </div>
+      <PageHeader
+        title="Submit Cadet Data"
+        subtitle={
+          <>
+            Welcome, <span className='font-medium text-[#3a5f9e] capitalize'>{instituteName}</span>.
+            Please upload the requested Excel sheet containing cadet details.
+          </>
+        }
+        icon={Upload}
+      />
 
       <div className='bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden'>
         <div className='p-6 border-b border-gray-100 bg-slate-50'>

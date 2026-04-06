@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import api from '../../lib/utils/apiConfig';
+import PageHeader from '../../components/common/PageHeader';
 
 const VesselForm = () => {
   const { id } = useParams();
@@ -129,24 +130,19 @@ const VesselForm = () => {
 
   return (
     <div className='py-6 mx-auto'>
-      <div className='flex items-center gap-4 mb-6'>
-        <button
-          onClick={() => navigate('/vessels')}
-          className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>
-            {isEditMode ? 'Edit Vessel' : 'Add New Vessel'}
-          </h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            {isEditMode
-              ? 'Update the vessel details below'
-              : 'Enter the details of the new vessel'}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={isEditMode ? 'Edit Vessel' : 'Add New Vessel'}
+        subtitle={isEditMode ? 'Update the vessel details below' : 'Enter the details of the new vessel'}
+        icon={isEditMode ? Ship : Anchor}
+        backButton={
+          <button
+            onClick={() => navigate('/vessels')}
+            className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
+          >
+            <ArrowLeft size={24} />
+          </button>
+        }
+      />
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
         <form onSubmit={handleSubmit} className='space-y-6'>

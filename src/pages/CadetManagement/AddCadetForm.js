@@ -8,7 +8,9 @@ import {
   Loader2,
   Camera,
   Image as ImageIcon,
+  UserPlus
 } from 'lucide-react';
+import PageHeader from '../../components/common/PageHeader';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import CadetFormFields from '../../components/cadet/CadetFormFields';
@@ -86,23 +88,23 @@ const AddCadetForm = () => {
       className='py-6 space-y-6 animate-in fade-in slide-in-from-bottom-4'
     >
       {/* Header */}
-      <div className='flex items-center gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100'>
-        <Button
-          type='button'
-          variant='ghost'
-          size='icon'
-          onClick={() => navigate('/cadets')}
-          className='rounded-full hover:bg-gray-100'
-        >
-          <ArrowLeft size={24} className='text-gray-600' />
-        </Button>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-900'>Add New Cadet</h1>
-          <p className='text-gray-500 text-sm'>
-            Enter details to register a new cadet
-          </p>
-        </div>
-        <div className='ml-auto flex gap-2'>
+      <PageHeader
+        title="Add New Cadet"
+        subtitle="Enter details to register a new cadet"
+        icon={UserPlus}
+        backButton={
+          <Button
+            type='button'
+            variant='ghost'
+            size='icon'
+            onClick={() => navigate('/cadets')}
+            className='rounded-full hover:bg-gray-100'
+          >
+            <ArrowLeft size={24} className='text-gray-600' />
+          </Button>
+        }
+      >
+        <div className='flex gap-2'>
           <Button
             type='button'
             variant='outline'
@@ -125,7 +127,7 @@ const AddCadetForm = () => {
             Save Cadet
           </Button>
         </div>
-      </div>
+      </PageHeader>
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8'>
         <div className='space-y-8'>

@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 import api from '../../lib/utils/apiConfig';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const ExtendTokenModal = ({ isOpen, onClose, institute, onSuccess }) => {
   const [newExpiryDate, setNewExpiryDate] = useState('');
@@ -41,7 +42,7 @@ const ExtendTokenModal = ({ isOpen, onClose, institute, onSuccess }) => {
         newExpiryDate: newExpiryDate,
       });
       toast.success(
-        `Token expiry extended to ${new Date(newExpiryDate).toLocaleDateString()} for ${institute.institute_name}`,
+        `Token expiry extended to ${formatDateForDisplay(newExpiryDate)} for ${institute.institute_name}`,
       );
       onSuccess?.();
       onClose();
@@ -56,13 +57,7 @@ const ExtendTokenModal = ({ isOpen, onClose, institute, onSuccess }) => {
     }
   };
 
-  const currentExpiry = institute.temp_expiry
-    ? new Date(institute.temp_expiry).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      })
-    : '—';
+  const currentExpiry = formatDateForDisplay(institute.temp_expiry);
 
   return (
     <div

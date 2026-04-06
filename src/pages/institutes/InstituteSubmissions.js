@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
+import PageHeader from '../../components/common/PageHeader';
 
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
@@ -264,7 +266,7 @@ const InstituteSubmissions = () => {
       width: 110,
       renderCell: ({ value }) => (
         <div className='flex flex-col'>
-          <span>{new Date(value).toLocaleDateString('en-GB')}</span>
+          <span>{formatDateForDisplay(value)}</span>
           <span className='text-xs text-gray-400'>
             {new Date(value).toLocaleTimeString()}
           </span>
@@ -370,14 +372,11 @@ const InstituteSubmissions = () => {
   return (
     <div className='py-6'>
       <div className='space-y-6'>
-        <div className='flex flex-col '>
-          <h1 className='text-2xl font-bold text-gray-800'>
-            Institute Submissions
-          </h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            Review and import Excel submissions from institutes
-          </p>
-        </div>
+        <PageHeader
+          title="Institute Submissions"
+          subtitle="Review and import Excel submissions from institutes"
+          icon={FileSpreadsheet}
+        />
 
         <div className='bg-white p-4 rounded-xl shadow-sm border border-gray-100'>
           <div className='flex flex-col md:flex-row justify-between items-center gap-4'>

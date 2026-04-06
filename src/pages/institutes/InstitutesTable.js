@@ -13,6 +13,7 @@ import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import { Button } from 'components/ui/button';
 import Permission from '../../components/common/Permission';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const InstitutesTable = ({
   institutes,
@@ -39,14 +40,7 @@ const InstitutesTable = ({
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
+
 
   const isExpired = (dateStr) => {
     if (!dateStr) return false;
@@ -160,14 +154,14 @@ const InstitutesTable = ({
                     className='text-xs font-medium text-red-600 flex items-center gap-1 cursor-pointer'
                     title='Token Expired'
                   >
-                    ⚠ {formatDate(row.temp_expiry)}
+                    ⚠ {formatDateForDisplay(row.temp_expiry)}
                   </span>
                 ) : (
                   <span
                     className='text-xs font-medium text-blue-600 flex items-center gap-1'
                     title={row.temp_expiry}
                   >
-                    {formatDate(row.temp_expiry)}
+                    {formatDateForDisplay(row.temp_expiry)}
                   </span>
                 );
               },

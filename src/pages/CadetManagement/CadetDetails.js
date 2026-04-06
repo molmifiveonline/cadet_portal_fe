@@ -9,6 +9,7 @@ import {
   Save,
   X,
   Loader2,
+  GraduationCap,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
@@ -17,6 +18,7 @@ import CadetFormFields from '../../components/cadet/CadetFormFields';
 import { useAuth } from '../../context/AuthContext';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
 import { formatDateForInput } from '../../lib/utils/dateUtils';
+import PageHeader from '../../components/common/PageHeader';
 
 import StageTracker from '../../components/common/StageTracker';
 
@@ -205,40 +207,42 @@ const CadetDetails = () => {
       className='py-6 space-y-6 animate-in fade-in slide-in-from-bottom-4'
     >
       {/* Header */}
-      <div className='flex items-center gap-4 mb-6 bg-white p-5 rounded-2xl shadow-md border border-gray-100 bg-gradient-to-r from-white to-indigo-50/30'>
-        <Button
-          type='button'
-          variant='ghost'
-          size='icon'
-          onClick={() => {
-            if (returnPath) {
-              navigate(returnPath, {
-                state: { returnState: returnStatePayload },
-              });
-            } else {
-              navigate(-1);
-            }
-          }}
-          className='rounded-full hover:bg-white hover:shadow-md transition-all'
-        >
-          <ArrowLeft size={24} className='text-gray-600' />
-        </Button>
-        <div>
+      <PageHeader
+        title={
           <div className='flex items-center gap-3'>
-            <h1 className='text-2xl font-extrabold text-gray-900 tracking-tight'>Cadet Profile</h1>
+            <span>Cadet Profile</span>
             {cadet.cadet_unique_id && (
-              <span className='px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-sm'>
+              <span className='px-3 py-1 bg-indigo-600 text-white text-[10px] font-bold rounded-full shadow-sm uppercase'>
                 {cadet.cadet_unique_id}
               </span>
             )}
           </div>
-          <p className='text-gray-500 text-sm font-medium'>
-            {isEditing
-              ? `Update details for ${cadet.name_as_in_indos_cert}`
-              : `Viewing comprehensive profile for ${cadet.name_as_in_indos_cert}`}
-          </p>
-        </div>
-        <div className='ml-auto flex gap-3'>
+        }
+        subtitle={isEditing
+          ? `Update details for ${cadet.name_as_in_indos_cert}`
+          : `Viewing comprehensive profile for ${cadet.name_as_in_indos_cert}`}
+        icon={GraduationCap}
+        backButton={
+          <Button
+            type='button'
+            variant='ghost'
+            size='icon'
+            onClick={() => {
+              if (returnPath) {
+                navigate(returnPath, {
+                  state: { returnState: returnStatePayload },
+                });
+              } else {
+                navigate(-1);
+              }
+            }}
+            className='rounded-full hover:bg-white hover:shadow-md transition-all'
+          >
+            <ArrowLeft size={24} className='text-gray-600' />
+          </Button>
+        }
+      >
+        <div className='flex gap-3'>
           {isEditing ? (
             <>
               <Button
@@ -273,7 +277,7 @@ const CadetDetails = () => {
             </Button>
           )}
         </div>
-      </div>
+      </PageHeader>
 
       {/* Stage Tracker - Only for Admins */}
       {user?.role?.toLowerCase() === 'superadmin' && (

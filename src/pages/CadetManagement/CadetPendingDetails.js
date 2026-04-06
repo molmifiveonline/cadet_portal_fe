@@ -10,9 +10,11 @@ import {
   Loader2,
   ClipboardList
 } from 'lucide-react';
+import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
+import { formatDateForInput } from '../../lib/utils/dateUtils';
 import CadetFormFields from '../../components/cadet/CadetFormFields';
 import { useAuth } from '../../context/AuthContext';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
@@ -62,18 +64,7 @@ const CadetPendingDetails = () => {
         const formData = { ...data };
         ['date_of_birth', 'passing_out_date'].forEach((field) => {
           if (formData[field]) {
-            const date = new Date(formData[field]);
-            if (!isNaN(date.getTime())) {
-              const localDateString = date.toLocaleDateString('en-GB'); // DD/MM/YYYY
-              const parts = localDateString.split('/');
-              if (parts.length === 3) {
-                formData[field] = `${parts[2]}-${parts[1]}-${parts[0]}`;
-              } else {
-                formData[field] = '';
-              }
-            } else {
-              formData[field] = '';
-            }
+            formData[field] = formatDateForInput(formData[field]);
           }
         });
 
@@ -162,38 +153,31 @@ const CadetPendingDetails = () => {
         className='max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4'
       >
         {/* Header */}
-        <div className='flex items-center gap-4 mb-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100'>
-          <Button
-            type='button'
-            variant='ghost'
-            size='icon'
-            onClick={() => {
-              if (returnPath) {
-                navigate(returnPath, {
-                  state: { returnState: returnStatePayload },
-                });
-              } else {
-                navigate(defaultBackPath);
-              }
-            }}
-            className='rounded-full hover:bg-gray-100'
-          >
-            <ArrowLeft size={24} className='text-gray-600' />
-          </Button>
-          <div>
-            <div className='flex items-center gap-3'>
-              <div className='p-2 bg-blue-600 rounded-lg shadow-sm'>
-                <ClipboardList className='text-white' size={24} />
-              </div>
-              <div>
-                <h1 className='text-2xl font-bold text-gray-900'>Fill Pending Details</h1>
-                <p className='text-gray-500 text-sm'>
-                  Complete the profile for {cadet.name_as_in_indos_cert}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className='ml-auto flex gap-3'>
+        <PageHeader
+          title="Fill Pending Details"
+          subtitle={`Complete the profile for ${cadet.name_as_in_indos_cert}`}
+          icon={ClipboardList}
+          backButton={
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              onClick={() => {
+                if (returnPath) {
+                  navigate(returnPath, {
+                    state: { returnState: returnStatePayload },
+                  });
+                } else {
+                  navigate(defaultBackPath);
+                }
+              }}
+              className='rounded-full hover:bg-gray-100'
+            >
+              <ArrowLeft size={24} className='text-gray-600' />
+            </Button>
+          }
+        >
+          <div className='flex gap-3'>
             <Button
               type='button'
               variant='outline'
@@ -216,7 +200,7 @@ const CadetPendingDetails = () => {
               Save Details
             </Button>
           </div>
-        </div>
+        </PageHeader>
 
         <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8'>
           <div className='space-y-8'>
