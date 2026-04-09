@@ -10,11 +10,11 @@
 const INTENT_ROUTE_CONFIG = {
   institute_submit: {
     primary: '/institute/submit-excel',
-    allowed: [],
+    allowed: ['/drives', '/drives/*'],
   },
   institute_shortlist: {
     primary: '/institute/shortlisted-cadets',
-    allowed: ['/cadets/fill-details/*'],
+    allowed: ['/cadets/fill-details/*', '/drives', '/drives/*'],
   },
 };
 
@@ -42,6 +42,7 @@ export const getPrefixRoute = (user) => {
  */
 export const isAllowedRoute = (user, pathname) => {
   if (!user?.intent) return true; // No intent restriction
+  if (!pathname) return false; // If pathname is undefined, don't crash
 
   const config = INTENT_ROUTE_CONFIG[user.intent];
   if (!config) return true; // Unknown intent, allow

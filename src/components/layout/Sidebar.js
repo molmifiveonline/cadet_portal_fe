@@ -7,7 +7,7 @@ import { MenuItems } from "../../lib/utils/menu";
 import { useAuth } from "../../context/AuthContext";
 import { useLayout } from "../../context/LayoutContext";
 import { useUserPermissions } from "../../hooks/usePermission";
-import { getPrefixRoute } from "../../lib/utils/routeUtils";
+import { isAllowedRoute } from "../../lib/utils/routeUtils";
 import {
   Tooltip,
   TooltipTrigger,
@@ -52,11 +52,9 @@ const Sidebar = () => {
     });
   };
 
-  const intentRoute = getPrefixRoute(user);
-
   const visibleItems = MenuItems.filter((item) => {
-    if (intentRoute) {
-      return item.url === intentRoute;
+    if (user?.intent && !isAllowedRoute(user, item.url)) {
+      return false;
     }
 
     if (item.module && item.action) {

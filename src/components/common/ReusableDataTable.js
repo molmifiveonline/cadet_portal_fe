@@ -108,6 +108,7 @@ export default function ReusableDataTable({
   handlePerPageChange,
   onRowSelectionModelChange,
   rowSelectionModel,
+  isRowSelectable = () => true,
   title,
   emptyMessage = 'No data available',
   pagination,
@@ -166,7 +167,9 @@ export default function ReusableDataTable({
   const handleSelectAllClick = (e) => {
     const checked = e.target.checked;
     if (checked) {
-      const newSelected = rows.map((n) => n.id);
+      // Only select rows that are selectable
+      const selectableRows = rows.filter((row) => isRowSelectable(row));
+      const newSelected = selectableRows.map((n) => n.id);
       setSelected(newSelected);
       onRowSelectionModelChange?.(newSelected);
       return;
@@ -176,7 +179,7 @@ export default function ReusableDataTable({
   };
 
   const handleRowSelect = (row) => {
-    if (!checkboxSelection) return;
+    if (!checkboxSelection || !isRowSelectable(row)) return;
 
     const selectedIndex = selected.indexOf(row.id);
     let newSelected = [];
@@ -215,8 +218,13 @@ export default function ReusableDataTable({
     return row[column.field];
   };
 
-  const isAllSelected = rows.length > 0 && selected.length === rows.length;
-  const isSomeSelected = selected.length > 0 && selected.length < rows.length;
+  // isAllSelected should only compare against selectable rows
+  const selectableRowsInPage = rows.filter((row) => isRowSelectable(row));
+  const isAllSelected =
+    selectableRowsInPage.length > 0 &&
+    selectableRowsInPage.every((row) => selected.includes(row.id));
+  const isSomeSelected =
+    selected.length > 0 && !isAllSelected;
 
   return (
     <div className='w-full p-3'>
@@ -301,13 +309,15 @@ export default function ReusableDataTable({
               {visibleRows.length > 0 ? (
                 visibleRows.map((row, index) => {
                   const isItemSelected = selected.includes(row.id);
+                  const isSelectable = isRowSelectable(row);
                   return (
                     <TableRow
                       key={row.id}
-                      onClick={() => onRowClick?.(row)}
+                      onClick={() => isSelectable && onRowClick?.(row)}
                       className={cn(
-                        onRowClick && 'cursor-pointer',
-                        'hover:bg-blue-50 transition',
+                        onRowClick && isSelectable && 'cursor-pointer',
+                        'transition',
+                        !isSelectable ? 'bg-gray-50/50' : 'hover:bg-blue-50',
                         getRowClassName?.(row),
                         'group',
                       )}
@@ -317,6 +327,7 @@ export default function ReusableDataTable({
                           <Checkbox
                             checked={isItemSelected}
                             onChange={() => handleRowSelect(row)}
+                            disabled={!isSelectable}
                           />
                         </TableCell>
                       )}
@@ -365,31 +376,33 @@ export default function ReusableDataTable({
 
       {/* Pagination */}
       {rows.length > 0 && (
-        <div className='flex items-center justify-between border-t border-gray-100 pb-5 p-2'>
-          <div className='flex items-center gap-1.5'>
-            <span className='text-sm text-gray-500'>Rows per page:</span>
-            <Select
-              value={perPage.toString()}
-              onValueChange={(value) => {
-                const newPerPage = Number(value);
-                if (handlePerPageChange) {
-                  handlePerPageChange(newPerPage);
-                } else {
-                  handlePageChange?.(1); // Fallback: Reset to first page
-                }
-              }}
-            >
-              <SelectTrigger className='w-[75px] h-9 bg-white border-gray-200 rounded-lg'>
-                <SelectValue placeholder={perPage} />
-              </SelectTrigger>
-              <SelectContent className='bg-white'>
-                <SelectItem value='10'>10</SelectItem>
-                <SelectItem value='20'>20</SelectItem>
-                <SelectItem value='50'>50</SelectItem>
-                <SelectItem value='100'>100</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className='text-sm text-gray-500 ml-8'>
+        <div className='flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 pb-5 p-2'>
+          <div className='flex flex-col sm:flex-row items-center gap-2 sm:gap-4 w-full sm:w-auto'>
+            <div className='flex items-center gap-1.5'>
+              <span className='text-xs sm:text-sm text-gray-500'>Rows:</span>
+              <Select
+                value={perPage.toString()}
+                onValueChange={(value) => {
+                  const newPerPage = Number(value);
+                  if (handlePerPageChange) {
+                    handlePerPageChange(newPerPage);
+                  } else {
+                    handlePageChange?.(1); // Fallback: Reset to first page
+                  }
+                }}
+              >
+                <SelectTrigger className='w-[65px] sm:w-[75px] h-8 sm:h-9 bg-white border-gray-200 rounded-lg'>
+                  <SelectValue placeholder={perPage} />
+                </SelectTrigger>
+                <SelectContent className='bg-white'>
+                  <SelectItem value='10'>10</SelectItem>
+                  <SelectItem value='20'>20</SelectItem>
+                  <SelectItem value='50'>50</SelectItem>
+                  <SelectItem value='100'>100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <span className='text-xs sm:text-sm text-gray-500 whitespace-nowrap'>
               Showing{' '}
               <span className='font-semibold text-gray-700'>
                 {(totalItems === 0
@@ -404,26 +417,25 @@ export default function ReusableDataTable({
               of{' '}
               <span className='font-semibold text-gray-700'>
                 {totalItems.toLocaleString()}
-              </span>{' '}
-              entries
+              </span>
             </span>
           </div>
 
-          <div className='flex items-center gap-1.5'>
+          <div className='flex items-center gap-1 sm:gap-1.5 overflow-x-auto max-w-full pb-2 sm:pb-0'>
             <Button
               variant='outline'
               size='icon'
-              className='h-9 w-9 rounded-lg border-gray-200 text-gray-600 hover:bg-gray-50'
+              className='h-8 w-8 sm:h-9 sm:w-9 rounded-lg border-gray-200 text-gray-600 hover:bg-gray-50 shrink-0'
               onClick={() => handleChangePage(currentPage - 1)}
               disabled={currentPage === 1}
             >
               <ChevronLeft className='h-4 w-4' />
             </Button>
 
-            <div className='flex items-center gap-1.5'>
+            <div className='flex items-center gap-1 sm:gap-1.5'>
               {getPageNumbers(currentPage, totalPages).map((page, index) =>
                 page === '...' ? (
-                  <span key={`dots-${index}`} className='px-2 text-gray-400'>
+                  <span key={`dots-${index}`} className='px-1 text-gray-400'>
                     ...
                   </span>
                 ) : (
@@ -431,7 +443,7 @@ export default function ReusableDataTable({
                     key={page}
                     variant={currentPage === page ? 'default' : 'outline'}
                     size='sm'
-                    className={`h-9 w-9 rounded-lg font-medium ${
+                    className={`h-8 min-w-[32px] sm:h-9 sm:w-9 rounded-lg font-medium transition-all ${
                       currentPage === page
                         ? 'bg-[#3a5f9e] hover:bg-[#3a5f9e]/80 text-white border-[#3a5f9e] shadow-sm'
                         : 'border-gray-200 text-gray-600 hover:bg-gray-50'
@@ -447,7 +459,7 @@ export default function ReusableDataTable({
             <Button
               variant='outline'
               size='icon'
-              className='h-9 w-9 rounded-lg border-gray-200 text-gray-600 hover:bg-gray-50'
+              className='h-8 w-8 sm:h-9 sm:w-9 rounded-lg border-gray-200 text-gray-600 hover:bg-gray-50 shrink-0'
               onClick={() => handleChangePage(currentPage + 1)}
               disabled={currentPage === totalPages}
             >

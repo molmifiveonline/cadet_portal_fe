@@ -1,19 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
-import api from '../../lib/utils/apiConfig';
-import { Plus, Users, Rocket } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import Permission from '../../components/common/Permission';
-import PageHeader from '../../components/common/PageHeader';
+import React, { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import api from "../../lib/utils/apiConfig";
+import { useAuth } from "../../context/AuthContext";
+import { Plus, Users, Rocket, Trash2 } from "lucide-react";
+import { Button } from "../../components/ui/button";
+import Permission from "../../components/common/Permission";
+import PageHeader from "../../components/common/PageHeader";
+import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 
 const RecruitmentDrives = () => {
   const [drives, setDrives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [institutes, setInstitutes] = useState([]);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 10,
@@ -21,9 +24,14 @@ const RecruitmentDrives = () => {
     last_page: 1,
   });
   const [filters, setFilters] = useState({
-    status: 'all',
-    course_type: 'all',
-    institute_id: ''
+    status: "all",
+    course_type: "all",
+    institute_id: "",
+  });
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    driveId: null,
+    driveName: "",
   });
 
   const fetchDrives = useCallback(
@@ -41,8 +49,8 @@ const RecruitmentDrives = () => {
           page,
           limit,
           search,
-          ...(filterStatus !== 'all' && { status: filterStatus }),
-          ...(filterCourseType !== 'all' && { course_type: filterCourseType }),
+          ...(filterStatus !== "all" && { status: filterStatus }),
+          ...(filterCourseType !== "all" && { course_type: filterCourseType }),
           ...(filterInstituteId && { institute_id: filterInstituteId }),
         });
 
@@ -55,8 +63,8 @@ const RecruitmentDrives = () => {
           last_page: Math.ceil(response.data.total / response.data.limit),
         });
       } catch (error) {
-        console.error('Error fetching recruitment drives:', error);
-        toast.error('Failed to fetch recruitment drives');
+        console.error("Error fetching recruitment drives:", error);
+        toast.error("Failed to fetch recruitment drives");
       } finally {
         setLoading(false);
       }
@@ -73,15 +81,17 @@ const RecruitmentDrives = () => {
 
   useEffect(() => {
     fetchDrives();
-    fetchInstitutes();
-  }, [fetchDrives]);
+    if (user?.role !== "Institute") {
+      fetchInstitutes();
+    }
+  }, [fetchDrives, user]);
 
   const fetchInstitutes = async () => {
     try {
-      const response = await api.get('/institutes?limit=1000');
+      const response = await api.get("/institutes?limit=1000");
       setInstitutes(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching institutes:', error);
+      console.error("Error fetching institutes:", error);
     }
   };
 
@@ -95,24 +105,74 @@ const RecruitmentDrives = () => {
   };
 
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({ ...prev, [filterType]: value }));
-    fetchDrives(1, pagination.per_page, searchTerm, filterType === 'status' ? value : filters.status,
-               filterType === 'course_type' ? value : filters.course_type,
-               filterType === 'institute_id' ? value : filters.institute_id);
+    setFilters((prev) => ({ ...prev, [filterType]: value }));
+    fetchDrives(
+      1,
+      pagination.per_page,
+      searchTerm,
+      filterType === "status" ? value : filters.status,
+      filterType === "course_type" ? value : filters.course_type,
+      filterType === "institute_id" ? value : filters.institute_id,
+    );
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Active': return 'bg-green-100 text-green-800';
-      case 'Draft': return 'bg-yellow-100 text-yellow-800';
-      case 'Completed': return 'bg-blue-100 text-blue-800';
-      case 'Cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "Active":
+        return "bg-green-100 text-green-800";
+      case "Draft":
+        return "bg-yellow-100 text-yellow-800";
+      case "Completed":
+        return "bg-blue-100 text-blue-800";
+      case "Cancelled":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getCourseTypeColor = (courseType) => {
-    return courseType === 'Deck' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800';
+    return courseType === "Deck"
+      ? "bg-blue-100 text-blue-800"
+      : "bg-orange-100 text-orange-800";
+  };
+
+  const handleDeleteClick = (e, drive) => {
+    e.stopPropagation();
+    setDeleteModal({
+      isOpen: true,
+      driveId: drive.id,
+      driveName: drive.drive_name,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.driveId) return;
+    if (user?.role === "Institute") {
+      toast.error("Institute users cannot delete recruitment drives");
+      setDeleteModal({ isOpen: false, driveId: null, driveName: "" });
+      return;
+    }
+    try {
+      await api.delete(`/recruitment-drives/${deleteModal.driveId}`);
+      toast.success("Recruitment drive deleted successfully");
+      setDeleteModal({ isOpen: false, driveId: null, driveName: "" });
+
+      const isLastCardOnPage = drives.length === 1 && pagination.current_page > 1;
+      fetchDrives(
+        isLastCardOnPage ? pagination.current_page - 1 : pagination.current_page,
+        pagination.per_page,
+        searchTerm,
+        filters.status,
+        filters.course_type,
+        filters.institute_id,
+      );
+    } catch (error) {
+      console.error("Error deleting recruitment drive:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to delete recruitment drive",
+      );
+    }
   };
 
   if (loading) {
@@ -131,7 +191,10 @@ const RecruitmentDrives = () => {
         icon={Rocket}
       >
         <Permission module="recruitment_drives" action="create">
-          <Button onClick={() => navigate('/drives/new')} className="flex items-center gap-2">
+          <Button
+            onClick={() => navigate("/drives/new")}
+            className="flex items-center gap-2"
+          >
             <Plus className="h-4 w-4" />
             New Drive
           </Button>
@@ -153,7 +216,7 @@ const RecruitmentDrives = () => {
           <div>
             <select
               value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              onChange={(e) => handleFilterChange("status", e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Status</option>
@@ -166,7 +229,9 @@ const RecruitmentDrives = () => {
           <div>
             <select
               value={filters.course_type}
-              onChange={(e) => handleFilterChange('course_type', e.target.value)}
+              onChange={(e) =>
+                handleFilterChange("course_type", e.target.value)
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">All Courses</option>
@@ -174,18 +239,24 @@ const RecruitmentDrives = () => {
               <option value="Engine">Engine</option>
             </select>
           </div>
-          <div>
-            <select
-              value={filters.institute_id}
-              onChange={(e) => handleFilterChange('institute_id', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Institutes</option>
-              {institutes.map(inst => (
-                <option key={inst.id} value={inst.id}>{inst.institute_name}</option>
-              ))}
-            </select>
-          </div>
+          {user?.role !== "Institute" && (
+            <div>
+              <select
+                value={filters.institute_id}
+                onChange={(e) =>
+                  handleFilterChange("institute_id", e.target.value)
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Institutes</option>
+                {institutes.map((inst) => (
+                  <option key={inst.id} value={inst.id}>
+                    {inst.institute_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -202,20 +273,45 @@ const RecruitmentDrives = () => {
                 <h3 className="text-lg font-semibold text-gray-900 truncate">
                   {drive.drive_name}
                 </h3>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(drive.status)}`}>
-                  {drive.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(drive.status)}`}
+                  >
+                    {drive.status}
+                  </span>
+                  {user?.role !== "Institute" && (
+                    <Permission module="recruitment_drives" action="delete">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteClick(e, drive)}
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors"
+                        title="Delete drive"
+                        aria-label={`Delete ${drive.drive_name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </Permission>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2 mb-4">
                 <p className="text-sm text-gray-600">
-                  <span className="font-medium">Institute:</span> {drive.institute_name}
+                  <span className="font-medium">Institute:</span>{" "}
+                  {drive.institute_name}
                 </p>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCourseTypeColor(drive.course_type)}`}>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${getCourseTypeColor(drive.course_type)}`}
+                  >
                     {drive.course_type}
                   </span>
-                  <span className="text-sm text-gray-600">
+                  {drive.year && (
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700">
+                      {drive.year}
+                    </span>
+                  )}
+                  <span className="text-sm text-gray-600 flex-1 text-right">
                     Capacity: {drive.intake_capacity}
                   </span>
                 </div>
@@ -223,9 +319,40 @@ const RecruitmentDrives = () => {
 
               {/* Progress Meter */}
               {(() => {
-                const totalCadets = drive.total_cadets || 0;
-                const onboarded = drive.onboarded || 0;
-                const progress = totalCadets > 0 ? Math.round((onboarded / totalCadets) * 100) : 0;
+                const totalCadets = Number(drive.total_cadets || 0);
+                const uploaded = Number(drive.uploaded_count || 0);
+                const assessmentCompleted = Number(
+                  drive.assessment_completed_count || 0,
+                );
+                const interviewReady = Number(drive.interview_ready_count || 0);
+                const medicalReady = Number(drive.medical_ready_count || 0);
+                const medicalCompleted = Number(
+                  drive.medical_completed_count || 0,
+                );
+                const ctvAssigned = Number(drive.ctv_assigned_count || 0);
+                const onboarded = Number(
+                  drive.onboarded_count || drive.onboarded || 0,
+                );
+
+                // Weighted progress by current cadet stage (0-100). Statuses are treated as mutually exclusive.
+                const weightedTotal =
+                  uploaded * 15 +
+                  assessmentCompleted * 30 +
+                  interviewReady * 45 +
+                  medicalReady * 60 +
+                  medicalCompleted * 75 +
+                  ctvAssigned * 90 +
+                  onboarded * 100;
+                const progress =
+                  totalCadets > 0 ? Math.round(weightedTotal / totalCadets) : 0;
+                const progressBarColorClass =
+                  progress >= 80
+                    ? "bg-emerald-600"
+                    : progress >= 50
+                      ? "bg-amber-500"
+                      : progress > 0
+                        ? "bg-blue-600"
+                        : "bg-gray-300";
                 return (
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
@@ -233,10 +360,13 @@ const RecruitmentDrives = () => {
                       <span>{progress}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
+                      <div
+                        className={`${progressBarColorClass} h-2 rounded-full transition-all`}
+                        style={{ width: `${progress}%` }}
+                      ></div>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>{totalCadets} Uploaded</span>
+                      <span>{uploaded} Uploaded</span>
                       <span>{onboarded} Onboarded</span>
                     </div>
                   </div>
@@ -250,11 +380,15 @@ const RecruitmentDrives = () => {
       {drives.length === 0 && (
         <div className="text-center py-12">
           <Users className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No recruitment drives</h3>
-          <p className="mt-1 text-sm text-gray-500">Get started by creating a new recruitment drive.</p>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">
+            No recruitment drives
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Get started by creating a new recruitment drive.
+          </p>
           <div className="mt-6">
             <Permission module="recruitment_drives" action="create">
-              <Button onClick={() => navigate('/drives/new')}>
+              <Button onClick={() => navigate("/drives/new")}>
                 <Plus className="h-4 w-4 mr-2" />
                 New Drive
               </Button>
@@ -262,6 +396,16 @@ const RecruitmentDrives = () => {
           </div>
         </div>
       )}
+
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() =>
+          setDeleteModal({ isOpen: false, driveId: null, driveName: "" })
+        }
+        onConfirm={handleConfirmDelete}
+        title="Delete Recruitment Drive"
+        message={`Are you sure you want to delete "${deleteModal.driveName}"? This action cannot be undone.`}
+      />
     </div>
   );
 };

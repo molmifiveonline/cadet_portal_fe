@@ -187,7 +187,7 @@ const CadetFormFields = ({
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
             <div className='space-y-4'>
               <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider'>10th Standard</h4>
-              <div className='grid grid-cols-2 gap-4'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
                 <DetailItem label='Board' value={cadet.tenth_std_board} name='tenth_std_board' icon={School} />
                 <DetailItem label='Year' value={cadet.tenth_std_pass_out_year} name='tenth_std_pass_out_year' type='number' icon={Calendar} />
                 <DetailItem label='Percentage' value={cadet.tenth_avg_percentage} name='tenth_avg_percentage' type='text' icon={Percent} />
@@ -198,7 +198,7 @@ const CadetFormFields = ({
             </div>
             <div className='space-y-4'>
               <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider'>12th Standard</h4>
-              <div className='grid grid-cols-2 gap-4'>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
                 <DetailItem label='Board' value={cadet.twelfth_std_board} name='twelfth_std_board' icon={School} />
                 <DetailItem label='Year' value={cadet.twelfth_std_pass_out_year} name='twelfth_std_pass_out_year' type='text' icon={Calendar} />
                 <DetailItem label='PCM %' value={cadet.twelfth_pcm_avg_percentage} name='twelfth_pcm_avg_percentage' type='text' icon={Percent} />
@@ -218,7 +218,7 @@ const CadetFormFields = ({
             </div>
             <div className='space-y-4'>
               <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider'>IMU Performance</h4>
-              <div className='grid grid-cols-2 gap-4'>
+              <div className='grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4'>
                 <DetailItem label='IMU Rank' value={cadet.imu_rank} name='imu_rank' type='text' icon={Award} />
                 <DetailItem
                   label='Avg %'

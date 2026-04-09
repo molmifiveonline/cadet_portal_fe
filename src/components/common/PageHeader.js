@@ -38,7 +38,7 @@ const PageHeader = ({
         </div>
         
         {/* Actions Container - Keep original buttons here */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 md:justify-end">
           {children}
         </div>
       </div>

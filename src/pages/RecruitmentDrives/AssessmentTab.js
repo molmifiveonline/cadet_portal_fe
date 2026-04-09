@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { Plus, Eye, Edit, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
@@ -8,6 +9,7 @@ import { Input } from '../../components/ui/input';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 
 const AssessmentTab = ({ drive }) => {
+  const { user } = useAuth();
   useParams();
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,10 +21,14 @@ const AssessmentTab = ({ drive }) => {
       setLoading(true);
       // Fetch cadets eligible for assessment in this drive
       const response = await api.get(
-        `/cadets?course_type=${drive.course_type}&instituteId=${drive.institute_id}&status=Eligible for Assessment&limit=1000`,
+        `/cadets?drive_id=${drive.id}&status=Eligible for Assessment&limit=1000`,
       );
       if (response.data && response.data.data) {
-        setCadets(response.data.data);
+        let fetchedCadets = response.data.data;
+        if (user?.role !== 'Institute') {
+          fetchedCadets = fetchedCadets.filter(cadet => cadet.shortlist_email_sent === 1);
+        }
+        setCadets(fetchedCadets);
       }
     } catch (error) {
       console.error('Error fetching cadets:', error);
@@ -30,7 +36,7 @@ const AssessmentTab = ({ drive }) => {
     } finally {
       setLoading(false);
     }
-  }, [drive.course_type, drive.institute_id]);
+  }, [drive.id, user?.role]);
 
   useEffect(() => {
     fetchCadets();

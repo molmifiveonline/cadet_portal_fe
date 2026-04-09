@@ -20,7 +20,7 @@ const MedicalTab = ({ drive }) => {
       setLoading(true);
       // Fetch cadets eligible for medical in this drive
       const response = await api.get(
-        `/cadets?course_type=${drive.course_type}&instituteId=${drive.institute_id}&status=Eligible for Medical&limit=1000`,
+        `/cadets?drive_id=${drive.id}&status=Eligible for Medical&limit=1000`,
       );
       if (response.data && response.data.data) {
         setCadets(response.data.data);
@@ -31,7 +31,7 @@ const MedicalTab = ({ drive }) => {
     } finally {
       setLoading(false);
     }
-  }, [drive.course_type, drive.institute_id]);
+  }, [drive.id]);
 
   useEffect(() => {
     fetchCadets();

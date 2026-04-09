@@ -9,6 +9,7 @@ import api from '../../lib/utils/apiConfig';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 
 const DOCUMENT_TYPES = [
   'Passport',
@@ -33,6 +34,7 @@ const DocumentsTab = ({ drive }) => {
   const [uploadForm, setUploadForm] = useState({ document_name: '', document_type: '', file: null });
   const [reviewingDoc, setReviewingDoc] = useState(null);
   const [reviewRemarks, setReviewRemarks] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, documentId: null });
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -118,14 +120,21 @@ const DocumentsTab = ({ drive }) => {
     window.open(`${api.defaults.baseURL}/documents/${documentId}/download?token=${token}`, '_blank');
   };
 
-  const handleDelete = async (documentId) => {
-    if (!window.confirm('Are you sure you want to delete this document?')) return;
+  const handleDeleteClick = (documentId) => {
+    setDeleteModal({ isOpen: true, documentId });
+  };
+
+  const handleConfirmDelete = async () => {
+    const documentId = deleteModal.documentId;
+    if (!documentId) return;
 
     try {
       await api.delete(`/documents/${documentId}`);
       toast.success('Document deleted');
+      setDeleteModal({ isOpen: false, documentId: null });
       fetchDocuments();
     } catch (error) {
+      console.error('Error deleting document:', error);
       toast.error('Failed to delete document');
     }
   };
@@ -222,7 +231,7 @@ const DocumentsTab = ({ drive }) => {
             </Button>
           )}
 
-          <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50' onClick={() => handleDelete(doc.id)} title='Delete'>
+          <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50' onClick={() => handleDeleteClick(doc.id)} title='Delete'>
             <Trash2 size={14} />
           </Button>
         </div>
@@ -378,6 +387,14 @@ const DocumentsTab = ({ drive }) => {
       <div className='text-sm text-gray-600'>
         Total Cadets: {filteredCadets.length}
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, documentId: null })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Document"
+        message="Are you sure you want to delete this document? This action cannot be undone."
+      />
     </div>
   );
 };

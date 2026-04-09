@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { Loader2, ArrowLeft, Save, Rocket } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
-import api from '../../lib/utils/apiConfig';
-import { toast } from 'sonner';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
+import React, { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { Loader2, ArrowLeft, Save, Rocket } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import api from "../../lib/utils/apiConfig";
+import { toast } from "sonner";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../../components/ui/select';
-import PageHeader from '../../components/common/PageHeader';
+} from "../../components/ui/select";
+import PageHeader from "../../components/common/PageHeader";
 
 const DriveForm = () => {
   const { id } = useParams();
@@ -22,6 +22,10 @@ const DriveForm = () => {
   const [fetching, setFetching] = useState(false);
   const [institutes, setInstitutes] = useState([]);
   const isEdit = !!id;
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 6 }, (_, index) =>
+    String(currentYear - 2 + index),
+  );
 
   const {
     register,
@@ -31,24 +35,25 @@ const DriveForm = () => {
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
-      drive_name: '',
-      institute_id: '',
-      course_type: '',
+      drive_name: "",
+      institute_id: "",
+      course_type: "",
+      year: String(currentYear),
       intake_capacity: 0,
-      eligibility_criteria: '',
-      status: 'Draft'
-    }
+      eligibility_criteria: "",
+      status: "Draft",
+    },
   });
 
   // Fetch institutes for dropdown
   useEffect(() => {
     const fetchInstitutes = async () => {
       try {
-        const response = await api.get('/institutes?limit=1000');
+        const response = await api.get("/institutes?limit=1000");
         setInstitutes(response.data.data);
       } catch (error) {
-        console.error('Error fetching institutes:', error);
-        toast.error('Failed to fetch institutes');
+        console.error("Error fetching institutes:", error);
+        toast.error("Failed to fetch institutes");
       }
     };
 
@@ -67,14 +72,15 @@ const DriveForm = () => {
             drive_name: drive.drive_name,
             institute_id: drive.institute_id,
             course_type: drive.course_type,
+            year: drive.year ? String(drive.year) : String(currentYear),
             intake_capacity: drive.intake_capacity,
             eligibility_criteria: drive.eligibility_criteria,
-            status: drive.status
+            status: drive.status,
           });
         } catch (error) {
-          console.error('Error fetching drive:', error);
-          toast.error('Failed to fetch drive details');
-          navigate('/drives');
+          console.error("Error fetching drive:", error);
+          toast.error("Failed to fetch drive details");
+          navigate("/drives");
         } finally {
           setFetching(false);
         }
@@ -90,21 +96,24 @@ const DriveForm = () => {
 
       const payload = {
         ...data,
-        intake_capacity: parseInt(data.intake_capacity) || 0
+        year: parseInt(data.year, 10),
+        intake_capacity: parseInt(data.intake_capacity) || 0,
       };
 
       if (isEdit) {
         await api.put(`/recruitment-drives/${id}`, payload);
-        toast.success('Recruitment drive updated successfully');
+        toast.success("Recruitment drive updated successfully");
       } else {
-        await api.post('/recruitment-drives', payload);
-        toast.success('Recruitment drive created successfully');
+        await api.post("/recruitment-drives", payload);
+        toast.success("Recruitment drive created successfully");
       }
 
-      navigate('/drives');
+      navigate("/drives");
     } catch (error) {
-      console.error('Error saving drive:', error);
-      toast.error(error.response?.data?.message || 'Failed to save recruitment drive');
+      console.error("Error saving drive:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to save recruitment drive",
+      );
     } finally {
       setLoading(false);
     }
@@ -121,13 +130,19 @@ const DriveForm = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={isEdit ? 'Edit Recruitment Drive' : 'Create New Recruitment Drive'}
-        subtitle={isEdit ? 'Update the details of the recruitment drive' : 'Enter the details for the new recruitment drive'}
+        title={
+          isEdit ? "Edit Recruitment Drive" : "Create New Recruitment Drive"
+        }
+        subtitle={
+          isEdit
+            ? "Update the details of the recruitment drive"
+            : "Enter the details for the new recruitment drive"
+        }
         icon={Rocket}
         backButton={
           <Button
             variant="ghost"
-            onClick={() => navigate('/drives')}
+            onClick={() => navigate("/drives")}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -145,12 +160,16 @@ const DriveForm = () => {
                 Drive Name *
               </label>
               <Input
-                {...register('drive_name', { required: 'Drive name is required' })}
+                {...register("drive_name", {
+                  required: "Drive name is required",
+                })}
                 placeholder="Enter drive name"
-                className={errors.drive_name ? 'border-red-500' : ''}
+                className={errors.drive_name ? "border-red-500" : ""}
               />
               {errors.drive_name && (
-                <p className="mt-1 text-sm text-red-600">{errors.drive_name.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.drive_name.message}
+                </p>
               )}
             </div>
 
@@ -162,10 +181,12 @@ const DriveForm = () => {
               <Controller
                 name="institute_id"
                 control={control}
-                rules={{ required: 'Institute is required' }}
+                rules={{ required: "Institute is required" }}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className={errors.institute_id ? 'border-red-500' : ''}>
+                    <SelectTrigger
+                      className={errors.institute_id ? "border-red-500" : ""}
+                    >
                       <SelectValue placeholder="Select institute" />
                     </SelectTrigger>
                     <SelectContent>
@@ -179,7 +200,9 @@ const DriveForm = () => {
                 )}
               />
               {errors.institute_id && (
-                <p className="mt-1 text-sm text-red-600">{errors.institute_id.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.institute_id.message}
+                </p>
               )}
             </div>
 
@@ -191,10 +214,12 @@ const DriveForm = () => {
               <Controller
                 name="course_type"
                 control={control}
-                rules={{ required: 'Course type is required' }}
+                rules={{ required: "Course type is required" }}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className={errors.course_type ? 'border-red-500' : ''}>
+                    <SelectTrigger
+                      className={errors.course_type ? "border-red-500" : ""}
+                    >
                       <SelectValue placeholder="Select course type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -205,7 +230,42 @@ const DriveForm = () => {
                 )}
               />
               {errors.course_type && (
-                <p className="mt-1 text-sm text-red-600">{errors.course_type.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.course_type.message}
+                </p>
+              )}
+            </div>
+
+            {/* Year */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Year *
+              </label>
+              <Controller
+                name="year"
+                control={control}
+                rules={{ required: "Year is required" }}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger
+                      className={errors.year ? "border-red-500" : ""}
+                    >
+                      <SelectValue placeholder="Select year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((year) => (
+                        <SelectItem key={year} value={year}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.year && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.year.message}
+                </p>
               )}
             </div>
 
@@ -216,12 +276,16 @@ const DriveForm = () => {
               </label>
               <Input
                 type="number"
-                {...register('intake_capacity', { min: { value: 0, message: 'Capacity must be positive' } })}
+                {...register("intake_capacity", {
+                  min: { value: 0, message: "Capacity must be positive" },
+                })}
                 placeholder="0"
-                className={errors.intake_capacity ? 'border-red-500' : ''}
+                className={errors.intake_capacity ? "border-red-500" : ""}
               />
               {errors.intake_capacity && (
-                <p className="mt-1 text-sm text-red-600">{errors.intake_capacity.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.intake_capacity.message}
+                </p>
               )}
             </div>
 
@@ -256,7 +320,7 @@ const DriveForm = () => {
               Eligibility Criteria
             </label>
             <textarea
-              {...register('eligibility_criteria')}
+              {...register("eligibility_criteria")}
               placeholder="Enter eligibility criteria..."
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -268,7 +332,7 @@ const DriveForm = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/drives')}
+              onClick={() => navigate("/drives")}
               disabled={isSubmitting}
             >
               Cancel
@@ -277,12 +341,12 @@ const DriveForm = () => {
               {isSubmitting || loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {isEdit ? 'Updating...' : 'Creating...'}
+                  {isEdit ? "Updating..." : "Creating..."}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  {isEdit ? 'Update Drive' : 'Create Drive'}
+                  {isEdit ? "Update Drive" : "Create Drive"}
                 </>
               )}
             </Button>

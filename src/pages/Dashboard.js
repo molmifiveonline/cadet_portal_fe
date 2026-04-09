@@ -255,26 +255,28 @@ const Dashboard = () => {
                 const percentage = ((stage.count / maxStageCount) * 100).toFixed(0);
                 return (
                   <div key={stage.stage} className='group'>
-                    <div className='flex items-center gap-4'>
-                      <div className='w-40 shrink-0 flex items-center gap-2'>
-                        <div className={cn('w-2.5 h-2.5 rounded-full bg-gradient-to-r', info.color)} />
-                        <span className='text-sm font-semibold text-slate-700 truncate'>
+                    <div className='flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4'>
+                      <div className='w-full sm:w-40 shrink-0 flex items-center gap-2 mb-1 sm:mb-0'>
+                        <div className={cn('w-2 h-2 rounded-full bg-gradient-to-r', info.color)} />
+                        <span className='text-xs sm:text-sm font-semibold text-slate-700 truncate'>
                           {info.label}
                         </span>
                       </div>
-                      <div className='flex-1 h-8 bg-slate-100 rounded-xl overflow-hidden relative'>
-                        <div
-                          className={cn(
-                            'h-full rounded-xl bg-gradient-to-r transition-all duration-700 ease-out',
-                            info.color,
-                          )}
-                          style={{ width: `${Math.max(percentage, 3)}%` }}
-                        />
-                      </div>
-                      <div className='w-16 text-right'>
-                        <span className={cn('text-sm font-bold', info.text)}>
-                          {stage.count}
-                        </span>
+                      <div className='flex-1 flex items-center gap-3'>
+                        <div className='flex-1 h-6 sm:h-8 bg-slate-100 rounded-xl overflow-hidden relative'>
+                          <div
+                            className={cn(
+                              'h-full rounded-xl bg-gradient-to-r transition-all duration-700 ease-out',
+                              info.color,
+                            )}
+                            style={{ width: `${Math.max(percentage, 3)}%` }}
+                          />
+                        </div>
+                        <div className='w-12 sm:w-16 text-right'>
+                          <span className={cn('text-xs sm:text-sm font-bold', info.text)}>
+                            {stage.count}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

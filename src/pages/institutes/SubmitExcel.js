@@ -46,6 +46,7 @@ const SubmitExcel = () => {
   const [institutes, setInstitutes] = useState([]);
   const [selectedInstitute, setSelectedInstitute] = useState('');
   const [selectedBatchYear, setSelectedBatchYear] = useState('');
+  const [selectedCourseType, setSelectedCourseType] = useState('');
 
   const isAdmin = user?.role === 'SuperAdmin';
   const currentYear = new Date().getFullYear();
@@ -227,6 +228,10 @@ const SubmitExcel = () => {
       toast.error('Please select a Batch Year');
       return;
     }
+    if (isAdmin && !selectedCourseType) {
+      toast.error('Please select a Course Type');
+      return;
+    }
     setShowConfirm(true);
   };
 
@@ -240,6 +245,7 @@ const SubmitExcel = () => {
       if (isAdmin) {
         formData.append('instituteId', selectedInstitute);
         formData.append('batch_year', selectedBatchYear);
+        formData.append('course_type', selectedCourseType);
       }
 
       formData.append('file', file);
@@ -342,6 +348,24 @@ const SubmitExcel = () => {
                           {year}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className='flex-1 space-y-2'>
+                  <label className='text-sm font-medium leading-none'>
+                    Course Type <span className='text-red-500'>*</span>
+                  </label>
+                  <Select
+                    value={selectedCourseType}
+                    onValueChange={setSelectedCourseType}
+                  >
+                    <SelectTrigger className='bg-white'>
+                      <SelectValue placeholder='Select course type' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='Deck'>Deck</SelectItem>
+                      <SelectItem value='Engine'>Engine</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

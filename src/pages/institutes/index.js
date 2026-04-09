@@ -194,7 +194,7 @@ const InstitutesManagement = () => {
           </Button>
         </Permission>
 
-        {selectedInstitutes.length === 0 && (
+        {/* {selectedInstitutes.length === 0 && (
           <Button
             variant='outline'
             onClick={() => {
@@ -207,7 +207,7 @@ const InstitutesManagement = () => {
             <Mail size={20} />
             Send Email
           </Button>
-        )}
+        )} */}
 
         <Permission module='institutes' action='create'>
           <Button
@@ -220,7 +220,7 @@ const InstitutesManagement = () => {
         </Permission>
       </PageHeader>
 
-      {selectedInstitutes.length > 0 && (
+      {/* {selectedInstitutes.length > 0 && (
         <div className='mb-4 flex items-center gap-4 bg-[#3a5f9e]/10 p-3 rounded-lg border border-[#3a5f9e]/20 animate-in fade-in slide-in-from-top-2'>
           <span className='text-sm text-[#3a5f9e] font-medium'>
             You have selected {selectedInstitutes.length} institute
@@ -245,7 +245,7 @@ const InstitutesManagement = () => {
             </Button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Table Component */}
       <InstitutesTable

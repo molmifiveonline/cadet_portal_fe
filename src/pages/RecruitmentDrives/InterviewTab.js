@@ -20,7 +20,7 @@ const InterviewTab = ({ drive }) => {
       setLoading(true);
       // Fetch cadets marked for interview in this drive
       const response = await api.get(
-        `/cadets?course_type=${drive.course_type}&instituteId=${drive.institute_id}&status=Eligible for Interview&limit=1000`,
+        `/cadets?drive_id=${drive.id}&status=Eligible for Interview&limit=1000`,
       );
       if (response.data && response.data.data) {
         setCadets(response.data.data);
@@ -31,7 +31,7 @@ const InterviewTab = ({ drive }) => {
     } finally {
       setLoading(false);
     }
-  }, [drive.course_type, drive.institute_id]);
+  }, [drive.id]);
 
   useEffect(() => {
     fetchCadets();
