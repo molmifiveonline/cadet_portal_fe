@@ -87,7 +87,10 @@ const DriveDetails = () => {
       return;
     }
     if ((stats.uploaded || 0) > 0) {
-      setStatusFilter("Eligible for Assessment");
+      // If we have uploaded cadets, check if they are "Imported" or "Eligible for Assessment"
+      // Since we recently moved newly imported cadets to "Imported", we should prefer that
+      // if it's where the data actually is.
+      setStatusFilter("Imported");
       return;
     }
     setStatusFilter("all");
@@ -99,10 +102,27 @@ const DriveDetails = () => {
         return "bg-green-100 text-green-800";
       case "Draft":
         return "bg-yellow-100 text-yellow-800";
+      case "Requested":
+        return "bg-orange-100 text-orange-800";
+      case "Received":
+        return "bg-cyan-100 text-cyan-800";
+      case "Submitted":
+        return "bg-indigo-100 text-indigo-800";
+      case "Shortlisted":
+        return "bg-purple-100 text-purple-800";
+      case "Assessment Completed":
+        return "bg-teal-100 text-teal-800";
+      case "Interview Completed":
+        return "bg-emerald-100 text-emerald-800";
+      case "Medical Completed":
+        return "bg-lime-100 text-lime-800";
       case "Completed":
+      case "Closed":
         return "bg-blue-100 text-blue-800";
       case "Cancelled":
         return "bg-red-100 text-red-800";
+      case "Imported":
+        return "bg-slate-100 text-slate-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -192,7 +212,14 @@ const DriveDetails = () => {
     // Legacy mapping (for OLD drives that might be marked 'Active')
     if (status === "Active" || !status) {
       if (hasExcel) {
-        status = "Received";
+        // Resolve status based on cadet progress counts
+        if (Number(stats?.shortlisted_cadets) > 0 || Number(stats?.assessment_passed) > 0 || Number(stats?.interview_ready) > 0) {
+          status = "Shortlisted";
+        } else if (Number(stats?.total_cadets) > 0) {
+          status = "Submitted";
+        } else {
+          status = "Received";
+        }
       } else if (hasRequested) {
         status = "Requested";
       } else {
@@ -202,7 +229,11 @@ const DriveDetails = () => {
 
     const getButton = () => {
       // 1. If we have excel, show "Submit" regardless of Draft/Requested status (if not yet submitted)
-      if (hasExcel && (status === "Draft" || status === "Requested" || status === "Received" || status === "Active")) {
+      // Additional safety: If stats show cadets are already imported, don't show Submit button.
+      const isAlreadySubmitted = status === "Submitted" || status === "Shortlisted" || status === "Assessment Completed" || status === "Interview Completed" || status === "Medical Completed" || status === "Completed";
+      const hasCadetsImported = Number(stats?.total_cadets) > 0;
+
+      if (hasExcel && !isAlreadySubmitted && !hasCadetsImported && (status === "Draft" || status === "Requested" || status === "Received" || status === "Active")) {
         return (
           <Permission module="recruitment_drives" action="edit">
             <Button
@@ -267,54 +298,54 @@ const DriveDetails = () => {
               </Button>
             </Permission>
           );
-        case "Shortlisted":
-          return (
-            <Permission module="recruitment_drives" action="edit">
-              <Button
-                onClick={() => handleWorkflowAction("finalize-assessment", "Assessment stage finalized")}
-                className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                <CheckCircle className="h-4 w-4" />
-                Finalize Assessment
-              </Button>
-            </Permission>
-          );
-        case "Assessment Completed":
-          return (
-            <Permission module="recruitment_drives" action="edit">
-              <Button
-                onClick={() => handleWorkflowAction("finalize-interview", "Interview stage finalized")}
-                className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white"
-              >
-                <Clock className="h-4 w-4" />
-                Finalize Interview
-              </Button>
-            </Permission>
-          );
-        case "Interview Completed":
-          return (
-            <Permission module="recruitment_drives" action="edit">
-              <Button
-                onClick={() => handleWorkflowAction("finalize-medical", "Medical stage finalized")}
-                className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white"
-              >
-                <CheckCircle className="h-4 w-4" />
-                Finalize Medical
-              </Button>
-            </Permission>
-          );
-        case "Medical Completed":
-          return (
-            <Permission module="recruitment_drives" action="edit">
-              <Button
-                onClick={() => handleWorkflowAction("close", "Recruitment Drive closed successfully")}
-                className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white"
-              >
-                <CheckCircle className="h-4 w-4" />
-                Close Drive
-              </Button>
-            </Permission>
-          );
+        // case "Shortlisted":
+        //   return (
+        //     <Permission module="recruitment_drives" action="edit">
+        //       <Button
+        //         onClick={() => handleWorkflowAction("finalize-assessment", "Assessment stage finalized")}
+        //         className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+        //       >
+        //         <CheckCircle className="h-4 w-4" />
+        //         Finalize Assessment
+        //       </Button>
+        //     </Permission>
+        //   );
+        // case "Assessment Completed":
+        //   return (
+        //     <Permission module="recruitment_drives" action="edit">
+        //       <Button
+        //         onClick={() => handleWorkflowAction("finalize-interview", "Interview stage finalized")}
+        //         className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white"
+        //       >
+        //         <Clock className="h-4 w-4" />
+        //         Finalize Interview
+        //       </Button>
+        //     </Permission>
+        //   );
+        // case "Interview Completed":
+        //   return (
+        //     <Permission module="recruitment_drives" action="edit">
+        //       <Button
+        //         onClick={() => handleWorkflowAction("finalize-medical", "Medical stage finalized")}
+        //         className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white"
+        //       >
+        //         <CheckCircle className="h-4 w-4" />
+        //         Finalize Medical
+        //       </Button>
+        //     </Permission>
+        //   );
+        // case "Medical Completed":
+        //   return (
+        //     <Permission module="recruitment_drives" action="edit">
+        //       <Button
+        //         onClick={() => handleWorkflowAction("close", "Recruitment Drive closed successfully")}
+        //         className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white"
+        //       >
+        //         <CheckCircle className="h-4 w-4" />
+        //         Close Drive
+        //       </Button>
+        //     </Permission>
+        //   );
         default:
           return null;
       }
@@ -423,8 +454,8 @@ const DriveDetails = () => {
               <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Total</div>
             </button>
             <button
-              onClick={() => handlePipelineClick("Eligible for Assessment")}
-              className={`text-center p-3 rounded-xl border transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${statusFilter === "Eligible for Assessment" ? "bg-green-50 border-green-300 ring-4 ring-green-100" : "bg-white border-slate-200 hover:border-green-300 hover:bg-slate-50"}`}
+              onClick={() => handlePipelineClick("Imported")}
+              className={`text-center p-3 rounded-xl border transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${statusFilter === "Imported" ? "bg-green-50 border-green-300 ring-4 ring-green-100" : "bg-white border-slate-200 hover:border-green-300 hover:bg-slate-50"}`}
             >
               <div className="text-xl sm:text-2xl font-black text-green-600">
                 {stats.uploaded}
@@ -613,6 +644,7 @@ const DriveDetails = () => {
         defaultCourseType={drive?.course_type}
         lockBatchYear
         lockCourseType
+        onSuccess={fetchDriveData}
       />
     </div>
   );

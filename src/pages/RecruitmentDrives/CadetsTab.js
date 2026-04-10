@@ -121,6 +121,8 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
         return "bg-emerald-100 text-emerald-800";
       case "Rejected":
         return "bg-red-100 text-red-800";
+      case "Imported":
+        return "bg-slate-100 text-slate-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -193,53 +195,6 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
       ),
     },
     {
-      field: "calculated_score",
-      headerName: "Assessment Score",
-      width: "140px",
-      sortable: true,
-      renderCell: ({ value }) => (value ? parseFloat(value).toFixed(2) : "-"),
-    },
-    {
-      field: "final_decision",
-      headerName: "Interview Status",
-      width: "140px",
-      sortable: true,
-      renderCell: ({ value }) =>
-        value ? (
-          <span
-            className={`px-2 py-1 text-xs font-medium rounded-full ${
-              value === "selected"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            {value}
-          </span>
-        ) : (
-          "-"
-        ),
-    },
-    {
-      field: "fit_status",
-      headerName: "Medical Status",
-      width: "140px",
-      sortable: true,
-      renderCell: ({ value }) =>
-        value ? (
-          <span
-            className={`px-2 py-1 text-xs font-medium rounded-full ${
-              value === "Fit"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
-          >
-            {value}
-          </span>
-        ) : (
-          "-"
-        ),
-    },
-    {
       field: "actions",
       headerName: "Actions",
       width: "120px",
@@ -302,6 +257,7 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="Imported">Imported</SelectItem>
               <SelectItem value="Eligible for Assessment">
                 Eligible for Assessment
               </SelectItem>

@@ -144,23 +144,21 @@ const InterviewTab = ({ drive }) => {
           <Button
             variant='ghost'
             size='sm'
-            onClick={() => window.open(`/interviews/${row.id}`, '_blank')}
+            onClick={() => window.location.href = `/cadets/interview/${row.id}`}
             className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
             title={row.interview ? 'Edit Interview' : 'Start Interview'}
           >
             {row.interview ? <Edit size={16} /> : <Plus size={16} />}
           </Button>
-          {row.interview && (
-            <Button
-              variant='ghost'
-              size='sm'
-              onClick={() => window.open(`/interviews/${row.id}`, '_blank')}
-              className='h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50'
-              title='View Interview'
-            >
-              <Eye size={16} />
-            </Button>
-          )}
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={() => window.open(`/cadets/interview/${row.id}`, '_blank')}
+            className='h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            title='View Interview'
+          >
+            <Eye size={16} />
+          </Button>
         </div>
       ),
     },

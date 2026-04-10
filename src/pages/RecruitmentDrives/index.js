@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/utils/apiConfig";
 import { useAuth } from "../../context/AuthContext";
-import { Plus, Users, Rocket, Trash2 } from "lucide-react";
+import { Plus, Users, Rocket, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import Permission from "../../components/common/Permission";
 import PageHeader from "../../components/common/PageHeader";
@@ -98,10 +98,8 @@ const RecruitmentDrives = () => {
   const handleSearch = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    // Debounced search
-    setTimeout(() => {
-      fetchDrives(1, pagination.per_page, value);
-    }, 500);
+    // Fetch with first page on search
+    fetchDrives(1, pagination.per_page, value);
   };
 
   const handleFilterChange = (filterType, value) => {
@@ -116,16 +114,39 @@ const RecruitmentDrives = () => {
     );
   };
 
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= pagination.last_page) {
+      fetchDrives(newPage);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case "Active":
         return "bg-green-100 text-green-800";
       case "Draft":
         return "bg-yellow-100 text-yellow-800";
+      case "Requested":
+        return "bg-orange-100 text-orange-800";
+      case "Received":
+        return "bg-cyan-100 text-cyan-800";
+      case "Submitted":
+        return "bg-indigo-100 text-indigo-800";
+      case "Shortlisted":
+        return "bg-purple-100 text-purple-800";
+      case "Assessment Completed":
+        return "bg-teal-100 text-teal-800";
+      case "Interview Completed":
+        return "bg-emerald-100 text-emerald-800";
+      case "Medical Completed":
+        return "bg-lime-100 text-lime-800";
       case "Completed":
+      case "Closed":
         return "bg-blue-100 text-blue-800";
       case "Cancelled":
         return "bg-red-100 text-red-800";
+      case "Imported":
+        return "bg-slate-100 text-slate-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -221,8 +242,15 @@ const RecruitmentDrives = () => {
             >
               <option value="all">All Status</option>
               <option value="Draft">Draft</option>
-              <option value="Active">Active</option>
+              <option value="Requested">Requested</option>
+              <option value="Received">Received</option>
+              <option value="Submitted">Submitted</option>
+              <option value="Shortlisted">Shortlisted</option>
+              <option value="Assessment Completed">Assessment Completed</option>
+              <option value="Interview Completed">Interview Completed</option>
+              <option value="Medical Completed">Medical Completed</option>
               <option value="Completed">Completed</option>
+              <option value="Closed">Closed</option>
               <option value="Cancelled">Cancelled</option>
             </select>
           </div>
@@ -356,7 +384,7 @@ const RecruitmentDrives = () => {
                 return (
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                      <span>Progress</span>
+                       <span>Progress</span>
                       <span>{progress}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -376,6 +404,59 @@ const RecruitmentDrives = () => {
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {drives.length > 0 && pagination.last_page > 1 && (
+        <div className="flex items-center justify-between bg-white px-4 py-3 rounded-lg border shadow-sm mt-6">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(pagination.current_page - 1)}
+              disabled={pagination.current_page === 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(pagination.current_page + 1)}
+              disabled={pagination.current_page === pagination.last_page}
+            >
+              Next
+            </Button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing page <span className="font-medium">{pagination.current_page}</span> of{" "}
+                <span className="font-medium">{pagination.last_page}</span>
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <Button
+                  variant="outline"
+                  className="rounded-l-md px-2 py-2 h-9"
+                  onClick={() => handlePageChange(pagination.current_page - 1)}
+                  disabled={pagination.current_page === 1}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <div className="flex items-center px-4 text-sm font-semibold text-gray-900 border-t border-b bg-white border-gray-300 h-9">
+                  {pagination.current_page} / {pagination.last_page}
+                </div>
+                <Button
+                  variant="outline"
+                  className="rounded-r-md px-2 py-2 h-9"
+                  onClick={() => handlePageChange(pagination.current_page + 1)}
+                  disabled={pagination.current_page === pagination.last_page}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
 
       {drives.length === 0 && (
         <div className="text-center py-12">

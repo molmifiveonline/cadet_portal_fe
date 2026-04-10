@@ -130,23 +130,21 @@ const MedicalTab = ({ drive }) => {
           <Button
             variant='ghost'
             size='sm'
-            onClick={() => window.open(`/medical-results/${row.id}`, '_blank')}
+            onClick={() => window.location.href = `/cadets/medical/${row.id}`}
             className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
             title={row.medical_result ? 'Edit Medical' : 'Start Medical'}
           >
             {row.medical_result ? <Edit size={16} /> : <Plus size={16} />}
           </Button>
-          {row.medical_result && (
-            <Button
-              variant='ghost'
-              size='sm'
-              onClick={() => window.open(`/medical-results/${row.id}`, '_blank')}
-              className='h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50'
-              title='View Medical'
-            >
-              <Eye size={16} />
-            </Button>
-          )}
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={() => window.open(`/cadets/medical/${row.id}`, '_blank')}
+            className='h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+            title='View Medical'
+          >
+            <Eye size={16} />
+          </Button>
         </div>
       ),
     },

@@ -39,7 +39,7 @@ const DocumentsTab = ({ drive }) => {
   const fetchDocuments = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/documents/drive?institute_id=${drive.institute_id}&course_type=${drive.course_type}`);
+      const response = await api.get(`/documents/drive?drive_id=${drive.id}`);
       if (response.data?.success) {
         setCadetsWithDocs(response.data.data);
       }
@@ -49,7 +49,7 @@ const DocumentsTab = ({ drive }) => {
     } finally {
       setLoading(false);
     }
-  }, [drive.institute_id, drive.course_type]);
+  }, [drive.id]);
 
   useEffect(() => {
     fetchDocuments();
