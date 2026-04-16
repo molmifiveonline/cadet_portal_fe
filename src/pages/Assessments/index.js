@@ -8,6 +8,7 @@ const AssessmentManagement = () => {
     <CadetManagement
       pageTitle='Assessment Management'
       showShortlistedOnlyDefault={true}
+      showAssessmentScore={true}
     />
   );
 };

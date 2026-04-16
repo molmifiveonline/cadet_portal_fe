@@ -664,7 +664,11 @@ const CadetFormFields = ({
                   variant='outline' 
                   size='sm' 
                   className='h-8 text-xs gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50'
-                  onClick={() => navigate(`/cadets/interview/${cadet.id}`)}
+                  onClick={() =>
+                    navigate(
+                      `/cadets/interview/${cadet.id}?returnTo=${encodeURIComponent(window.location.pathname)}`,
+                    )
+                  }
                 >
                   <ArrowRight size={14} />
                   Record Interview

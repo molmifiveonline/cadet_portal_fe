@@ -46,6 +46,7 @@ const CadetTable = ({
   shortlistStats = null,
   onDelete = () => {},
   onStatusChange = () => {},
+  showAssessmentScore = false,
 }) => {
   const navigate = useNavigate();
 
@@ -161,6 +162,26 @@ const CadetTable = ({
         </span>
       ),
     },
+    ...(showAssessmentScore
+      ? [
+          {
+            field: 'assessment_score',
+            headerName: 'Assessment Score',
+            width: '140px',
+            sortable: true,
+            renderCell: ({ row }) => {
+              const score = row.assessment_score ?? row.calculated_score;
+              return score || score === 0 ? (
+                <span className='px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold'>
+                  {Number(score).toFixed(2)}
+                </span>
+              ) : (
+                '-'
+              );
+            },
+          },
+        ]
+      : []),
     { field: 'contact_number', headerName: 'Contact', width: '130px' },
     { field: 'gender', headerName: 'Gender', width: '80px' },
     {

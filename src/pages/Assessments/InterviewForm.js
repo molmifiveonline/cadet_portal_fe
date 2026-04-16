@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Save,
   ArrowLeft,
   Calendar,
+  Clock,
   User,
   Star,
   MessageSquare,
-  CheckCircle,
   XCircle,
   Loader2,
   FileText,
@@ -29,6 +29,7 @@ import {
 const InterviewForm = () => {
   const { cadet_id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cadet, setCadet] = useState(null);
@@ -40,19 +41,47 @@ const InterviewForm = () => {
 
   const [formData, setFormData] = useState({
     interview_date: new Date().toISOString().split('T')[0],
+    interview_time: '',
     panel_members: '',
     evaluation_score: '',
     total_score: '',
     remarks: '',
+    comments: '',
     final_decision: 'selected',
   });
+
+  const returnPath = location.state?.returnPath || null;
+  const returnStatePayload = location.state?.returnState || null;
+  const queryReturnTo = new URLSearchParams(location.search).get('returnTo');
+  const defaultBackPath = '/interviews';
+
+  const handleBack = useCallback(() => {
+    if (returnPath) {
+      navigate(returnPath, {
+        state: returnStatePayload || undefined,
+      });
+      return;
+    }
+
+    if (queryReturnTo) {
+      navigate(queryReturnTo);
+      return;
+    }
+
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate(defaultBackPath);
+  }, [defaultBackPath, navigate, queryReturnTo, returnPath, returnStatePayload]);
 
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const cadetRes = await api.get(`/cadets/${cadet_id}`);
-      setCadet(cadetRes.data);
+      setCadet(cadetRes.data?.data || null);
 
       try {
         const interviewRes = await api.get(`/interviews/${cadet_id}`);
@@ -62,16 +91,14 @@ const InterviewForm = () => {
             interview_date: data.interview_date
               ? data.interview_date.split('T')[0]
               : new Date().toISOString().split('T')[0],
+            interview_time: data.interview_time || '',
             panel_members: data.panel_members || '',
             evaluation_score: data.evaluation_score || '',
             total_score: data.total_score || '',
             remarks: data.remarks || '',
+            comments: data.comments || '',
             final_decision: data.final_decision ? data.final_decision.toLowerCase() : 'selected',
           });
-          // Match 'waitlisted' from DB to 'waitlist' in FE
-          if (data.final_decision && data.final_decision.toLowerCase() === 'waitlisted') {
-            setFormData(prev => ({ ...prev, final_decision: 'waitlist' }));
-          }
           setExistingSheetName(data.interview_sheet_name || '');
           setExistingSheetMimeType(data.interview_sheet_mime_type || '');
         }
@@ -92,6 +119,8 @@ const InterviewForm = () => {
 
   // Load preview if it's an image
   useEffect(() => {
+    let objectUrl = null;
+
     const loadPreview = async () => {
       if (existingSheetName && existingSheetMimeType?.startsWith('image/')) {
         try {
@@ -99,8 +128,8 @@ const InterviewForm = () => {
           const response = await api.get(`/interviews/${cadet_id}/sheet`, {
             responseType: 'blob',
           });
-          const url = URL.createObjectURL(response.data);
-          setPreviewUrl(url);
+          objectUrl = URL.createObjectURL(response.data);
+          setPreviewUrl(objectUrl);
         } catch (error) {
           console.error('Error loading preview:', error);
         } finally {
@@ -110,7 +139,7 @@ const InterviewForm = () => {
     };
     loadPreview();
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [existingSheetName, existingSheetMimeType, cadet_id]);
 
@@ -138,10 +167,12 @@ const InterviewForm = () => {
     try {
       const data = new FormData();
       data.append('interview_date', formData.interview_date);
+      data.append('interview_time', formData.interview_time);
       data.append('panel_members', formData.panel_members);
       data.append('evaluation_score', formData.evaluation_score);
       data.append('total_score', formData.total_score);
       data.append('remarks', formData.remarks);
+      data.append('comments', formData.comments);
       data.append('final_decision', formData.final_decision);
 
       if (interviewSheetFile) {
@@ -154,7 +185,7 @@ const InterviewForm = () => {
         },
       });
       toast.success('Interview recorded successfully');
-      navigate(-1);
+      handleBack();
     } catch (error) {
       toast.error('Failed to save interview');
     } finally {
@@ -193,7 +224,8 @@ const InterviewForm = () => {
         icon={Calendar}
         backButton={
           <button
-            onClick={() => navigate(-1)}
+            type='button'
+            onClick={handleBack}
             className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
           >
             <ArrowLeft size={24} />
@@ -239,6 +271,22 @@ const InterviewForm = () => {
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
+                Interview Time
+              </label>
+              <div className='relative'>
+                <Clock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                <Input
+                  type='time'
+                  name='interview_time'
+                  value={formData.interview_time}
+                  onChange={handleInputChange}
+                  className='pl-10'
+                />
+              </div>
+            </div>
+
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
                 Interview Score (%)
               </label>
               <div className='relative'>
@@ -270,25 +318,11 @@ const InterviewForm = () => {
                   className='pl-10'
                 />
               </div>
-              {formData.total_score && (
-                <div className='mt-2'>
-                  {parseFloat(formData.total_score) >= 60 ? (
-                    <div className='flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200'>
-                      <CheckCircle className='text-green-600' size={14} />
-                      <span className='text-xs font-medium text-green-700'>
-                        Recommended: Selected
-                      </span>
-                    </div>
-                  ) : (
-                    <div className='flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200'>
-                      <XCircle className='text-red-600' size={14} />
-                      <span className='text-xs font-medium text-red-700'>
-                        Recommended: Rejected
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
+              {formData.total_score ? (
+                <p className='mt-2 text-xs text-slate-500'>
+                  Recommendation remains manual until the final interview formula is provided.
+                </p>
+              ) : null}
             </div>
 
             <div className='space-y-2'>
@@ -309,7 +343,7 @@ const InterviewForm = () => {
                     Selected (Advance to Medical)
                   </SelectItem>
                   <SelectItem value='rejected'>Rejected</SelectItem>
-                  <SelectItem value='waitlist'>Waitlist</SelectItem>
+                  <SelectItem value='waitlisted'>Waitlisted</SelectItem>
                 </SelectContent>
               </Select>
               {formData.final_decision === 'rejected' && (
@@ -319,6 +353,11 @@ const InterviewForm = () => {
                     <strong>Warning:</strong> This cadet will not proceed to the
                     Medical stage and will be marked as "Interview Failed".
                   </p>
+                </div>
+              )}
+              {formData.final_decision === 'waitlisted' && (
+                <div className='mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-700'>
+                  Waitlisted cadets remain in the interview stage and do not move to medical until selected.
                 </div>
               )}
             </div>
@@ -401,6 +440,21 @@ const InterviewForm = () => {
           <div className='space-y-2'>
             <label className='text-sm font-medium text-gray-700 flex items-center gap-2'>
               <MessageSquare size={16} className='text-gray-400' />
+              Comments
+            </label>
+            <textarea
+              name='comments'
+              value={formData.comments}
+              onChange={handleInputChange}
+              rows={3}
+              className='w-full rounded-xl border border-gray-300 p-4 text-sm focus:ring-4 focus:ring-blue-100 outline-none resize-none'
+              placeholder='Panel comments and observations...'
+            />
+          </div>
+
+          <div className='space-y-2'>
+            <label className='text-sm font-medium text-gray-700 flex items-center gap-2'>
+              <MessageSquare size={16} className='text-gray-400' />
               Remarks / Feedback
             </label>
             <textarea
@@ -414,7 +468,7 @@ const InterviewForm = () => {
           </div>
 
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200'>
-            <Button type='button' variant='ghost' onClick={() => navigate(-1)}>
+            <Button type='button' variant='ghost' onClick={handleBack}>
               Cancel
             </Button>
             <Button

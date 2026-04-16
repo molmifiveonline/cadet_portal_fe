@@ -1,43 +1,67 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { formatDateForDisplay } from "../../lib/utils/dateUtils";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import api from "../../lib/utils/apiConfig";
-import { useAuth } from "../../context/AuthContext";
 import {
   ArrowLeft,
   Edit,
-  Users,
-  ListChecks,
   FileText,
-  CheckCircle,
-  Clock,
+  ListChecks,
   Mail,
   Rocket,
+  Stethoscope,
+  Users,
 } from "lucide-react";
+import api from "../../lib/utils/apiConfig";
+import { formatDateForDisplay } from "../../lib/utils/dateUtils";
+import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import Permission from "../../components/common/Permission";
 import PageHeader from "../../components/common/PageHeader";
 import AssessmentTab from "./AssessmentTab";
+import CadetsTab from "./CadetsTab";
+import DocumentsTab from "./DocumentsTab";
 import InterviewTab from "./InterviewTab";
 import MedicalTab from "./MedicalTab";
-import CadetsTab from "./CadetsTab";
-import ShortlistTab from "./ShortlistTab";
-import DocumentsTab from "./DocumentsTab";
 import SendEmailModal from "../institutes/SendEmailModal";
+import ShortlistTab from "./ShortlistTab";
+
+const STATUS_COLORS = {
+  Draft: "bg-yellow-100 text-yellow-800",
+  Requested: "bg-blue-100 text-blue-800",
+  Received: "bg-cyan-100 text-cyan-800",
+  Submitted: "bg-indigo-100 text-indigo-800",
+  Shortlisted: "bg-purple-100 text-purple-800",
+  "Assessment Completed": "bg-teal-100 text-teal-800",
+  "Interview Completed": "bg-emerald-100 text-emerald-800",
+  "Medical Completed": "bg-lime-100 text-lime-800",
+  Closed: "bg-slate-100 text-slate-800",
+  Cancelled: "bg-red-100 text-red-800",
+};
+
+const getCourseTypeColor = (courseType) =>
+  courseType === "Deck"
+    ? "bg-blue-100 text-blue-800"
+    : "bg-orange-100 text-orange-800";
+
+const getStatusColor = (status) =>
+  STATUS_COLORS[status] || "bg-slate-100 text-slate-800";
 
 const DriveDetails = () => {
   const { user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [drive, setDrive] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("info");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sendingShortlist, setSendingShortlist] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [sendingShortlist, setSendingShortlist] = useState(false);
   const [shortlistRefreshTrigger, setShortlistRefreshTrigger] = useState(0);
+
+  const isInstituteUser = user?.role === "Institute";
 
   const fetchDriveData = useCallback(async () => {
     try {
@@ -51,7 +75,7 @@ const DriveDetails = () => {
       setStats(statsResponse.data.data);
     } catch (error) {
       console.error("Error fetching drive data:", error);
-      toast.error("Failed to fetch drive details");
+      toast.error("Failed to fetch recruitment drive details");
       navigate("/drives");
     } finally {
       setLoading(false);
@@ -63,99 +87,37 @@ const DriveDetails = () => {
   }, [fetchDriveData]);
 
   useEffect(() => {
-    if (!stats) return;
+    const requestedTab =
+      location.state?.activeTab ||
+      new URLSearchParams(location.search).get("tab");
 
-    // Auto-select current progress stage when entering details.
-    if ((stats.onboarded || 0) > 0) {
-      setStatusFilter("Onboarded");
-      return;
+    if (requestedTab) {
+      setActiveTab(requestedTab);
     }
-    if ((stats.ctv_assigned || 0) > 0) {
-      setStatusFilter("CTV Assigned");
-      return;
-    }
-    if ((stats.medical_completed || 0) > 0) {
-      setStatusFilter("Medical Completed");
-      return;
-    }
-    if ((stats.medical_ready || 0) > 0) {
-      setStatusFilter("Eligible for Medical");
-      return;
-    }
-    if ((stats.interview_ready || 0) > 0) {
-      setStatusFilter("Eligible for Interview");
-      return;
-    }
-    if ((stats.uploaded || 0) > 0) {
-      // If we have uploaded cadets, check if they are "Imported" or "Eligible for Assessment"
-      // Since we recently moved newly imported cadets to "Imported", we should prefer that
-      // if it's where the data actually is.
-      setStatusFilter("Imported");
-      return;
-    }
-    setStatusFilter("all");
-  }, [stats]);
+  }, [location.search, location.state]);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Active":
-        return "bg-green-100 text-green-800";
-      case "Draft":
-        return "bg-yellow-100 text-yellow-800";
-      case "Requested":
-        return "bg-orange-100 text-orange-800";
-      case "Received":
-        return "bg-cyan-100 text-cyan-800";
-      case "Submitted":
-        return "bg-indigo-100 text-indigo-800";
-      case "Shortlisted":
-        return "bg-purple-100 text-purple-800";
-      case "Assessment Completed":
-        return "bg-teal-100 text-teal-800";
-      case "Interview Completed":
-        return "bg-emerald-100 text-emerald-800";
-      case "Medical Completed":
-        return "bg-lime-100 text-lime-800";
-      case "Completed":
-      case "Closed":
-        return "bg-blue-100 text-blue-800";
-      case "Cancelled":
-        return "bg-red-100 text-red-800";
-      case "Imported":
-        return "bg-slate-100 text-slate-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getCourseTypeColor = (courseType) => {
-    return courseType === "Deck"
-      ? "bg-blue-100 text-blue-800"
-      : "bg-orange-100 text-orange-800";
-  };
-
-  const handlePipelineClick = (status) => {
-    setStatusFilter(status);
-    setActiveTab("cadets");
-  };
-
-  const handleWorkflowAction = async (endpoint, successMessage) => {
+  const handleSubmitCadets = async () => {
     try {
       setLoading(true);
-      await api.post(`/recruitment-drives/${id}/${endpoint}`);
-      toast.success(successMessage);
-      fetchDriveData();
+      await api.post(`/recruitment-drives/${id}/submit-cadets`);
+      toast.success("Cadets imported into the recruitment drive");
+      await fetchDriveData();
     } catch (error) {
-      console.error(`Error executing ${endpoint}:`, error);
-      toast.error(error.response?.data?.message || `Failed to execute action`);
+      console.error("Error submitting cadets:", error);
+      toast.error(error.response?.data?.message || "Failed to submit cadets");
     } finally {
       setLoading(false);
     }
   };
 
   const handleSendShortlistEmail = async (cadetIds) => {
-    if (!drive || !drive.institute_id) {
-      toast.error("Institute information missing");
+    if (!drive?.institute_id) {
+      toast.error("Institute information is missing for this drive");
+      return;
+    }
+
+    if (!cadetIds.length) {
+      toast.error("Select at least one shortlisted cadet");
       return;
     }
 
@@ -163,26 +125,20 @@ const DriveDetails = () => {
       setSendingShortlist(true);
       const response = await api.post("/institutes/send-shortlist-email", {
         instituteIds: [drive.institute_id],
-        cadetIds: cadetIds || [],
+        cadetIds,
       });
 
-      const results = response.data.results || [];
-      const success = results.filter((r) => r.status === "success");
-      const skipped = results.filter((r) => r.status === "skipped");
-
-      if (success.length > 0) {
+      const result = response.data?.results?.[0];
+      if (result?.status === "success") {
         toast.success(
-          `Shortlist email sent to ${success[0].email} (${success[0].cadetCount} cadets)`,
+          `Shortlist email sent to ${result.email} for ${result.cadetCount} cadet(s)`,
         );
         setShortlistRefreshTrigger((prev) => prev + 1);
-        fetchDriveData();
-      } else if (skipped.length > 0) {
-        toast.warning(
-          skipped[0].reason || "No shortlisted cadets for this institute",
-        );
-      } else {
-        toast.error("Failed to send shortlist email");
+        await fetchDriveData();
+        return;
       }
+
+      toast.warning(result?.reason || "No shortlist email was sent");
     } catch (error) {
       console.error("Error sending shortlist email:", error);
       toast.error(
@@ -193,195 +149,99 @@ const DriveDetails = () => {
     }
   };
 
-  const isInstituteRevertedExcelSent = Boolean(
-    Number(drive?.institute_reverted_excel),
-  );
-  
+  const canSendRequestEmail =
+    !isInstituteUser &&
+    !Number(drive?.institute_email_sent) &&
+    !Number(drive?.institute_reverted_excel);
+  const canSubmitCadets =
+    !isInstituteUser &&
+    Number(drive?.institute_reverted_excel) &&
+    Number(stats?.total_uploaded || 0) === 0;
   const canSendShortlistEmail =
-    isInstituteRevertedExcelSent && user?.role !== "Institute";
+    !isInstituteUser && Number(drive?.institute_reverted_excel);
 
-  const renderActionButtons = () => {
-    if (user?.role === "Institute") return null;
+  const progressCards = useMemo(
+    () => [
+      {
+        label: "Total Uploaded",
+        value: stats?.total_uploaded || 0,
+        tone: "text-blue-600",
+        onClick: () => {
+          setActiveTab("cadets");
+          setStatusFilter("all");
+        },
+      },
+      {
+        label: "Shortlisted",
+        value: stats?.shortlisted_count || 0,
+        tone: "text-purple-600",
+        onClick: () => {
+          setActiveTab("shortlist");
+          setStatusFilter("Shortlisted");
+        },
+      },
+      {
+        label: "Assessment Passed",
+        value: stats?.assessment_passed || 0,
+        tone: "text-teal-600",
+        onClick: () => setActiveTab("assessment"),
+      },
+      {
+        label: "Interview Selected",
+        value: stats?.interview_selected || 0,
+        tone: "text-emerald-600",
+        onClick: () => setActiveTab("medical"),
+      },
+      {
+        label: "CTV Assigned",
+        value: stats?.ctv_assigned || 0,
+        tone: "text-amber-600",
+        onClick: () => {
+          setActiveTab("cadets");
+          setStatusFilter("CTV Assigned");
+        },
+      },
+      {
+        label: "Onboarded",
+        value: stats?.onboarded || 0,
+        tone: "text-lime-600",
+        onClick: () => {
+          setActiveTab("cadets");
+          setStatusFilter("Onboarded");
+        },
+      },
+    ],
+    [stats],
+  );
 
-    const hasExcel = Boolean(Number(drive?.institute_reverted_excel));
-    const hasRequested = Boolean(Number(drive?.institute_email_sent));
-    
-    // Resolve effective status for legacy drives or unknown statuses
-    let status = drive.status;
-    
-    // Legacy mapping (for OLD drives that might be marked 'Active')
-    if (status === "Active" || !status) {
-      if (hasExcel) {
-        // Resolve status based on cadet progress counts
-        if (Number(stats?.shortlisted_cadets) > 0 || Number(stats?.assessment_passed) > 0 || Number(stats?.interview_ready) > 0) {
-          status = "Shortlisted";
-        } else if (Number(stats?.total_cadets) > 0) {
-          status = "Submitted";
-        } else {
-          status = "Received";
-        }
-      } else if (hasRequested) {
-        status = "Requested";
-      } else {
-        status = "Draft";
-      }
-    }
-
-    const getButton = () => {
-      // 1. If we have excel, show "Submit" regardless of Draft/Requested status (if not yet submitted)
-      // Additional safety: If stats show cadets are already imported, don't show Submit button.
-      const isAlreadySubmitted = status === "Submitted" || status === "Shortlisted" || status === "Assessment Completed" || status === "Interview Completed" || status === "Medical Completed" || status === "Completed";
-      const hasCadetsImported = Number(stats?.total_cadets) > 0;
-
-      if (hasExcel && !isAlreadySubmitted && !hasCadetsImported && (status === "Draft" || status === "Requested" || status === "Received" || status === "Active")) {
-        return (
-          <Permission module="recruitment_drives" action="edit">
-            <Button
-              onClick={() => handleWorkflowAction("submit-cadets", "Cadets imported and submitted successfully")}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Users className="h-4 w-4" />
-              Submit Cadets to Drive
-            </Button>
-          </Permission>
-        );
-      }
-
-      // 2. If no excel, and we are in early stages, show "Send Request Email"
-      if (status === "Draft" || status === "Requested" || status === "Active" || !status) {
-        return (
-          <Permission module="institutes" action="view">
-            <Button
-              variant="outline"
-              onClick={() => setIsEmailModalOpen(true)}
-              className="flex items-center gap-2 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-            >
-              <Mail className="h-4 w-4" />
-              Send Request Email
-            </Button>
-          </Permission>
-        );
-      }
-
-      // 3. Fallback/Standard Workflow Switches for advanced stages
-      switch (status) {
-        case "Received": // Handle Received separately if Excel flag check somehow missed
-          return (
-            <Permission module="recruitment_drives" action="edit">
-              <Button
-                onClick={() => handleWorkflowAction("submit-cadets", "Cadets imported and submitted successfully")}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Users className="h-4 w-4" />
-                Submit Cadets to Drive
-              </Button>
-            </Permission>
-          );
-        case "Requested":
-          return (
-            <Permission module="recruitment_drives" action="edit">
-              <Button disabled variant="outline" className="flex items-center gap-2 opacity-70">
-                <Clock className="h-4 w-4" />
-                Awaiting Submission
-              </Button>
-            </Permission>
-          );
-        case "Submitted":
-          return (
-            <Permission module="recruitment_drives" action="edit">
-              <Button
-                onClick={() => handleWorkflowAction("finalize-shortlist", "Shortlist finalized")}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                <ListChecks className="h-4 w-4" />
-                Finalize Shortlist
-              </Button>
-            </Permission>
-          );
-        // case "Shortlisted":
-        //   return (
-        //     <Permission module="recruitment_drives" action="edit">
-        //       <Button
-        //         onClick={() => handleWorkflowAction("finalize-assessment", "Assessment stage finalized")}
-        //         className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-        //       >
-        //         <CheckCircle className="h-4 w-4" />
-        //         Finalize Assessment
-        //       </Button>
-        //     </Permission>
-        //   );
-        // case "Assessment Completed":
-        //   return (
-        //     <Permission module="recruitment_drives" action="edit">
-        //       <Button
-        //         onClick={() => handleWorkflowAction("finalize-interview", "Interview stage finalized")}
-        //         className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white"
-        //       >
-        //         <Clock className="h-4 w-4" />
-        //         Finalize Interview
-        //       </Button>
-        //     </Permission>
-        //   );
-        // case "Interview Completed":
-        //   return (
-        //     <Permission module="recruitment_drives" action="edit">
-        //       <Button
-        //         onClick={() => handleWorkflowAction("finalize-medical", "Medical stage finalized")}
-        //         className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white"
-        //       >
-        //         <CheckCircle className="h-4 w-4" />
-        //         Finalize Medical
-        //       </Button>
-        //     </Permission>
-        //   );
-        // case "Medical Completed":
-        //   return (
-        //     <Permission module="recruitment_drives" action="edit">
-        //       <Button
-        //         onClick={() => handleWorkflowAction("close", "Recruitment Drive closed successfully")}
-        //         className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white"
-        //       >
-        //         <CheckCircle className="h-4 w-4" />
-        //         Close Drive
-        //       </Button>
-        //     </Permission>
-        //   );
-        default:
-          return null;
-      }
-    };
-
-    return getButton();
-  };
-
-  const baseTabs = [
-    { id: "info", label: "Drive Info", icon: FileText },
-    { id: "cadets", label: "Cadets", icon: Users },
-    { id: "shortlist", label: "Shortlist", icon: ListChecks },
-    { id: "assessment", label: "Assessment", icon: CheckCircle },
-    { id: "interview", label: "Interview", icon: Clock },
-  ];
-
-  const medicalTab = { id: "medical", label: "Medical", icon: CheckCircle };
-  
-  const documentsTab = { id: "documents", label: "Documents", icon: FileText };
-
-  const tabs = user?.role !== "Institute" 
-    ? [...baseTabs, medicalTab, documentsTab] 
-    : [...baseTabs, documentsTab];
+  const tabs = isInstituteUser
+    ? [
+        { id: "info", label: "Drive Info", icon: FileText },
+        { id: "cadets", label: "Cadets", icon: Users },
+        { id: "documents", label: "Documents", icon: FileText },
+      ]
+    : [
+        { id: "info", label: "Drive Info", icon: FileText },
+        { id: "cadets", label: "Cadets", icon: Users },
+        { id: "shortlist", label: "Shortlist", icon: ListChecks },
+        { id: "assessment", label: "Assessment", icon: ListChecks },
+        { id: "interview", label: "Interview", icon: Users },
+        { id: "medical", label: "Medical", icon: Stethoscope },
+        { id: "documents", label: "Documents", icon: FileText },
+      ];
 
   if (loading && !drive) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
       </div>
     );
   }
 
-  if (!drive && !loading) {
+  if (!drive) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">Drive not found</h3>
+      <div className="py-12 text-center">
+        <h3 className="text-lg font-medium text-slate-900">Drive not found</h3>
         <Button onClick={() => navigate("/drives")} className="mt-4">
           Back to Drives
         </Button>
@@ -391,7 +251,6 @@ const DriveDetails = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <PageHeader
         title={drive.drive_name}
         subtitle={drive.institute_name}
@@ -407,126 +266,100 @@ const DriveDetails = () => {
           </Button>
         }
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(drive.status)}`}
+            className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusColor(drive.status)}`}
           >
             {drive.status}
           </span>
           <span
-            className={`px-3 py-1 text-sm font-medium rounded-full ${getCourseTypeColor(drive.course_type)}`}
+            className={`rounded-full px-3 py-1 text-sm font-medium ${getCourseTypeColor(drive.course_type)}`}
           >
             {drive.course_type}
           </span>
-          
-          {/* Dynamic Workflow Action Button */}
-          {renderActionButtons()}
 
-          {/* Edit Button */}
-          <Permission module="recruitment_drives" action="edit">
-            <Button
-              variant="outline"
-              onClick={() => navigate(`/drives/edit/${id}`)}
-              className="flex items-center gap-2"
-            >
-              <Edit className="h-4 w-4" />
-              Edit
-            </Button>
-          </Permission>
+          {canSendRequestEmail ? (
+            <Permission module="recruitment_drives" action="edit">
+              <Button
+                variant="outline"
+                onClick={() => setIsEmailModalOpen(true)}
+                className="flex items-center gap-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+              >
+                <Mail className="h-4 w-4" />
+                Request Cadet Details
+              </Button>
+            </Permission>
+          ) : null}
+
+          {canSubmitCadets ? (
+            <Permission module="recruitment_drives" action="edit">
+              <Button
+                onClick={handleSubmitCadets}
+                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
+              >
+                <Users className="h-4 w-4" />
+                Submit Cadets to Drive
+              </Button>
+            </Permission>
+          ) : null}
+
+          {!isInstituteUser ? (
+            <Permission module="recruitment_drives" action="edit">
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/drives/edit/${id}`)}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            </Permission>
+          ) : null}
         </div>
       </PageHeader>
 
-      {/* Progress Overview */}
-      {stats && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <Rocket className="w-5 h-5 text-blue-600" />
+      {stats ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800">
+            <Rocket className="h-5 w-5 text-blue-600" />
             Pipeline Progress
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
-            <button
-              onClick={() => handlePipelineClick("all")}
-              className={`text-center p-3 rounded-xl border transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${statusFilter === "all" && activeTab === "cadets" ? "bg-blue-50 border-blue-300 ring-4 ring-blue-100" : "bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50"}`}
-            >
-              <div className="text-xl sm:text-2xl font-black text-blue-600">
-                {stats.total_cadets}
-              </div>
-              <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Total</div>
-            </button>
-            <button
-              onClick={() => handlePipelineClick("Imported")}
-              className={`text-center p-3 rounded-xl border transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${statusFilter === "Imported" ? "bg-green-50 border-green-300 ring-4 ring-green-100" : "bg-white border-slate-200 hover:border-green-300 hover:bg-slate-50"}`}
-            >
-              <div className="text-xl sm:text-2xl font-black text-green-600">
-                {stats.uploaded}
-              </div>
-              <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Uploaded</div>
-            </button>
-            <button
-              onClick={() => handlePipelineClick("Eligible for Interview")}
-              className={`text-center p-3 rounded-xl border transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${statusFilter === "Eligible for Interview" ? "bg-yellow-50 border-yellow-300 ring-4 ring-yellow-100" : "bg-white border-slate-200 hover:border-yellow-300 hover:bg-slate-50"}`}
-            >
-              <div className="text-xl sm:text-2xl font-black text-yellow-600">
-                {stats.interview_ready}
-              </div>
-              <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Interview</div>
-            </button>
-            {user?.role !== "Institute" && (
-              <>
-                <button
-                  onClick={() => handlePipelineClick("Eligible for Medical")}
-                  className={`text-center p-3 rounded-xl border transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${statusFilter === "Eligible for Medical" ? "bg-purple-50 border-purple-300 ring-4 ring-purple-100" : "bg-white border-slate-200 hover:border-purple-300 hover:bg-slate-50"}`}
-                >
-                  <div className="text-xl sm:text-2xl font-black text-purple-600">
-                    {stats.medical_ready}
-                  </div>
-                  <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Medical</div>
-                </button>
-                <button
-                  onClick={() => handlePipelineClick("Medical Completed")}
-                  className={`text-center p-3 rounded-xl border transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${statusFilter === "Medical Completed" ? "bg-indigo-50 border-indigo-300 ring-4 ring-indigo-100" : "bg-white border-slate-200 hover:border-indigo-300 hover:bg-slate-50"}`}
-                >
-                  <div className="text-xl sm:text-2xl font-black text-indigo-600">
-                    {stats.medical_completed}
-                  </div>
-                  <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Med Done</div>
-                </button>
-              </>
-            )}
-            <button
-              onClick={() => handlePipelineClick("CTV Assigned")}
-              className={`text-center p-3 rounded-xl border transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${statusFilter === "CTV Assigned" ? "bg-amber-50 border-amber-300 ring-4 ring-amber-100" : "bg-white border-slate-200 hover:border-amber-300 hover:bg-slate-50"}`}
-            >
-              <div className="text-xl sm:text-2xl font-black text-amber-600">
-                {stats.ctv_assigned}
-              </div>
-              <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">CTV</div>
-            </button>
-            <button
-              onClick={() => handlePipelineClick("Onboarded")}
-              className={`text-center p-3 rounded-xl border transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${statusFilter === "Onboarded" ? "bg-emerald-50 border-emerald-300 ring-4 ring-emerald-100" : "bg-white border-slate-200 hover:border-emerald-300 hover:bg-slate-50"}`}
-            >
-              <div className="text-xl sm:text-2xl font-black text-emerald-600">
-                {stats.onboarded}
-              </div>
-              <div className="text-[11px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Joined</div>
-            </button>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+            {progressCards.map((card) => (
+              <button
+                key={card.label}
+                type="button"
+                onClick={card.onClick}
+                className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-white hover:shadow-sm"
+              >
+                <div className={`text-2xl font-black ${card.tone}`}>
+                  {card.value}
+                </div>
+                <div className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+                  {card.label}
+                </div>
+              </button>
+            ))}
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="border-b border-slate-200 bg-slate-50/50">
-          <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 overflow-x-auto no-scrollbar" aria-label="Tabs">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50/80">
+          <nav
+            className="flex gap-2 overflow-x-auto px-4 py-3 no-scrollbar sm:px-6"
+            aria-label="Drive tabs"
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-bold text-xs sm:text-sm flex items-center gap-2 transition-all whitespace-nowrap ${
+                aria-current={activeTab === tab.id ? "page" : undefined}
+                className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all ${
                   activeTab === tab.id
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                    ? "border-blue-200 bg-blue-50 text-blue-700 shadow-sm shadow-blue-100/60"
+                    : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-900"
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
@@ -536,103 +369,166 @@ const DriveDetails = () => {
           </nav>
         </div>
 
-        <div className="p-6">
-          {activeTab === "info" && (
+        <div className="p-4 sm:p-6">
+          {activeTab === "info" ? (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Drive Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Drive Name
-                    </label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {drive.drive_name}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Institute
-                    </label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {drive.institute_name}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Course Type
-                    </label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {drive.course_type}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Intake Capacity
-                    </label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {drive.intake_capacity}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Status
-                    </label>
-                    <p className="mt-1 text-sm text-gray-900">{drive.status}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Created
-                    </label>
-                    <p className="mt-1 text-sm text-gray-900">
-                      {formatDateForDisplay(drive.created_at)}
-                    </p>
-                  </div>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Drive Name
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900">
+                    {drive.drive_name}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Institute
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900">
+                    {drive.institute_name}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Course Type
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900">
+                    {drive.course_type}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Intake Capacity
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900">
+                    {drive.intake_capacity || 0}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Status
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900">{drive.status}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">
+                    Created
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900">
+                    {formatDateForDisplay(drive.created_at)}
+                  </p>
                 </div>
               </div>
 
-              {drive.eligibility_criteria && (
+              {canSendRequestEmail ? (
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 sm:p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-bold text-blue-900">
+                        Request Cadet Details From Institute
+                      </h3>
+                      <p className="mt-1 text-sm text-blue-800">
+                        This drive is created, but cadet details have not been
+                        requested from the institute yet. Send the request email
+                        to start the data collection flow.
+                      </p>
+                    </div>
+                    <Permission module="recruitment_drives" action="edit">
+                      <Button
+                        onClick={() => setIsEmailModalOpen(true)}
+                        className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        <Mail className="h-4 w-4" />
+                        Request Cadet Details
+                      </Button>
+                    </Permission>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Uploaded
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">
+                    {stats?.total_uploaded || 0}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Assessment Passed
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">
+                    {stats?.assessment_passed || 0}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Interview Selected
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">
+                    {stats?.interview_selected || 0}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Rejected
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900">
+                    {stats?.rejected_count || 0}
+                  </p>
+                </div>
+              </div>
+
+              {drive.eligibility_criteria ? (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
                     Eligibility Criteria
                   </label>
-                  <div className="bg-gray-50 rounded-md p-4">
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="whitespace-pre-wrap text-sm text-slate-900">
                       {drive.eligibility_criteria}
                     </p>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
-          )}
+          ) : null}
 
-          {activeTab === "cadets" && (
+          {activeTab === "cadets" ? (
             <CadetsTab
               drive={drive}
               initialStatus={statusFilter}
               onStatusFilterChange={setStatusFilter}
             />
-          )}
+          ) : null}
 
-          {activeTab === "shortlist" && (
+          {activeTab === "shortlist" && !isInstituteUser ? (
             <ShortlistTab
               drive={drive}
               canSendShortlistEmail={canSendShortlistEmail}
               onSendShortlistEmail={handleSendShortlistEmail}
               sendingShortlist={sendingShortlist}
               refreshTrigger={shortlistRefreshTrigger}
+              onRefresh={fetchDriveData}
             />
-          )}
+          ) : null}
 
-          {activeTab === "assessment" && <AssessmentTab drive={drive} />}
+          {activeTab === "assessment" && !isInstituteUser ? (
+            <AssessmentTab drive={drive} onRefresh={fetchDriveData} />
+          ) : null}
 
-          {activeTab === "interview" && <InterviewTab drive={drive} />}
+          {activeTab === "interview" && !isInstituteUser ? (
+            <InterviewTab drive={drive} onRefresh={fetchDriveData} />
+          ) : null}
 
-          {activeTab === "medical" && <MedicalTab drive={drive} />}
+          {activeTab === "medical" && !isInstituteUser ? (
+            <MedicalTab drive={drive} onRefresh={fetchDriveData} />
+          ) : null}
 
-          {activeTab === "documents" && <DocumentsTab drive={drive} />}
+          {activeTab === "documents" ? <DocumentsTab drive={drive} /> : null}
         </div>
       </div>
 

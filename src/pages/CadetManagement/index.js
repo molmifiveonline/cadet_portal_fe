@@ -15,6 +15,7 @@ const CadetManagement = ({
   showShortlistedOnlyDefault = false,
   initialStatus = 'all',
   pageTitle = null,
+  showAssessmentScore = false,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -324,6 +325,7 @@ const CadetManagement = ({
           shortlistStats={shortlistStats}
           onDelete={handleDeleteClick}
           onStatusChange={handleStatusChange}
+          showAssessmentScore={showAssessmentScore}
         />
       </div>
 

@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 import {
   Save,
   ArrowLeft,
+  Calendar,
+  Clock,
   FileText,
   CheckCircle,
   XCircle,
@@ -34,6 +36,8 @@ const AssessmentForm = () => {
   const [cadet, setCadet] = useState(null);
   const [essayFile, setEssayFile] = useState(null);
   const [formData, setFormData] = useState({
+    assessment_date: '',
+    assessment_time: '',
     ces_test: '',
     ces_test_2: '',
     qa_test: '',
@@ -66,7 +70,7 @@ const AssessmentForm = () => {
       setLoading(true);
       // Fetch cadet details
       const cadetRes = await api.get(`/cadets/${cadet_id}`);
-      setCadet(cadetRes.data);
+      setCadet(cadetRes.data?.data || null);
 
       // Fetch existing assessment if any
       try {
@@ -74,6 +78,10 @@ const AssessmentForm = () => {
         if (assessmentRes.data.success && assessmentRes.data.data) {
           const data = assessmentRes.data.data;
           setFormData({
+            assessment_date: data.assessment_date
+              ? data.assessment_date.split('T')[0]
+              : '',
+            assessment_time: data.assessment_time || '',
             ces_test: data.ces_test || '',
             ces_test_2: data.ces_test_2 || '',
             qa_test: data.qa_test || '',
@@ -125,6 +133,8 @@ const AssessmentForm = () => {
 
     try {
       const data = new FormData();
+      data.append('assessment_date', formData.assessment_date);
+      data.append('assessment_time', formData.assessment_time);
       data.append('ces_test', formData.ces_test);
       data.append('ces_test_2', formData.ces_test_2);
       data.append('qa_test', formData.qa_test);
@@ -218,6 +228,38 @@ const AssessmentForm = () => {
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700'>
+                  Assessment Date
+                </label>
+                <div className='relative'>
+                  <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                  <Input
+                    name='assessment_date'
+                    type='date'
+                    value={formData.assessment_date}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  Assessment Time
+                </label>
+                <div className='relative'>
+                  <Clock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                  <Input
+                    name='assessment_time'
+                    type='time'
+                    value={formData.assessment_time}
+                    onChange={handleInputChange}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
                   CES Test (Attempt 1)
                 </label>
                 <div className='relative'>
@@ -246,6 +288,9 @@ const AssessmentForm = () => {
                     className={inputClass}
                   />
                 </div>
+                <p className='text-xs text-gray-500'>
+                  Use Attempt 2 when a cadet is being reassessed after a failed first attempt.
+                </p>
               </div>
 
               <div className='space-y-2'>
@@ -400,28 +445,27 @@ const AssessmentForm = () => {
                   <div className='p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2'>
                     <p className='text-xs text-gray-500 uppercase font-bold tracking-wider'>Calculated Total Score (Preview)</p>
                     <p className='text-xl font-bold text-gray-800'>{previewScore.toFixed(2)}</p>
-                    {previewScore >= 50 ? (
-                      <div className='flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200'>
-                        <CheckCircle className='text-green-600' size={14} />
-                        <span className='text-xs font-medium text-green-700'>Recommended for Interview</span>
-                      </div>
-                    ) : (
-                      <div className='flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200'>
-                        <XCircle className='text-red-600' size={14} />
-                        <span className='text-xs font-medium text-red-700'>Not Recommended for Interview</span>
-                      </div>
-                    )}
+                    <div className='rounded-lg border border-blue-100 bg-blue-50 p-2 text-xs text-blue-700'>
+                      Recommendation logic is kept manual here until the final business formula is confirmed.
+                    </div>
                   </div>
                 )}
 
-                {!formData.mark_for_interview && (
+                {formData.status === 'fail' ? (
                   <div className='p-3 bg-yellow-50 rounded-xl border border-yellow-200 flex items-start gap-2'>
                     <XCircle className='text-yellow-600 mt-0.5' size={14} />
                     <p className='text-[11px] text-yellow-700 leading-tight'>
-                      <strong>Warning:</strong> This cadet will not proceed to the Interview stage and will be marked as "Assessment Failed".
+                      <strong>Reassessment:</strong> This cadet stays in the Assessment queue and can be reviewed again using CES Test Attempt 2.
                     </p>
                   </div>
-                )}
+                ) : !formData.mark_for_interview ? (
+                  <div className='p-3 bg-yellow-50 rounded-xl border border-yellow-200 flex items-start gap-2'>
+                    <XCircle className='text-yellow-600 mt-0.5' size={14} />
+                    <p className='text-[11px] text-yellow-700 leading-tight'>
+                      <strong>Queue Hold:</strong> This cadet will stay in the Assessment queue and will not move to the Interview stage until you mark Interview as Yes.
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </div>
 

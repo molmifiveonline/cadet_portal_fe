@@ -1,56 +1,10 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Eye, Edit, Loader2, Mail, Search } from "lucide-react";
+import { CheckCircle, Eye, Loader2, Search, Send } from "lucide-react";
 import api from "../../lib/utils/apiConfig";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
-
-const criteria = {
-  tenth_avg_percentage: 85,
-  tenth_std_maths: 80,
-  tenth_std_science: 80,
-  tenth_std_english: 80,
-  twelfth_pcm_avg_percentage: 80,
-  twelfth_std_english: 75,
-  twelfth_std_physics: 75,
-  twelfth_std_chemistry: 75,
-  twelfth_std_maths: 75,
-  imu_rank_max: 3000,
-  bmi_max: 25,
-};
-
-const toNumber = (value) => {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : NaN;
-};
-
-const isCriteriaQualified = (cadet) => {
-  return (
-    toNumber(cadet.tenth_avg_percentage) >= criteria.tenth_avg_percentage &&
-    toNumber(cadet.tenth_std_maths) >= criteria.tenth_std_maths &&
-    toNumber(cadet.tenth_std_science) >= criteria.tenth_std_science &&
-    toNumber(cadet.tenth_std_english) >= criteria.tenth_std_english &&
-    toNumber(cadet.twelfth_pcm_avg_percentage) >= criteria.twelfth_pcm_avg_percentage &&
-    toNumber(cadet.twelfth_std_english) >= criteria.twelfth_std_english &&
-    toNumber(cadet.twelfth_std_physics) >= criteria.twelfth_std_physics &&
-    toNumber(cadet.twelfth_std_chemistry) >= criteria.twelfth_std_chemistry &&
-    toNumber(cadet.twelfth_std_maths) >= criteria.twelfth_std_maths &&
-    toNumber(cadet.imu_rank) <= criteria.imu_rank_max &&
-    toNumber(cadet.bmi) < criteria.bmi_max
-  );
-};
-
-const getSuggestion = (cadet) => {
-  const isLateralEntry = /lateral\s*entry/i.test(String(cadet.course || ""));
-  if (isCriteriaQualified(cadet)) {
-    return { label: "Qualified", tone: "green" };
-  }
-  if (isLateralEntry) {
-    return { label: "Lateral Entry", tone: "yellow" };
-  }
-  return { label: "Below Criteria", tone: "red" };
-};
 
 const ShortlistTab = ({
   drive,
@@ -58,204 +12,258 @@ const ShortlistTab = ({
   onSendShortlistEmail,
   sendingShortlist,
   refreshTrigger,
+  onRefresh,
 }) => {
   const [cadets, setCadets] = useState([]);
-  const [selectedCadets, setSelectedCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCadets, setSelectedCadets] = useState([]);
+  const [submittingShortlist, setSubmittingShortlist] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [debouncedSearch, setDebouncedSearch] = useState(searchTerm);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      setCurrentPage(1);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const fetchSuggestionCadets = useCallback(async () => {
-    if (!drive?.institute_id) return;
-
+  const fetchCadets = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        drive_id: drive.id,
-        page: currentPage,
-        limit: perPage,
-        search: debouncedSearch.trim(),
-      });
-
-      const response = await api.get(`/cadets?${params.toString()}`);
-      const data = (response.data?.data || []).map((cadet) => {
-        const suggestion = getSuggestion(cadet);
-        return {
-          ...cadet,
-          suggestion,
-          suggestion_order: suggestion.tone === 'green' ? 1 : suggestion.tone === 'yellow' ? 2 : 3
-        };
-      }).sort((a, b) => a.suggestion_order - b.suggestion_order);
-      const total =
-        Number(response.data?.pagination?.total) ||
-        Number(response.data?.total || 0);
-      const limit =
-        Number(response.data?.pagination?.limit) ||
-        Number(response.data?.limit || perPage);
-
-      setCadets(data);
-      setTotalItems(total);
-      setTotalPages(Math.max(1, Math.ceil(total / limit)));
-      // Reset selection when data is refreshed
+      const response = await api.get(
+        `/recruitment-drives/${drive.id}/cadets?queue=all`,
+      );
+      const driveCadets = (response.data?.data || []).filter(
+        (cadet) =>
+          ["uploaded", "shortlisted"].includes(cadet.workflow_phase) ||
+          ["pass", "fail"].includes(
+            String(cadet.assessment_status || "").toLowerCase(),
+          ),
+      );
+      setCadets(driveCadets);
       setSelectedCadets([]);
     } catch (error) {
-      console.error("Error fetching shortlist suggestions:", error);
-      toast.error("Failed to load shortlist suggestions");
+      console.error("Error fetching shortlist cadets:", error);
+      toast.error("Failed to load shortlist queue");
     } finally {
       setLoading(false);
     }
-  }, [
-    drive?.institute_id,
-    drive?.id,
-    currentPage,
-    perPage,
-    debouncedSearch,
-  ]);
+  }, [drive.id]);
 
   useEffect(() => {
-    fetchSuggestionCadets();
-  }, [fetchSuggestionCadets, refreshTrigger]);
+    fetchCadets();
+  }, [fetchCadets, refreshTrigger]);
 
-  const isRowSelectable = (row) => !row.shortlist_email_sent;
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, perPage]);
+
+  const filteredCadets = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    return cadets.filter((cadet) => {
+      if (!normalizedSearch) return true;
+
+      return (
+        cadet.name_as_in_indos_cert?.toLowerCase().includes(normalizedSearch) ||
+        cadet.cadet_unique_id?.toLowerCase().includes(normalizedSearch) ||
+        cadet.roll_no?.toLowerCase().includes(normalizedSearch) ||
+        cadet.email_id?.toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [cadets, searchTerm]);
+
+  const paginatedCadets = useMemo(() => {
+    const start = (currentPage - 1) * perPage;
+    return filteredCadets.slice(start, start + perPage);
+  }, [filteredCadets, currentPage, perPage]);
+
+  const selectedRows = useMemo(
+    () => cadets.filter((cadet) => selectedCadets.includes(cadet.id)),
+    [cadets, selectedCadets],
+  );
+
+  const selectedForShortlist = useMemo(
+    () => selectedRows.filter((cadet) => cadet.workflow_phase === "uploaded"),
+    [selectedRows],
+  );
+
+  const shortlistedPendingEmail = useMemo(
+    () =>
+      cadets.filter(
+        (cadet) =>
+          cadet.workflow_phase === "shortlisted" &&
+          !Number(cadet.shortlist_email_sent || 0),
+      ),
+    [cadets],
+  );
+
+  const handleShortlist = async () => {
+    if (!selectedForShortlist.length) {
+      toast.error("Select at least one uploaded cadet to shortlist");
+      return;
+    }
+
+    try {
+      setSubmittingShortlist(true);
+      await api.post(`/recruitment-drives/${drive.id}/shortlist`, {
+        cadet_ids: selectedForShortlist.map((cadet) => cadet.id),
+      });
+      toast.success(`${selectedForShortlist.length} cadet(s) shortlisted`);
+      await fetchCadets();
+      await onRefresh?.();
+    } catch (error) {
+      console.error("Error shortlisting cadets:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to shortlist cadets",
+      );
+    } finally {
+      setSubmittingShortlist(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    await onSendShortlistEmail(
+      shortlistedPendingEmail.map((cadet) => cadet.id),
+    );
+  };
+
+  const getWorkflowBadge = (cadet) => {
+    if (cadet.workflow_phase === "uploaded") {
+      return "bg-blue-100 text-blue-700";
+    }
+    if (cadet.workflow_phase === "shortlisted") {
+      return "bg-purple-100 text-purple-700";
+    }
+    return "bg-emerald-100 text-emerald-700";
+  };
 
   const columns = [
     {
       field: "cadet_unique_id",
       headerName: "Cadet ID",
-      width: "120px",
-      sortable: true,
-      renderCell: ({ row, value }) => (
-        <div className="flex items-center gap-2">
-          {row.shortlist_email_sent === 1 && (
-            <Mail className="h-3 w-3 text-blue-500" title="Shortlist email sent" />
-          )}
-          <span>{value}</span>
-        </div>
+      width: "130px",
+      renderCell: ({ value }) => (
+        <span className="rounded border border-indigo-100 bg-indigo-50 px-2 py-1 text-[10px] font-bold uppercase text-indigo-700">
+          {value || "-"}
+        </span>
       ),
     },
     {
       field: "name_as_in_indos_cert",
       headerName: "Name",
       width: "220px",
-      sortable: true,
-      renderCell: ({ value }) => (
-        <span className="font-medium text-gray-900">{value || "-"}</span>
+      renderCell: ({ row }) => (
+        <div>
+          <p className="font-medium text-slate-900">
+            {row.name_as_in_indos_cert}
+          </p>
+          <p className="text-xs text-slate-500">{row.email_id || "-"}</p>
+        </div>
       ),
     },
     {
-      field: "email_id",
-      headerName: "Email",
-      width: "220px",
-      sortable: true,
-    },
-    {
-      field: "batch_year",
-      headerName: "Batch",
-      width: "100px",
-      sortable: true,
-    },
-    {
-      field: "course",
-      headerName: "Course",
+      field: "roll_no",
+      headerName: "Roll No",
       width: "120px",
-      sortable: true,
+      renderCell: ({ value }) => value || "-",
     },
     {
-      field: "suggestion_order",
-      headerName: "Suggestion",
-      width: "160px",
-      sortable: true,
-      renderCell: ({ row }) => {
-        const value = row.suggestion;
-        if (row.shortlist_email_sent === 1) {
+      field: "cadet_percentage",
+      headerName: "%",
+      width: "100px",
+      renderCell: ({ value }) =>
+        value || value === 0 ? `${Number(value).toFixed(2)}%` : "-",
+    },
+    {
+      field: "status",
+      headerName: "Current Stage",
+      width: "140px",
+      renderCell: ({ row }) => (
+        <span
+          className={`rounded-full px-2 py-1 text-xs font-semibold ${getWorkflowBadge(row)}`}
+        >
+          {row.status}
+        </span>
+      ),
+    },
+    {
+      field: "cv_needed",
+      headerName: "CV Needed",
+      width: "110px",
+      align: "center",
+      renderCell: ({ value }) => (
+        <span
+          className={`rounded-full px-2 py-1 text-xs font-semibold ${
+            value
+              ? "bg-rose-100 text-rose-700"
+              : "bg-emerald-100 text-emerald-700"
+          }`}
+        >
+          {value ? "Yes" : "No"}
+        </span>
+      ),
+    },
+    {
+      field: "shortlist_email_sent",
+      headerName: "Shortlist Email",
+      width: "130px",
+      align: "center",
+      renderCell: ({ value }) =>
+        Number(value) ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+            <CheckCircle size={12} />
+            Sent
+          </span>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+            Pending
+          </span>
+        ),
+    },
+    {
+      field: "assessment_status",
+      headerName: "Assessment Result",
+      width: "140px",
+      align: "center",
+      renderCell: ({ value }) => {
+        const normalized = String(value || "").toLowerCase();
+        if (normalized === "pass") {
           return (
-            <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 flex items-center gap-1 w-fit">
-              <Mail className="h-3 w-3" />
-              Email Sent
+            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+              Passed
             </span>
           );
         }
-        const toneClass =
-          value?.tone === "green"
-            ? "bg-green-100 text-green-800"
-            : value?.tone === "yellow"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-red-100 text-red-800";
+        if (normalized === "fail") {
+          return (
+            <span className="rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">
+              Failed
+            </span>
+          );
+        }
         return (
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${toneClass}`}>
-            {value?.label || "Below Criteria"}
+          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+            Pending
           </span>
         );
       },
     },
     {
-      field: "imu_rank",
-      headerName: "IMU Rank",
-      width: "120px",
-      sortable: true,
-      renderCell: ({ value }) => value || "-",
-    },
-    {
-      field: "bmi",
-      headerName: "BMI",
-      width: "90px",
-      sortable: true,
-      renderCell: ({ value }) => value || "-",
-    },
-    {
       field: "actions",
       headerName: "Actions",
-      width: "120px",
+      width: "100px",
       sortable: false,
       sticky: "right",
       cellClassName: "bg-white",
       align: "right",
       renderCell: ({ row }) => (
-        <div className="flex items-center gap-2 justify-end">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => window.open(`/cadets/view/${row.id}`, "_blank")}
-            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            title="View Cadet Details"
-          >
-            <Eye size={16} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              window.open(`/cadets/view/${row.id}`, { state: { editMode: true } })
-            }
-            className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-            title="Edit Cadet"
-          >
-            <Edit size={16} />
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.open(`/cadets/view/${row.id}`, "_blank")}
+          className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+          title="View cadet"
+        >
+          <Eye size={16} />
+        </Button>
       ),
     },
   ];
-
-  const getSuggestionRowClassName = (row) => {
-    if (row.shortlist_email_sent === 1) return "!bg-blue-50/30 opacity-75";
-    const tone = row?.suggestion?.tone;
-    if (tone === "green") return "!bg-green-50 hover:!bg-green-100";
-    if (tone === "yellow") return "!bg-yellow-50 hover:!bg-yellow-100";
-    return "!bg-red-50 hover:!bg-red-100";
-  };
 
   if (loading && cadets.length === 0) {
     return (
@@ -267,66 +275,90 @@ const ShortlistTab = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Shortlist Suggestions</h2>
-          <p className="text-sm text-gray-600">
-            Green: qualified, Yellow: Lateral Entry, Red: below criteria. Locked rows indicate email already sent.
+          <h2 className="text-xl font-semibold text-slate-900">
+            Shortlist Management
+          </h2>
+          <p className="text-sm text-slate-500">
+            Review uploaded, shortlisted, and assessed cadets here. Already
+            shortlisted rows stay locked.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
-              placeholder="Search suggestion cadets..."
+              placeholder="Search cadets..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 pl-10"
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="pl-10"
             />
           </div>
-          {canSendShortlistEmail && (
+
+          <Button
+            onClick={handleShortlist}
+            disabled={submittingShortlist || selectedForShortlist.length === 0}
+            className="gap-2 bg-purple-600 text-white hover:bg-purple-700"
+          >
+            {submittingShortlist ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle className="h-4 w-4" />
+            )}
+            Shortlist Selected
+          </Button>
+
+          {canSendShortlistEmail ? (
             <Button
               variant="outline"
-              onClick={() => onSendShortlistEmail(selectedCadets)}
-              disabled={sendingShortlist || selectedCadets.length === 0}
-              className="flex items-center gap-2 border-green-300 text-green-600 hover:bg-green-50"
-              title={
-                selectedCadets.length === 0
-                  ? "Select at least one cadet"
-                  : "Send shortlist email"
+              onClick={handleSendEmail}
+              disabled={
+                sendingShortlist || shortlistedPendingEmail.length === 0
               }
+              className="gap-2 border-green-200 text-green-700 hover:bg-green-50"
             >
               {sendingShortlist ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Mail className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               )}
-              Send Shortlist Email
+              Send Shortlist Email ({shortlistedPendingEmail.length})
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
 
-      <div className="bg-white shadow-sm overflow-hidden border rounded-lg">
+      <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-800">
+        <p className="font-semibold">How this tab works</p>
+        <p className="mt-1">
+          `Shortlist Selected` marks uploaded cadets as shortlisted. Once
+          shortlisted, rows are locked here. Assessment passed and failed cadets
+          remain visible here for tracking, and `Send Shortlist Email` sends to
+          all shortlisted rows that are still pending email.
+        </p>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
         <ReusableDataTable
           columns={columns}
-          rows={cadets}
+          rows={paginatedCadets}
           loading={loading}
-          getRowClassName={getSuggestionRowClassName}
-          checkboxSelection={true}
-          isRowSelectable={isRowSelectable}
+          checkboxSelection
           rowSelectionModel={selectedCadets}
           onRowSelectionModelChange={setSelectedCadets}
+          isRowSelectable={(row) => row.workflow_phase === "uploaded"}
           emptyMessage={
             searchTerm
-              ? `No suggestion cadets found matching "${searchTerm}"`
-              : "No shortlist suggestions found for this drive"
+              ? `No cadets found matching "${searchTerm}"`
+              : "No cadets available for shortlist management"
           }
           pagination={{
             current_page: currentPage,
             per_page: perPage,
-            total: totalItems,
-            last_page: totalPages,
+            total: filteredCadets.length,
+            last_page: Math.max(1, Math.ceil(filteredCadets.length / perPage)),
           }}
           handlePageChange={setCurrentPage}
           handlePerPageChange={(limit) => {

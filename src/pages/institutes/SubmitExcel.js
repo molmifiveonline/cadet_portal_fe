@@ -19,6 +19,7 @@ import {
 import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import * as xlsx from 'xlsx';
+import { useNavigate } from 'react-router-dom';
 import {
   isDateColumn,
   formatCellValue,
@@ -30,6 +31,7 @@ import ConfirmationModal from '../../components/common/ConfirmationModal';
 
 const SubmitExcel = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const instituteName = user?.first_name || 'Institute';
 
   const [file, setFile] = useState(null);
@@ -41,6 +43,8 @@ const SubmitExcel = () => {
   const [validationError, setValidationError] = useState('');
   const [cellErrors, setCellErrors] = useState({});
   const [errorCount, setErrorCount] = useState(0);
+  const [remarks, setRemarks] = useState('');
+  const [submittedDriveId, setSubmittedDriveId] = useState('');
 
   // Admin specific state
   const [institutes, setInstitutes] = useState([]);
@@ -249,11 +253,13 @@ const SubmitExcel = () => {
       }
 
       formData.append('file', file);
+      formData.append('remarks', remarks);
 
-      await api.post('/institutes/submit-excel', formData, {
+      const response = await api.post('/institutes/submit-excel', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
+      setSubmittedDriveId(response.data?.drive_id || '');
       setSubmitted(true);
       toast.success('File submitted successfully');
     } catch (error) {
@@ -277,16 +283,35 @@ const SubmitExcel = () => {
           </div>
           <PageHeader
             title="Submission Successful!"
-            subtitle={`Thank you, ${instituteName}. Your Excel file has been successfully uploaded and sent for processing.`}
+            subtitle={`Thank you, ${instituteName}. Your Excel file has been successfully uploaded and sent for processing. The MOLMI team has been notified automatically.`}
             icon={CheckCircle}
             className="mb-6 shadow-none border-none bg-transparent backdrop-blur-none"
           />
-          <Button
-            onClick={() => setSubmitted(false)}
-            className='bg-[#3a5f9e] hover:bg-[#325186] text-white'
-          >
-            Upload Another File
-          </Button>
+          <div className='space-y-3'>
+            <p className='text-sm text-slate-600'>
+              Next step: upload cadet CVs in the drive document workspace so MOLMI can review them.
+            </p>
+            <div className='flex flex-col gap-3 sm:flex-row sm:justify-center'>
+              {submittedDriveId ? (
+                <Button
+                  onClick={() => navigate(`/drives/${submittedDriveId}`)}
+                  className='bg-[#3a5f9e] text-white hover:bg-[#325186]'
+                >
+                  Open Recruitment Drive
+                </Button>
+              ) : null}
+              <Button
+                variant='outline'
+                onClick={() => {
+                  setSubmitted(false);
+                  setSubmittedDriveId('');
+                  setRemarks('');
+                }}
+              >
+                Upload Another File
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -421,6 +446,19 @@ const SubmitExcel = () => {
                 <p className='text-sm'>{validationError}</p>
               </div>
             )}
+
+            <div className='mt-4 space-y-2'>
+              <label className='text-sm font-medium leading-none'>
+                Submission Remarks
+              </label>
+              <textarea
+                value={remarks}
+                onChange={(event) => setRemarks(event.target.value)}
+                rows={3}
+                className='w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500'
+                placeholder='Optional notes for MOLMI along with this submission'
+              />
+            </div>
 
             <div className='mt-6 flex justify-end gap-3'>
               {file && (

@@ -35,6 +35,9 @@ const MedicalResultForm = () => {
     medical_time: '',
     medical_center_id: '',
     fit_status: 'fit',
+    final_decision: 'pass',
+    psychometric_status: 'pending',
+    profiling_status: 'pending',
     remarks: '',
   });
 
@@ -43,7 +46,7 @@ const MedicalResultForm = () => {
     try {
       setLoading(true);
       const cadetRes = await api.get(`/cadets/${cadet_id}`);
-      setCadet(cadetRes.data);
+      setCadet(cadetRes.data?.data || null);
 
       // Fetch medical centers
       const centersRes = await api.get('/medical-centers');
@@ -62,6 +65,11 @@ const MedicalResultForm = () => {
             medical_time: data.medical_time || '',
             medical_center_id: data.medical_center_id || '',
             fit_status: data.fit_status || 'fit',
+            final_decision:
+              data.final_decision ||
+              (data.fit_status === 'fit' ? 'pass' : 'fail'),
+            psychometric_status: data.psychometric_status || 'pending',
+            profiling_status: data.profiling_status || 'pending',
             remarks: data.remarks || '',
           });
         }
@@ -107,6 +115,9 @@ const MedicalResultForm = () => {
       data.append('medical_time', formData.medical_time);
       data.append('medical_center_id', formData.medical_center_id);
       data.append('fit_status', formData.fit_status);
+      data.append('final_decision', formData.final_decision);
+      data.append('psychometric_status', formData.psychometric_status);
+      data.append('profiling_status', formData.profiling_status);
       data.append('remarks', formData.remarks);
 
       if (reportFile) {
@@ -233,6 +244,68 @@ const MedicalResultForm = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Final Decision
+              </label>
+              <Select
+                value={formData.final_decision}
+                onValueChange={(val) =>
+                  setFormData((p) => ({ ...p, final_decision: val }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select final decision' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='pass'>Pass</SelectItem>
+                  <SelectItem value='fail'>Fail</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Psychometric Test
+              </label>
+              <Select
+                value={formData.psychometric_status}
+                onValueChange={(val) =>
+                  setFormData((p) => ({ ...p, psychometric_status: val }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select psychometric status' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='pending'>Pending</SelectItem>
+                  <SelectItem value='pass'>Pass</SelectItem>
+                  <SelectItem value='fail'>Fail</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Profiling Test
+              </label>
+              <Select
+                value={formData.profiling_status}
+                onValueChange={(val) =>
+                  setFormData((p) => ({ ...p, profiling_status: val }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select profiling status' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='pending'>Pending</SelectItem>
+                  <SelectItem value='pass'>Pass</SelectItem>
+                  <SelectItem value='fail'>Fail</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className='space-y-2'>
@@ -265,6 +338,9 @@ const MedicalResultForm = () => {
               className='w-full rounded-xl border border-gray-300 p-4 text-sm focus:ring-4 focus:ring-blue-100 outline-none resize-none'
               placeholder='Add specific medical observations...'
             />
+            <p className='text-xs text-slate-500'>
+              Candidates marked `Pass` move to the selected stage. Candidates marked `Fail` stop here.
+            </p>
           </div>
 
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200'>

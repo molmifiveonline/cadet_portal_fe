@@ -6,6 +6,7 @@ const InterviewManagement = () => {
     <CadetManagement
       pageTitle='Interview Management'
       initialStatus='Interview'
+      showAssessmentScore={true}
     />
   );
 };

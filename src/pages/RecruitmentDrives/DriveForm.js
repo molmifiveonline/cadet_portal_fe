@@ -88,7 +88,7 @@ const DriveForm = () => {
 
       fetchDrive();
     }
-  }, [id, isEdit, reset, navigate]);
+  }, [currentYear, id, isEdit, reset, navigate]);
 
   const onSubmit = async (data) => {
     try {
@@ -103,12 +103,17 @@ const DriveForm = () => {
       if (isEdit) {
         await api.put(`/recruitment-drives/${id}`, payload);
         toast.success("Recruitment drive updated successfully");
+        navigate(`/drives/${id}`);
       } else {
-        await api.post("/recruitment-drives", payload);
+        const response = await api.post("/recruitment-drives", payload);
         toast.success("Recruitment drive created successfully");
+        const createdDriveId = response.data?.id;
+        if (createdDriveId) {
+          navigate(`/drives/${createdDriveId}`);
+          return;
+        }
+        navigate("/drives");
       }
-
-      navigate("/drives");
     } catch (error) {
       console.error("Error saving drive:", error);
       toast.error(

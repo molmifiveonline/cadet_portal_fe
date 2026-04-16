@@ -33,6 +33,7 @@ const SendEmailModal = ({
   const [formData, setFormData] = useState({
     subject: "",
     description: "",
+    remarks: "",
     file: null,
     batch_year: resolvedDefaultBatchYear,
     course_type: resolvedDefaultCourseType,
@@ -77,6 +78,7 @@ const SendEmailModal = ({
     if (
       !formData.subject ||
       !formData.description ||
+      !formData.remarks ||
       !formData.file ||
       !formData.course_type
     ) {
@@ -95,6 +97,7 @@ const SendEmailModal = ({
       data.append("instituteIds", JSON.stringify(selectedInstitutes));
       data.append("subject", formData.subject);
       data.append("description", formData.description);
+      data.append("remarks", formData.remarks);
       data.append("batch_year", formData.batch_year);
       data.append("course_type", formData.course_type);
       data.append("file", formData.file);
@@ -109,6 +112,7 @@ const SendEmailModal = ({
       setFormData({
         subject: "",
         description: "",
+        remarks: "",
         batch_year: resolvedDefaultBatchYear,
         course_type: resolvedDefaultCourseType,
         file: null,
@@ -236,6 +240,21 @@ const SendEmailModal = ({
                 rows={4}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 placeholder="Enter email body..."
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Remarks <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                name="remarks"
+                value={formData.remarks}
+                onChange={handleInputChange}
+                rows={3}
+                className="w-full resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Add the remarks that should be saved with this request"
                 required
               />
             </div>

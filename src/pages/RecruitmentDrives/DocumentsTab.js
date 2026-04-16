@@ -1,51 +1,108 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import { toast } from 'sonner';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
-  FileText, Eye, Upload, CheckCircle, XCircle, Clock, Loader2, Search,
-  RotateCcw, Download, ChevronDown, ChevronUp, Trash2
-} from 'lucide-react';
-import api from '../../lib/utils/apiConfig';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import ReusableDataTable from '../../components/common/ReusableDataTable';
-import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Download,
+  Eye,
+  ExternalLink,
+  FileText,
+  Loader2,
+  RotateCcw,
+  Search,
+  Trash2,
+  Upload,
+  XCircle,
+} from "lucide-react";
+import api from "../../lib/utils/apiConfig";
+import { useAuth } from "../../context/AuthContext";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import ReusableDataTable from "../../components/common/ReusableDataTable";
+import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 
 const DOCUMENT_TYPES = [
-  'Passport',
-  'Medical Certificate',
-  'Bank Details',
-  'Academic Marksheet',
-  'Aadhaar Card',
-  'PAN Card',
-  'INDOS Certificate',
-  'CDC (Continuous Discharge Certificate)',
-  'Agreement / Contract',
-  'Other',
+  "CV",
+  "Passport",
+  "Medical Certificate",
+  "Bank Details",
+  "Academic Marksheet",
+  "Aadhaar Card",
+  "PAN Card",
+  "INDOS Certificate",
+  "CDC (Continuous Discharge Certificate)",
+  "Agreement / Contract",
+  "Other",
 ];
 
+const STATUS_BADGES = {
+  accepted: {
+    className: "bg-green-100 text-green-800",
+    icon: CheckCircle,
+    label: "Accepted",
+  },
+  rejected: {
+    className: "bg-red-100 text-red-800",
+    icon: XCircle,
+    label: "Rejected",
+  },
+  reupload_requested: {
+    className: "bg-amber-100 text-amber-800",
+    icon: RotateCcw,
+    label: "Re-upload",
+  },
+  pending: {
+    className: "bg-slate-100 text-slate-700",
+    icon: Clock,
+    label: "Pending",
+  },
+};
+
+const getStatusBadge = (status = "pending") => {
+  const badge = STATUS_BADGES[status] || STATUS_BADGES.pending;
+  const Icon = badge.icon;
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${badge.className}`}>
+      <Icon size={12} />
+      {badge.label}
+    </span>
+  );
+};
+
 const DocumentsTab = ({ drive }) => {
-  useParams();
+  const { user } = useAuth();
   const [cadetsWithDocs, setCadetsWithDocs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [expandedCadets, setExpandedCadets] = useState({});
   const [uploadingFor, setUploadingFor] = useState(null);
-  const [uploadForm, setUploadForm] = useState({ document_name: '', document_type: '', file: null });
+  const [uploadForm, setUploadForm] = useState({
+    document_name: "",
+    document_type: "CV",
+    file: null,
+  });
   const [reviewingDoc, setReviewingDoc] = useState(null);
-  const [reviewRemarks, setReviewRemarks] = useState('');
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, documentId: null });
+  const [reviewRemarks, setReviewRemarks] = useState("");
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    documentId: null,
+  });
+
+  const isInstituteUser = user?.role === "Institute";
 
   const fetchDocuments = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get(`/documents/drive?drive_id=${drive.id}`);
       if (response.data?.success) {
-        setCadetsWithDocs(response.data.data);
+        setCadetsWithDocs(response.data.data || []);
       }
     } catch (error) {
-      console.error('Error fetching documents:', error);
-      toast.error('Failed to load documents');
+      console.error("Error fetching drive documents:", error);
+      toast.error("Failed to load document workspace");
     } finally {
       setLoading(false);
     }
@@ -55,33 +112,45 @@ const DocumentsTab = ({ drive }) => {
     fetchDocuments();
   }, [fetchDocuments]);
 
+  const filteredCadets = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    return cadetsWithDocs.filter((cadet) => {
+      if (!normalizedSearch) return true;
+      return (
+        cadet.name_as_in_indos_cert?.toLowerCase().includes(normalizedSearch) ||
+        cadet.cadet_unique_id?.toLowerCase().includes(normalizedSearch) ||
+        cadet.email_id?.toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [cadetsWithDocs, searchTerm]);
+
   const toggleCadet = (cadetId) => {
-    setExpandedCadets(prev => ({ ...prev, [cadetId]: !prev[cadetId] }));
+    setExpandedCadets((prev) => ({ ...prev, [cadetId]: !prev[cadetId] }));
   };
 
   const handleUpload = async (cadetId) => {
     if (!uploadForm.file || !uploadForm.document_name || !uploadForm.document_type) {
-      toast.error('Please fill all fields and select a file');
+      toast.error("Please select a file and complete the document details");
       return;
     }
 
     try {
-      const data = new FormData();
-      data.append('document', uploadForm.file);
-      data.append('document_name', uploadForm.document_name);
-      data.append('document_type', uploadForm.document_type);
+      const formData = new FormData();
+      formData.append("document", uploadForm.file);
+      formData.append("document_name", uploadForm.document_name);
+      formData.append("document_type", uploadForm.document_type);
 
-      await api.post(`/documents/cadet/${cadetId}`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      await api.post(`/documents/cadet/${cadetId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
-      toast.success('Document uploaded successfully');
+      toast.success("Document uploaded successfully");
       setUploadingFor(null);
-      setUploadForm({ document_name: '', document_type: '', file: null });
-      fetchDocuments();
+      setUploadForm({ document_name: "", document_type: "CV", file: null });
+      await fetchDocuments();
     } catch (error) {
-      console.error('Error uploading document:', error);
-      toast.error('Failed to upload document');
+      console.error("Error uploading document:", error);
+      toast.error(error.response?.data?.message || "Failed to upload document");
     }
   };
 
@@ -91,302 +160,436 @@ const DocumentsTab = ({ drive }) => {
         status,
         admin_remarks: reviewRemarks,
       });
-
-      toast.success(`Document ${status === 'accepted' ? 'accepted' : status === 'rejected' ? 'rejected' : 'reupload requested'} successfully`);
+      toast.success("Document review updated");
       setReviewingDoc(null);
-      setReviewRemarks('');
-      fetchDocuments();
+      setReviewRemarks("");
+      await fetchDocuments();
     } catch (error) {
-      console.error('Error reviewing document:', error);
-      toast.error('Failed to review document');
+      console.error("Error reviewing document:", error);
+      toast.error(error.response?.data?.message || "Failed to review document");
     }
   };
 
   const handleDownload = (documentId) => {
-    const userStr = localStorage.getItem('user');
-    let token = '';
+    const userStr = localStorage.getItem("user");
+    let token = "";
+
     try {
       if (userStr) {
-        const user = JSON.parse(userStr);
-        token = user.token || '';
+        const parsed = JSON.parse(userStr);
+        token = parsed.token || "";
       }
       if (!token) {
-        token = localStorage.getItem('token') || '';
+        token = localStorage.getItem("token") || "";
       }
-    } catch (e) {
-      token = localStorage.getItem('token') || '';
+    } catch (error) {
+      token = localStorage.getItem("token") || "";
     }
 
-    window.open(`${api.defaults.baseURL}/documents/${documentId}/download?token=${token}`, '_blank');
-  };
-
-  const handleDeleteClick = (documentId) => {
-    setDeleteModal({ isOpen: true, documentId });
+    window.open(
+      `${api.defaults.baseURL}/documents/${documentId}/download?token=${token}`,
+      "_blank",
+    );
   };
 
   const handleConfirmDelete = async () => {
-    const documentId = deleteModal.documentId;
-    if (!documentId) return;
-
     try {
-      await api.delete(`/documents/${documentId}`);
-      toast.success('Document deleted');
+      await api.delete(`/documents/${deleteModal.documentId}`);
+      toast.success("Document deleted");
       setDeleteModal({ isOpen: false, documentId: null });
-      fetchDocuments();
+      await fetchDocuments();
     } catch (error) {
-      console.error('Error deleting document:', error);
-      toast.error('Failed to delete document');
+      console.error("Error deleting document:", error);
+      toast.error(error.response?.data?.message || "Failed to delete document");
     }
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'accepted':
-        return <span className='inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800'><CheckCircle size={12} /> Accepted</span>;
-      case 'rejected':
-        return <span className='inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800'><XCircle size={12} /> Rejected</span>;
-      case 'reupload_requested':
-        return <span className='inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800'><RotateCcw size={12} /> Re-upload</span>;
-      default:
-        return <span className='inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800'><Clock size={12} /> Pending</span>;
-    }
+  const getCadetSummary = (documents = []) => {
+    const cvCount = documents.filter(
+      (document) => String(document.document_type || "").toUpperCase() === "CV",
+    ).length;
+    const acceptedCount = documents.filter(
+      (document) => document.status === "accepted",
+    ).length;
+    const pendingCount = documents.filter(
+      (document) => document.status === "pending",
+    ).length;
+    const needsAttentionCount = documents.filter((document) =>
+      ["rejected", "reupload_requested"].includes(document.status),
+    ).length;
+
+    return {
+      total: documents.length,
+      cvCount,
+      acceptedCount,
+      pendingCount,
+      needsAttentionCount,
+    };
   };
 
-  const getDocSummary = (documents) => {
-    const total = documents.length;
-    const accepted = documents.filter(d => d.status === 'accepted').length;
-    const pending = documents.filter(d => d.status === 'pending').length;
-    const rejected = documents.filter(d => d.status === 'rejected' || d.status === 'reupload_requested').length;
-    return { total, accepted, pending, rejected };
-  };
-
-  const docColumns = [
+  const documentColumns = [
     {
-      field: 'document_name',
-      headerName: 'Document Name',
-      width: '180px',
-      sortable: true,
-      renderCell: ({ value }) => <span className='font-medium text-gray-900'>{value}</span>
-    },
-    { field: 'document_type', headerName: 'Type', width: '150px', sortable: true },
-    { field: 'original_filename', headerName: 'File', width: '180px', sortable: true },
-    {
-      field: 'status',
-      headerName: 'Status',
-      width: '140px',
-      sortable: true,
-      renderCell: ({ value }) => getStatusBadge(value)
-    },
-    {
-      field: 'admin_remarks',
-      headerName: 'Remarks',
-      width: '160px',
-      sortable: true,
+      field: "document_name",
+      headerName: "Document Name",
+      width: "180px",
       renderCell: ({ value }) => (
-        <span className='truncate block w-full text-xs text-gray-600' title={value}>
-          {value || '-'}
-        </span>
-      )
+        <span className="font-medium text-slate-900">{value}</span>
+      ),
     },
     {
-      field: 'actions',
-      headerName: 'Actions',
-      width: reviewingDoc ? '480px' : '120px',
-      sortable: false,
-      sticky: 'right',
-      cellClassName: 'bg-white',
-      align: 'right',
-      renderCell: ({ row: doc }) => (
-        <div className='flex items-center gap-1 justify-end'>
-          <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50' onClick={() => handleDownload(doc.id)} title='Download'>
-            <Download size={14} />
-          </Button>
-
-          {reviewingDoc === doc.id ? (
-            <div className='flex items-center gap-2 ml-2 bg-blue-50 p-1 rounded border border-blue-100'>
-              <Input
-                placeholder='Remarks...'
-                value={reviewRemarks}
-                onChange={(e) => setReviewRemarks(e.target.value)}
-                className='w-32 h-8 text-[10px]'
-              />
-              <div className='flex gap-1'>
-                <Button size='sm' className='h-7 px-2 bg-green-600 hover:bg-green-700 text-white text-[10px]' onClick={() => handleReview(doc.id, 'accepted')}>
-                  Accept
-                </Button>
-                <Button size='sm' className='h-7 px-2 bg-red-600 hover:bg-red-700 text-white text-[10px]' onClick={() => handleReview(doc.id, 'rejected')}>
-                  Reject
-                </Button>
-                <Button size='sm' className='h-7 px-2 bg-yellow-500 hover:bg-yellow-600 text-white text-[10px]' onClick={() => handleReview(doc.id, 'reupload_requested')}>
-                  Re-upload
-                </Button>
-                <Button size='sm' variant='ghost' className='h-7 w-7 p-0' onClick={() => { setReviewingDoc(null); setReviewRemarks(''); }}>
-                  ✕
-                </Button>
-              </div>
+      field: "document_type",
+      headerName: "Type",
+      width: "150px",
+      renderCell: ({ value }) => value || "-",
+    },
+    {
+      field: "source",
+      headerName: "Source",
+      width: "110px",
+      renderCell: ({ row }) => (
+        <div className="space-y-1">
+          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+            {row.source || "portal"}
+          </span>
+          {row.external_upload_link ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => window.open(row.external_upload_link, "_blank")}
+                className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+              >
+                <ExternalLink size={12} />
+                Open Link
+              </button>
             </div>
-          ) : (
-            <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50' onClick={() => setReviewingDoc(doc.id)} title='Review'>
-              <Eye size={14} />
-            </Button>
-          )}
-
-          <Button variant='ghost' size='sm' className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50' onClick={() => handleDeleteClick(doc.id)} title='Delete'>
-            <Trash2 size={14} />
-          </Button>
+          ) : null}
         </div>
-      )
-    }
-  ];
+      ),
+    },
+    {
+      field: "original_filename",
+      headerName: "File / Reference",
+      width: "180px",
+      renderCell: ({ row }) => (
+        <span className="block truncate text-slate-600" title={row.original_filename || row.external_reference}>
+          {row.original_filename || row.external_reference || "-"}
+        </span>
+      ),
+    },
+    {
+      field: "requested_at",
+      headerName: "Requested",
+      width: "130px",
+      renderCell: ({ value }) =>
+        value ? new Date(value).toLocaleDateString() : "-",
+    },
+    {
+      field: "status",
+      headerName: "Status",
+      width: "130px",
+      renderCell: ({ value }) => getStatusBadge(value),
+    },
+    {
+      field: "admin_remarks",
+      headerName: "Admin Remarks",
+      width: "180px",
+      renderCell: ({ value }) => (
+        <span className="block truncate text-slate-600" title={value}>
+          {value || "-"}
+        </span>
+      ),
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: isInstituteUser ? "110px" : "420px",
+      sortable: false,
+      sticky: "right",
+      cellClassName: "bg-white",
+      align: "right",
+      renderCell: ({ row: document }) => (
+        <div className="flex items-center justify-end gap-2">
+          {document.original_filename ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              onClick={() => handleDownload(document.id)}
+              title="Download document"
+            >
+              <Download size={14} />
+            </Button>
+          ) : null}
 
-  const filteredCadets = cadetsWithDocs.filter(cadet => {
-    const search = searchTerm.toLowerCase().trim();
-    if (!search) return true;
-    return (
-      cadet.name_as_in_indos_cert?.toLowerCase().includes(search) ||
-      cadet.cadet_unique_id?.toLowerCase().includes(search) ||
-      cadet.email_id?.toLowerCase().includes(search)
-    );
-  });
+          {!isInstituteUser ? (
+            reviewingDoc === document.id ? (
+              <div className="ml-2 flex items-center gap-2 rounded border border-blue-100 bg-blue-50 p-1">
+                <Input
+                  placeholder="Remarks..."
+                  value={reviewRemarks}
+                  onChange={(event) => setReviewRemarks(event.target.value)}
+                  className="h-8 w-32 text-xs"
+                />
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    className="h-7 bg-green-600 px-2 text-[10px] text-white hover:bg-green-700"
+                    onClick={() => handleReview(document.id, "accepted")}
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 bg-red-600 px-2 text-[10px] text-white hover:bg-red-700"
+                    onClick={() => handleReview(document.id, "rejected")}
+                  >
+                    Reject
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 bg-amber-500 px-2 text-[10px] text-white hover:bg-amber-600"
+                    onClick={() => handleReview(document.id, "reupload_requested")}
+                  >
+                    Re-upload
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    onClick={() => {
+                      setReviewingDoc(null);
+                      setReviewRemarks("");
+                    }}
+                  >
+                    <XCircle size={12} />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-50 hover:text-purple-700"
+                onClick={() => setReviewingDoc(document.id)}
+                title="Review document"
+              >
+                <Eye size={14} />
+              </Button>
+            )
+          ) : null}
+
+          {!isInstituteUser ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={() =>
+                setDeleteModal({ isOpen: true, documentId: document.id })
+              }
+              title="Delete document"
+            >
+              <Trash2 size={14} />
+            </Button>
+          ) : null}
+        </div>
+      ),
+    },
+  ];
 
   if (loading) {
     return (
-      <div className='flex items-center justify-center p-20'>
-        <Loader2 className='animate-spin text-[#3a5f9e]' size={40} />
+      <div className="flex items-center justify-center p-20">
+        <Loader2 className="animate-spin text-[#3a5f9e]" size={40} />
       </div>
     );
   }
 
   return (
-    <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
+    <div className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
         <div>
-          <h2 className='text-xl font-semibold text-gray-900'>Document Management</h2>
-          <p className='text-sm text-gray-600'>Review and manage cadet documents for this recruitment drive</p>
+          <h2 className="text-xl font-semibold text-slate-900">Document Workspace</h2>
+          <p className="text-sm text-slate-500">
+            Track CV intake, external document requests, uploads received, and admin review status.
+          </p>
         </div>
-        <div className='relative'>
-          <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
-            placeholder='Search cadets...'
+            placeholder="Search cadets..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className='w-64 pl-10'
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="pl-10"
           />
         </div>
       </div>
 
       {filteredCadets.length === 0 ? (
-        <div className='text-center py-12 bg-white rounded-lg border'>
-          <FileText className='mx-auto h-12 w-12 text-gray-400' />
-          <h3 className='mt-2 text-sm font-medium text-gray-900'>No cadets eligible for document collection</h3>
-          <p className='mt-1 text-sm text-gray-500'>Only cadets who have completed medical will appear here.</p>
+        <div className="rounded-lg border bg-white py-12 text-center">
+          <FileText className="mx-auto h-12 w-12 text-slate-400" />
+          <h3 className="mt-2 text-sm font-medium text-slate-900">
+            No cadets found for this drive
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Uploaded cadets will appear here with their CV and document progress.
+          </p>
         </div>
       ) : (
-        <div className='space-y-3'>
+        <div className="space-y-3">
           {filteredCadets.map((cadet) => {
-            const isExpanded = expandedCadets[cadet.cadet_id];
-            const summary = getDocSummary(cadet.documents);
+            const isExpanded = !!expandedCadets[cadet.cadet_id];
+            const summary = getCadetSummary(cadet.documents || []);
 
             return (
-              <div key={cadet.cadet_id} className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
-                {/* Cadet Row Header */}
+              <div
+                key={cadet.cadet_id}
+                className="overflow-hidden rounded-lg border border-slate-200 bg-white"
+              >
                 <button
+                  type="button"
                   onClick={() => toggleCadet(cadet.cadet_id)}
-                  className='w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left'
+                  className="flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-slate-50"
                 >
-                  <div className='flex items-center gap-4'>
-                    <span className='px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded border border-indigo-100 uppercase'>
+                  <div className="flex items-center gap-4">
+                    <span className="rounded border border-indigo-100 bg-indigo-50 px-2 py-1 text-xs font-bold uppercase text-indigo-700">
                       {cadet.cadet_unique_id}
                     </span>
                     <div>
-                      <p className='font-medium text-gray-900'>{cadet.name_as_in_indos_cert}</p>
-                      <p className='text-xs text-gray-500'>{cadet.email_id}</p>
+                      <p className="font-medium text-slate-900">{cadet.name_as_in_indos_cert}</p>
+                      <p className="text-xs text-slate-500">{cadet.email_id || "-"}</p>
                     </div>
-                    <span className='px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800'>
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                       {cadet.status}
                     </span>
                   </div>
 
-                  <div className='flex items-center gap-4'>
-                    <div className='flex items-center gap-2 text-xs text-gray-500'>
-                      <span className='font-medium'>{summary.total} docs</span>
-                      {summary.accepted > 0 && <span className='text-green-600'>✓ {summary.accepted}</span>}
-                      {summary.pending > 0 && <span className='text-yellow-600'>⏳ {summary.pending}</span>}
-                      {summary.rejected > 0 && <span className='text-red-600'>✗ {summary.rejected}</span>}
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      <span className="font-medium">{summary.total} docs</span>
+                      <span className={summary.cvCount > 0 ? "text-emerald-600" : "text-rose-600"}>
+                        CV {summary.cvCount > 0 ? "received" : "needed"}
+                      </span>
+                      {summary.acceptedCount > 0 ? (
+                        <span className="text-emerald-600">{summary.acceptedCount} accepted</span>
+                      ) : null}
+                      {summary.pendingCount > 0 ? (
+                        <span className="text-amber-600">{summary.pendingCount} pending</span>
+                      ) : null}
+                      {summary.needsAttentionCount > 0 ? (
+                        <span className="text-rose-600">{summary.needsAttentionCount} needs attention</span>
+                      ) : null}
                     </div>
                     {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </div>
                 </button>
 
-                {/* Expanded Documents Section */}
-                {isExpanded && (
-                  <div className='border-t border-gray-200 p-4 bg-gray-50/50'>
-                    {/* Upload Button */}
+                {isExpanded ? (
+                  <div className="border-t border-slate-200 bg-slate-50/60 p-4">
                     {uploadingFor !== cadet.cadet_id ? (
                       <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={() => setUploadingFor(cadet.cadet_id)}
-                        className='mb-4 flex items-center gap-2'
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setUploadingFor(cadet.cadet_id);
+                          setUploadForm((prev) => ({
+                            ...prev,
+                            document_type: isInstituteUser ? "CV" : prev.document_type,
+                            document_name: isInstituteUser ? "Cadet CV" : prev.document_name,
+                          }));
+                        }}
+                        className="mb-4 gap-2"
                       >
                         <Upload size={14} />
-                        Upload Document
+                        {isInstituteUser ? "Upload CV / Document" : "Upload Document"}
                       </Button>
                     ) : (
-                      <div className='mb-4 p-4 bg-white rounded-lg border border-blue-200 space-y-3'>
-                        <h4 className='text-sm font-medium text-gray-700'>Upload New Document</h4>
-                        <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+                      <div className="mb-4 space-y-3 rounded-lg border border-blue-200 bg-white p-4">
+                        <h4 className="text-sm font-medium text-slate-700">
+                          Upload New Document
+                        </h4>
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                           <Input
-                            placeholder='Document name'
+                            placeholder="Document name"
                             value={uploadForm.document_name}
-                            onChange={(e) => setUploadForm(p => ({ ...p, document_name: e.target.value }))}
+                            onChange={(event) =>
+                              setUploadForm((prev) => ({
+                                ...prev,
+                                document_name: event.target.value,
+                              }))
+                            }
                           />
                           <select
                             value={uploadForm.document_type}
-                            onChange={(e) => setUploadForm(p => ({ ...p, document_type: e.target.value }))}
-                            className='px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+                            onChange={(event) =>
+                              setUploadForm((prev) => ({
+                                ...prev,
+                                document_type: event.target.value,
+                              }))
+                            }
+                            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                           >
-                            <option value=''>Select type...</option>
-                            {DOCUMENT_TYPES.map(type => (
-                              <option key={type} value={type}>{type}</option>
+                            {DOCUMENT_TYPES.map((type) => (
+                              <option key={type} value={type}>
+                                {type}
+                              </option>
                             ))}
                           </select>
                           <Input
-                            type='file'
-                            onChange={(e) => setUploadForm(p => ({ ...p, file: e.target.files?.[0] || null }))}
-                            accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
+                            type="file"
+                            onChange={(event) =>
+                              setUploadForm((prev) => ({
+                                ...prev,
+                                file: event.target.files?.[0] || null,
+                              }))
+                            }
+                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                           />
                         </div>
-                        <div className='flex items-center gap-2'>
-                          <Button size='sm' onClick={() => handleUpload(cadet.cadet_id)}>Upload</Button>
-                          <Button size='sm' variant='ghost' onClick={() => { setUploadingFor(null); setUploadForm({ document_name: '', document_type: '', file: null }); }}>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" onClick={() => handleUpload(cadet.cadet_id)}>
+                            Upload
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setUploadingFor(null);
+                              setUploadForm({
+                                document_name: "",
+                                document_type: "CV",
+                                file: null,
+                              });
+                            }}
+                          >
                             Cancel
                           </Button>
                         </div>
                       </div>
                     )}
 
-                    {/* Documents Table */}
-                    <div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
+                    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                       <ReusableDataTable
-                        columns={docColumns}
-                        rows={cadet.documents}
+                        columns={documentColumns}
+                        rows={cadet.documents || []}
                         loading={false}
-                        emptyMessage='No documents uploaded yet.'
+                        emptyMessage="No documents uploaded or requested yet."
                         pageSize={5}
+                        pagination={{
+                          current_page: 1,
+                          per_page: Math.max((cadet.documents || []).length, 1),
+                          total: (cadet.documents || []).length,
+                          last_page: 1,
+                        }}
                       />
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
             );
           })}
         </div>
       )}
-
-      <div className='text-sm text-gray-600'>
-        Total Cadets: {filteredCadets.length}
-      </div>
 
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
