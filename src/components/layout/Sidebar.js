@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { LogOut, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "../../lib/utils/utils";
@@ -8,6 +8,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useLayout } from "../../context/LayoutContext";
 import { useUserPermissions } from "../../hooks/usePermission";
 import { isAllowedRoute } from "../../lib/utils/routeUtils";
+import api from "../../lib/utils/apiConfig";
 import {
   Tooltip,
   TooltipTrigger,
@@ -34,7 +35,6 @@ const Sidebar = () => {
   const { isOpen, setIsOpen } = useLayout();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [expandedMenus, setExpandedMenus] = useState({});
 
   // Get user permissions from database
@@ -71,12 +71,12 @@ const Sidebar = () => {
   });
 
   const handleLogout = () => {
-    logout();
-    navigate("/");
+    const redirectPath = logout();
     toast.success("Logged out successfully");
     if (window.innerWidth < 768) {
       setIsOpen(false);
     }
+    window.location.assign(redirectPath);
   };
 
   const isLinkActive = (url, siblings = []) => {
@@ -264,14 +264,16 @@ const Sidebar = () => {
                           size={20}
                         />
                         {isOpen && (
-                          <span
-                            className={cn(
-                              "text-sm transition-all duration-200 whitespace-nowrap",
-                              isActive ? "font-semibold" : "font-medium",
-                            )}
-                          >
-                            {item.title}
-                          </span>
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <span
+                              className={cn(
+                                "text-sm transition-all duration-200 whitespace-nowrap",
+                                isActive ? "font-semibold" : "font-medium",
+                              )}
+                            >
+                              {item.title}
+                            </span>
+                          </div>
                         )}
                       </Link>
                     </TooltipWrapper>

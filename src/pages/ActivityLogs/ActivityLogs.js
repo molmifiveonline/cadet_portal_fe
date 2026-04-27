@@ -38,17 +38,21 @@ const ActivityLogs = () => {
       ),
     },
     {
-      field: 'user_name',
+      field: 'display_name',
       headerName: 'User',
       width: '200px',
       renderCell: ({ row }) => {
-        // The backend intelligently merges Admin names and Institute names into 'user_name'
+        // The backend merges Admin names and Institute names into 'display_name'
         // If it's missing, fallback to the raw pieces or email
         const firstName = row.first_name || '';
         const lastName = row.last_name || '';
         const fallbackName = `${firstName} ${lastName}`.trim();
         const displayName =
-          row.user_name || fallbackName || row.user_email || 'Unknown User';
+          row.display_name ||
+          row.user_name ||
+          fallbackName ||
+          row.user_email ||
+          'Unknown User';
 
         return (
           <div className='flex flex-col'>
@@ -87,12 +91,6 @@ const ActivityLogs = () => {
           </div>
         );
       },
-    },
-    {
-      field: 'ip_address',
-      headerName: 'IP Address',
-      width: '150px',
-      renderCell: ({ value }) => value || '-',
     },
   ];
 

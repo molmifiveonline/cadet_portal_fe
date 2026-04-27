@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useRef,
 } from 'react';
+import { getLogoutRedirectPath } from '../lib/utils/routeUtils';
 
 const AuthContext = createContext();
 
@@ -41,7 +42,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setUser(null);
-      window.location.href = '/login';
+      window.location.href = getLogoutRedirectPath(userData);
       return;
     }
 
@@ -53,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       setUser(null);
-      window.location.href = '/login';
+      window.location.href = getLogoutRedirectPath(userData);
     }, remainingMs);
   };
 
@@ -107,6 +108,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    const redirectPath = getLogoutRedirectPath(user);
+
     if (logoutTimerRef.current) {
       clearTimeout(logoutTimerRef.current);
       logoutTimerRef.current = null;
@@ -114,6 +117,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    return redirectPath;
   };
 
   const value = {

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
+  AlertCircle,
   ArrowLeft,
   Edit,
   FileText,
@@ -10,6 +11,7 @@ import {
   Rocket,
   Stethoscope,
   Users,
+  Upload,
 } from "lucide-react";
 import api from "../../lib/utils/apiConfig";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
@@ -24,6 +26,8 @@ import InterviewTab from "./InterviewTab";
 import MedicalTab from "./MedicalTab";
 import SendEmailModal from "../institutes/SendEmailModal";
 import ShortlistTab from "./ShortlistTab";
+import CadetPreviewModal from "../../components/common/CadetPreviewModal";
+import SubmitExcel from "../institutes/SubmitExcel";
 
 const STATUS_COLORS = {
   Draft: "bg-yellow-100 text-yellow-800",
@@ -46,6 +50,16 @@ const getCourseTypeColor = (courseType) =>
 const getStatusColor = (status) =>
   STATUS_COLORS[status] || "bg-slate-100 text-slate-800";
 
+const INSTITUTE_UPLOAD_CLOSED_STATUSES = new Set([
+  "Received",
+  "Submitted",
+  "Shortlisted",
+  "Assessment Completed",
+  "Interview Completed",
+  "Medical Completed",
+  "Closed",
+]);
+
 const DriveDetails = () => {
   const { user } = useAuth();
   const { id } = useParams();
@@ -60,6 +74,10 @@ const DriveDetails = () => {
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [sendingShortlist, setSendingShortlist] = useState(false);
   const [shortlistRefreshTrigger, setShortlistRefreshTrigger] = useState(0);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewCadets, setPreviewCadets] = useState([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isInstituteUser = user?.role === "Institute";
 
@@ -96,17 +114,34 @@ const DriveDetails = () => {
     }
   }, [location.search, location.state]);
 
+  const handlePreviewSubmit = async () => {
+    try {
+      setPreviewLoading(true);
+      const response = await api.get(`/recruitment-drives/${id}/preview-submit-cadets`);
+      if (response.data.success) {
+        setPreviewCadets(response.data.data);
+        setIsPreviewModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Error fetching preview:", error);
+      toast.error(error.response?.data?.message || "Failed to fetch cadet preview");
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const handleSubmitCadets = async () => {
     try {
-      setLoading(true);
+      setIsSubmitting(true);
       await api.post(`/recruitment-drives/${id}/submit-cadets`);
       toast.success("Cadets imported into the recruitment drive");
+      setIsPreviewModalOpen(false);
       await fetchDriveData();
     } catch (error) {
       console.error("Error submitting cadets:", error);
       toast.error(error.response?.data?.message || "Failed to submit cadets");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -159,6 +194,20 @@ const DriveDetails = () => {
     Number(stats?.total_uploaded || 0) === 0;
   const canSendShortlistEmail =
     !isInstituteUser && Number(drive?.institute_reverted_excel);
+  const hasPendingCadetDataRequest =
+    Number(drive?.cadet_data_submit_request_pending || 0) === 1 ||
+    drive?.cadet_data_request_status === "pending_submission";
+  const isInstituteCadetDataSubmitted =
+    Number(drive?.institute_reverted_excel || 0) === 1 ||
+    drive?.cadet_data_request_status === "submitted" ||
+    INSTITUTE_UPLOAD_CLOSED_STATUSES.has(drive?.status);
+  const canInstituteUploadCadets =
+    isInstituteUser &&
+    hasPendingCadetDataRequest &&
+    !isInstituteCadetDataSubmitted;
+  const instituteUploadDisabledMessage = isInstituteCadetDataSubmitted
+    ? "Cadet data has already been submitted for this drive. Further uploads are disabled."
+    : "There is no active cadet data request for this drive.";
 
   const progressCards = useMemo(
     () => [
@@ -193,23 +242,30 @@ const DriveDetails = () => {
         onClick: () => setActiveTab("medical"),
       },
       {
-        label: "CTV Assigned",
-        value: stats?.ctv_assigned || 0,
-        tone: "text-amber-600",
-        onClick: () => {
-          setActiveTab("cadets");
-          setStatusFilter("CTV Assigned");
-        },
-      },
-      {
-        label: "Onboarded",
-        value: stats?.onboarded || 0,
+        label: "Medical",
+        value: stats?.medical_queue_count || 0,
         tone: "text-lime-600",
-        onClick: () => {
-          setActiveTab("cadets");
-          setStatusFilter("Onboarded");
-        },
+        onClick: () => setActiveTab("medical"),
       },
+      // Phase 2: re-enable CTV Assigned and Onboarded progress cards.
+      // {
+      //   label: "CTV Assigned",
+      //   value: stats?.ctv_assigned || 0,
+      //   tone: "text-amber-600",
+      //   onClick: () => {
+      //     setActiveTab("cadets");
+      //     setStatusFilter("CTV Assigned");
+      //   },
+      // },
+      // {
+      //   label: "Onboarded",
+      //   value: stats?.onboarded || 0,
+      //   tone: "text-lime-600",
+      //   onClick: () => {
+      //     setActiveTab("cadets");
+      //     setStatusFilter("Onboarded");
+      //   },
+      // },
     ],
     [stats],
   );
@@ -217,6 +273,13 @@ const DriveDetails = () => {
   const tabs = isInstituteUser
     ? [
         { id: "info", label: "Drive Info", icon: FileText },
+        {
+          id: "upload",
+          label: "Upload Cadets",
+          icon: Upload,
+          disabled: !canInstituteUploadCadets,
+          disabledReason: instituteUploadDisabledMessage,
+        },
         { id: "cadets", label: "Cadets", icon: Users },
         { id: "documents", label: "Documents", icon: FileText },
       ]
@@ -294,7 +357,8 @@ const DriveDetails = () => {
           {canSubmitCadets ? (
             <Permission module="recruitment_drives" action="edit">
               <Button
-                onClick={handleSubmitCadets}
+                onClick={handlePreviewSubmit}
+                loading={previewLoading}
                 className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
               >
                 <Users className="h-4 w-4" />
@@ -317,6 +381,36 @@ const DriveDetails = () => {
           ) : null}
         </div>
       </PageHeader>
+
+      {hasPendingCadetDataRequest ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <div>
+                <h2 className="text-sm font-bold text-amber-950">
+                  {drive.cadet_data_request_message ||
+                    "Cadet data submit request is pending"}
+                </h2>
+                <p className="mt-1 text-sm text-amber-800">
+                  Upload the requested cadet data for this drive to move the
+                  request forward.
+                </p>
+              </div>
+            </div>
+            {isInstituteUser ? (
+              <Button
+                onClick={() => setActiveTab("upload")}
+                disabled={!canInstituteUploadCadets}
+                className="flex items-center gap-2 bg-amber-600 text-white hover:bg-amber-700"
+              >
+                <Upload className="h-4 w-4" />
+                Upload Cadet Data
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {stats ? (
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
@@ -354,11 +448,19 @@ const DriveDetails = () => {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  if (!tab.disabled) {
+                    setActiveTab(tab.id);
+                  }
+                }}
+                disabled={tab.disabled}
+                title={tab.disabled ? tab.disabledReason : undefined}
                 aria-current={activeTab === tab.id ? "page" : undefined}
                 className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all ${
                   activeTab === tab.id
                     ? "border-blue-200 bg-blue-50 text-blue-700 shadow-sm shadow-blue-100/60"
+                    : tab.disabled
+                      ? "cursor-not-allowed border-transparent text-slate-400 opacity-60"
                     : "border-transparent text-slate-600 hover:border-slate-200 hover:bg-white hover:text-slate-900"
                 }`}
               >
@@ -497,6 +599,23 @@ const DriveDetails = () => {
             </div>
           ) : null}
 
+          {activeTab === "upload" && isInstituteUser ? (
+            <SubmitExcel 
+              isEmbedded={true}
+              driveContext={{
+                driveId: drive.id,
+                instituteId: drive.institute_id,
+                batchYear: drive.year,
+                courseType: drive.course_type
+              }}
+              disabled={!canInstituteUploadCadets}
+              disabledMessage={instituteUploadDisabledMessage}
+              onSuccess={() => {
+                fetchDriveData();
+              }}
+            />
+          ) : null}
+
           {activeTab === "cadets" ? (
             <CadetsTab
               drive={drive}
@@ -541,6 +660,14 @@ const DriveDetails = () => {
         lockBatchYear
         lockCourseType
         onSuccess={fetchDriveData}
+      />
+
+      <CadetPreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        cadets={previewCadets}
+        onConfirm={handleSubmitCadets}
+        loading={isSubmitting}
       />
     </div>
   );

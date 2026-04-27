@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useForm, Controller, useFieldArray } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import {
   Loader2,
   ArrowLeft,
   Building2,
   MapPin,
-  Plus,
-  Trash2,
   Mail,
   User,
-  CheckCircle2,
 } from 'lucide-react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
@@ -25,6 +22,41 @@ import {
 } from 'components/ui/select';
 import PageHeader from '../../components/common/PageHeader';
 
+const CONTACT_COUNT = 3;
+
+const createEmptyContacts = () =>
+  Array.from({ length: CONTACT_COUNT }, (_, index) => ({
+    name: '',
+    email: '',
+    isDefault: index === 0,
+  }));
+
+const normalizeContacts = (contacts) => {
+  const normalized = Array.isArray(contacts) ? contacts.slice(0, CONTACT_COUNT) : [];
+  const paddedContacts = [...normalized, ...createEmptyContacts()].slice(
+    0,
+    CONTACT_COUNT,
+  );
+
+  return paddedContacts.map((contact, index) => ({
+    name: contact?.name || '',
+    email: contact?.email || '',
+    isDefault: index === 0,
+  }));
+};
+
+const prepareContactsForSubmit = (contacts) => {
+  const filledContacts = normalizeContacts(contacts).filter(
+    (contact) => contact.name.trim() || contact.email.trim(),
+  );
+
+  return filledContacts.map((contact, index) => ({
+    name: contact.name.trim(),
+    email: contact.email.trim(),
+    isDefault: index === 0,
+  }));
+};
+
 const InstituteForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -36,9 +68,7 @@ const InstituteForm = () => {
     register,
     handleSubmit,
     reset,
-    setValue,
     control,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
@@ -47,25 +77,9 @@ const InstituteForm = () => {
       address: '',
       institute_type: 'none',
       status: 'active',
-      contact_emails: [{ name: '', email: '', isDefault: true }],
+      contact_emails: createEmptyContacts(),
     },
   });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'contact_emails',
-  });
-
-  // Watch contacts to enforce exactly one default
-  const contactEmails = watch('contact_emails');
-
-  const setDefaultContact = (index) => {
-    const updatedContacts = contactEmails.map((contact, i) => ({
-      ...contact,
-      isDefault: i === index,
-    }));
-    setValue('contact_emails', updatedContacts, { shouldDirty: true });
-  };
 
   useEffect(() => {
     const processInstituteData = (data) => {
@@ -80,9 +94,9 @@ const InstituteForm = () => {
       }
 
       if (contacts && Array.isArray(contacts) && contacts.length > 0) {
-        initialContacts = contacts;
+        initialContacts = normalizeContacts(contacts);
       } else {
-        initialContacts = [{ name: '', email: '', isDefault: true }];
+        initialContacts = createEmptyContacts();
       }
 
       return {
@@ -132,30 +146,31 @@ const InstituteForm = () => {
         address: '',
         institute_type: '',
         status: 'active',
-        contact_emails: [{ name: '', email: '', isDefault: true }],
+        contact_emails: createEmptyContacts(),
       });
     }
   }, [id, reset, navigate, location.state]);
 
   const onSubmit = async (data) => {
-    // Ensure at least one default is selected
-    if (!data.contact_emails || data.contact_emails.length === 0) {
-      toast.error('Please add at least one contact');
+    const contactEmails = prepareContactsForSubmit(data.contact_emails);
+
+    if (contactEmails.length === 0) {
+      toast.error('Please enter at least one institute contact email');
       return;
     }
 
-    // Auto-select the first one as default if somehow none are
-    if (!data.contact_emails.some((c) => c.isDefault)) {
-      data.contact_emails[0].isDefault = true;
-    }
+    const payload = {
+      ...data,
+      contact_emails: contactEmails,
+    };
 
     try {
       setLoading(true);
       if (id) {
-        await api.put(`/institutes/${id}`, data);
+        await api.put(`/institutes/${id}`, payload);
         toast.success('Institute updated successfully');
       } else {
-        await api.post('/institutes', data);
+        await api.post('/institutes', payload);
         toast.success('Institute created successfully');
       }
       const returnState = location.state?.returnState;
@@ -255,42 +270,20 @@ const InstituteForm = () => {
               <div className='flex items-center justify-between'>
                 <h3 className='text-[15px] font-semibold text-gray-800 flex items-center gap-2'>
                   <Mail className='w-4 h-4 text-[#3a5f9e]' />
-                  Institute Contacts <span className='text-red-500 font-normal ml-0.5 mt-0.5 text-xs'>*Primary required</span>
+                  Institute Contacts
                 </h3>
-                <Button
-                  type='button'
-                  size='sm'
-                  onClick={() => append({ name: '', email: '', isDefault: false })}
-                  className='h-8 text-xs bg-[#3a5f9e] text-white hover:bg-[#325186] border-none shadow-sm'
-                >
-                  <Plus className='w-3 h-3 mr-1' /> Add Contact
-                </Button>
               </div>
 
               <div className='space-y-3'>
-                {fields.map((field, index) => (
-                  <div key={field.id} className='relative flex flex-col md:flex-row gap-3 p-4 bg-white rounded-xl border border-gray-300 transition-all hover:border-gray-400'>
-                    {/* Default Contact Selector (Radio Behavior) */}
-                    <div className='flex md:flex-col items-center justify-center gap-2 pr-2 border-b md:border-b-0 md:border-r border-gray-200 pb-3 md:pb-0 md:w-24 shrink-0'>
-                      <button
-                        type='button'
-                        onClick={() => setDefaultContact(index)}
-                        className={`group flex items-center justify-center gap-1.5 transition-colors w-full py-2 px-2 rounded-lg ${
-                          contactEmails?.[index]?.isDefault
-                            ? 'bg-green-100 text-green-700 border border-green-300 shadow-sm'
-                            : 'bg-gray-50 text-gray-500 border border-gray-300 hover:bg-green-50 hover:text-green-600 hover:border-green-300'
-                        }`}
-                      >
-                        <CheckCircle2 className={`w-4 h-4 ${contactEmails?.[index]?.isDefault ? 'fill-green-100' : ''}`} />
-                        <span className='text-xs uppercase tracking-wider font-bold whitespace-nowrap mx-auto'>
-                          {contactEmails?.[index]?.isDefault
-                            ? 'Primary'
-                            : 'Set Primary'}
-                        </span>
-                      </button>
+                {Array.from({ length: CONTACT_COUNT }, (_, index) => (
+                  <div key={`contact-${index}`} className='relative p-4 bg-white rounded-xl border border-gray-300 transition-all hover:border-gray-400'>
+                    <div className='text-xs font-semibold text-gray-600 mb-3'>
+                      {index === 0
+                        ? 'Institute Contact 1 - Primary Contact'
+                        : `Institute Contact ${index + 1}`}
                     </div>
 
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 pl-0 md:pl-2'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
                       <div className='space-y-1.5'>
                         <label className='text-xs font-medium text-gray-500 ml-1'>Contact Person</label>
                         <div className='relative'>
@@ -304,15 +297,34 @@ const InstituteForm = () => {
                       </div>
 
                       <div className='space-y-1.5'>
-                        <label className='text-xs font-medium text-gray-500 ml-1'>Email Address <span className='text-red-500'>*</span></label>
+                        <label className='text-xs font-medium text-gray-500 ml-1'>
+                          Email Address
+                          {index === 0 && <span className='text-red-500'> *</span>}
+                        </label>
                         <div className='relative'>
                           <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-3.5 w-3.5' />
                           <Input
                             {...register(`contact_emails.${index}.email`, {
-                              required: 'Email is required',
+                              required:
+                                index === 0 ? 'Contact email is required' : false,
                               pattern: {
                                 value: /^\S+@\S+$/i,
                                 message: 'Invalid email',
+                              },
+                              validate: (value, formValues) => {
+                                const contactName =
+                                  formValues.contact_emails?.[index]?.name || '';
+                                const emailValue = value || '';
+
+                                if (
+                                  index > 0 &&
+                                  contactName.trim() &&
+                                  !emailValue.trim()
+                                ) {
+                                  return 'Email is required when contact person is provided';
+                                }
+
+                                return true;
                               },
                             })}
                             className={`w-full pl-9 pr-3 py-2 text-sm rounded-lg border bg-gray-50/50 focus:bg-white h-9 ${errors?.contact_emails?.[index]?.email ? 'border-red-400 ring-1 ring-red-400/30' : 'border-gray-300'}`}
@@ -320,22 +332,12 @@ const InstituteForm = () => {
                           />
                         </div>
                         {errors?.contact_emails?.[index]?.email && (
-                          <span className='text-red-500 text-[10px] ml-1 absolute -bottom-4 left-0'>
+                          <span className='text-red-500 text-[10px] ml-1'>
                             {errors.contact_emails[index].email.message}
                           </span>
                         )}
                       </div>
                     </div>
-
-                    {fields.length > 1 && (
-                      <button
-                        type='button'
-                        onClick={() => remove(index)}
-                        className='absolute -top-2.5 -right-2.5 md:relative md:top-auto md:right-auto md:self-center bg-red-50 p-1.5 rounded-full text-red-500 hover:bg-red-100 hover:text-red-600 transition-colors shadow-sm md:shadow-none border border-red-100'
-                      >
-                        <Trash2 className='w-4 h-4' />
-                      </button>
-                    )}
                   </div>
                 ))}
               </div>

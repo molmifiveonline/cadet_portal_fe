@@ -3,6 +3,7 @@ import { Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLayout } from '../../context/LayoutContext';
 import { Button } from 'components/ui/button';
+import NotificationDropdown from '../common/NotificationDropdown';
 
 const Navbar = () => {
   const { toggleSidebar } = useLayout();
@@ -29,6 +30,7 @@ const Navbar = () => {
       </div>
 
       <div className='flex items-center gap-2 sm:gap-4'>
+        <NotificationDropdown />
         <div className='flex items-center gap-3'>
           <div className='text-right hidden sm:block'>
             <p className='text-sm font-bold text-slate-700 leading-none mb-1 capitalize'>

@@ -5,6 +5,16 @@ import api from "../../lib/utils/apiConfig";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
+import { getShortlistCriteriaStatus } from "../../lib/utils/shortlistCriteria";
+
+const formatPercentage = (value) => {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return "-";
+  }
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? `${numericValue.toFixed(2)}%` : "-";
+};
 
 const ShortlistTab = ({
   drive,
@@ -61,7 +71,6 @@ const ShortlistTab = ({
       return (
         cadet.name_as_in_indos_cert?.toLowerCase().includes(normalizedSearch) ||
         cadet.cadet_unique_id?.toLowerCase().includes(normalizedSearch) ||
-        cadet.roll_no?.toLowerCase().includes(normalizedSearch) ||
         cadet.email_id?.toLowerCase().includes(normalizedSearch)
       );
     });
@@ -157,17 +166,41 @@ const ShortlistTab = ({
       ),
     },
     {
-      field: "roll_no",
-      headerName: "Roll No",
-      width: "120px",
-      renderCell: ({ value }) => value || "-",
+      field: "tenth_avg_percentage",
+      headerName: "10th Avg",
+      width: "110px",
+      align: "center",
+      renderCell: ({ value }) => formatPercentage(value),
     },
     {
-      field: "cadet_percentage",
-      headerName: "%",
-      width: "100px",
-      renderCell: ({ value }) =>
-        value || value === 0 ? `${Number(value).toFixed(2)}%` : "-",
+      field: "twelfth_pcm_avg_percentage",
+      headerName: "12th PCM Avg",
+      width: "130px",
+      align: "center",
+      renderCell: ({ value }) => formatPercentage(value),
+    },
+    {
+      field: "twelfth_std_english",
+      headerName: "12th English",
+      width: "120px",
+      align: "center",
+      renderCell: ({ value }) => formatPercentage(value),
+    },
+    {
+      field: "criteria_status",
+      headerName: "Criteria",
+      width: "150px",
+      align: "center",
+      renderCell: ({ row }) => {
+        const criteriaStatus = getShortlistCriteriaStatus(row);
+        return (
+          <span
+            className={`rounded-full px-2 py-1 text-xs font-semibold ${criteriaStatus.badgeClassName}`}
+          >
+            {criteriaStatus.label}
+          </span>
+        );
+      },
     },
     {
       field: "status",
@@ -178,23 +211,6 @@ const ShortlistTab = ({
           className={`rounded-full px-2 py-1 text-xs font-semibold ${getWorkflowBadge(row)}`}
         >
           {row.status}
-        </span>
-      ),
-    },
-    {
-      field: "cv_needed",
-      headerName: "CV Needed",
-      width: "110px",
-      align: "center",
-      renderCell: ({ value }) => (
-        <span
-          className={`rounded-full px-2 py-1 text-xs font-semibold ${
-            value
-              ? "bg-rose-100 text-rose-700"
-              : "bg-emerald-100 text-emerald-700"
-          }`}
-        >
-          {value ? "Yes" : "No"}
         </span>
       ),
     },
@@ -214,34 +230,6 @@ const ShortlistTab = ({
             Pending
           </span>
         ),
-    },
-    {
-      field: "assessment_status",
-      headerName: "Assessment Result",
-      width: "140px",
-      align: "center",
-      renderCell: ({ value }) => {
-        const normalized = String(value || "").toLowerCase();
-        if (normalized === "pass") {
-          return (
-            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-              Passed
-            </span>
-          );
-        }
-        if (normalized === "fail") {
-          return (
-            <span className="rounded-full bg-rose-100 px-2 py-1 text-xs font-semibold text-rose-700">
-              Failed
-            </span>
-          );
-        }
-        return (
-          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
-            Pending
-          </span>
-        );
-      },
     },
     {
       field: "actions",
@@ -275,32 +263,32 @@ const ShortlistTab = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-        <div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(280px,1fr)_minmax(620px,auto)] xl:items-start">
+        <div className="min-w-0">
           <h2 className="text-xl font-semibold text-slate-900">
             Shortlist Management
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
             Review uploaded, shortlisted, and assessed cadets here. Already
             shortlisted rows stay locked.
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative w-full sm:w-72">
+        <div className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_auto_auto] sm:items-start xl:justify-end">
+          <div className="relative min-w-0 sm:w-80">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               placeholder="Search cadets..."
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              className="pl-10"
+              className="h-11 pl-10"
             />
           </div>
 
           <Button
             onClick={handleShortlist}
             disabled={submittingShortlist || selectedForShortlist.length === 0}
-            className="gap-2 bg-purple-600 text-white hover:bg-purple-700"
+            className="h-11 min-w-[178px] gap-2 whitespace-nowrap bg-purple-600 px-5 text-white hover:bg-purple-700"
           >
             {submittingShortlist ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -317,7 +305,7 @@ const ShortlistTab = ({
               disabled={
                 sendingShortlist || shortlistedPendingEmail.length === 0
               }
-              className="gap-2 border-green-200 text-green-700 hover:bg-green-50"
+              className="h-11 min-w-[230px] gap-2 whitespace-nowrap border-green-200 px-5 text-green-700 hover:bg-green-50"
             >
               {sendingShortlist ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -330,13 +318,12 @@ const ShortlistTab = ({
         </div>
       </div>
 
-      <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-blue-800">
-        <p className="font-semibold">How this tab works</p>
-        <p className="mt-1">
-          `Shortlist Selected` marks uploaded cadets as shortlisted. Once
-          shortlisted, rows are locked here. Assessment passed and failed cadets
-          remain visible here for tracking, and `Send Shortlist Email` sends to
-          all shortlisted rows that are still pending email.
+      <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-800">
+        <p>
+          <span className="font-semibold">Shortlist Selected</span> locks
+          uploaded cadets as shortlisted. Assessment results remain visible
+          here, and shortlist email sends only to shortlisted cadets still
+          pending email.
         </p>
       </div>
 
@@ -365,6 +352,7 @@ const ShortlistTab = ({
             setPerPage(limit);
             setCurrentPage(1);
           }}
+          getRowClassName={(row) => getShortlistCriteriaStatus(row).rowClassName}
           pageSize={perPage}
         />
       </div>

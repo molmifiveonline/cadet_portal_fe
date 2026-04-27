@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getPrefixRoute, isAllowedRoute } from '../../lib/utils/routeUtils';
+import { getPrefixRoute, isAllowedRoute, getLoginRedirectPath } from '../../lib/utils/routeUtils';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -19,7 +19,8 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to='/login' replace />;
+    const redirectPath = getLoginRedirectPath(location.pathname);
+    return <Navigate to={redirectPath} replace />;
   }
 
   // For intent-based users (e.g. Institute temp logins):

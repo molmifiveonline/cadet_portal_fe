@@ -8,13 +8,23 @@
 // `allowed` is a list of additional route patterns the user can navigate to.
 // Patterns support simple prefix matching with `*` (e.g. '/cadets/view/*').
 const INTENT_ROUTE_CONFIG = {
+  institute_drives: {
+    primary: '/drives',
+    allowed: [
+      '/drives',
+      '/drives/*',
+      '/institute/submit-excel',
+      '/institute/shortlisted-cadets',
+      '/cadets/fill-details/*',
+    ],
+  },
   institute_submit: {
-    primary: '/institute/submit-excel',
-    allowed: ['/drives', '/drives/*'],
+    primary: '/drives',
+    allowed: ['/drives', '/drives/*', '/institute/submit-excel'],
   },
   institute_shortlist: {
-    primary: '/institute/shortlisted-cadets',
-    allowed: ['/cadets/fill-details/*', '/drives', '/drives/*'],
+    primary: '/drives',
+    allowed: ['/cadets/fill-details/*', '/drives', '/drives/*', '/institute/shortlisted-cadets'],
   },
 };
 
@@ -58,4 +68,43 @@ export const isAllowedRoute = (user, pathname) => {
     }
     return pathname === pattern;
   });
+};
+
+/**
+ * Returns the correct login redirect path based on the current context.
+ * Only routes that explicitly start with '/institute/' are treated as institute
+ * routes. All other routes (including admin pages accessed on port 3001)
+ * redirect to the standard admin login page.
+ * @param {string} pathname Current location pathname
+ * @returns {string} '/institute-login' or '/login'
+ */
+export const getLoginRedirectPath = (pathname) => {
+  // Only redirect to institute-login for institute-specific paths
+  if (pathname && pathname.startsWith('/institute/')) {
+    return '/institute-login';
+  }
+
+  return '/login';
+};
+
+/**
+ * Returns the correct destination after explicit or automatic logout.
+ * Institute users should return to the institute OTP login, not admin login.
+ * @param {Object} user User object from AuthContext
+ * @returns {string} '/institute-login' or '/login'
+ */
+export const getLogoutRedirectPath = (user) => {
+  const role = String(user?.role || '').toLowerCase();
+  const intent = String(user?.intent || '').toLowerCase();
+  const workflowIntent = String(user?.workflowIntent || '').toLowerCase();
+
+  if (
+    role === 'institute' ||
+    intent.startsWith('institute') ||
+    workflowIntent.startsWith('institute')
+  ) {
+    return '/institute-login';
+  }
+
+  return '/login';
 };

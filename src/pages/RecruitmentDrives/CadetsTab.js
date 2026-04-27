@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
+import { getShortlistCriteriaStatus } from "../../lib/utils/shortlistCriteria";
 
 const STATUS_OPTIONS = [
   "Uploaded",
@@ -36,6 +37,15 @@ const STATUS_COLORS = {
 };
 
 const getStatusColor = (status) => STATUS_COLORS[status] || "bg-slate-100 text-slate-800";
+
+const formatPercentage = (value) => {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return "-";
+  }
+
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? `${numericValue.toFixed(2)}%` : "-";
+};
 
 const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
   const [cadets, setCadets] = useState([]);
@@ -81,7 +91,6 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
         !normalizedSearch ||
         cadet.name_as_in_indos_cert?.toLowerCase().includes(normalizedSearch) ||
         cadet.cadet_unique_id?.toLowerCase().includes(normalizedSearch) ||
-        cadet.roll_no?.toLowerCase().includes(normalizedSearch) ||
         cadet.email_id?.toLowerCase().includes(normalizedSearch);
 
       return matchesStatus && matchesSearch;
@@ -115,18 +124,25 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
       ),
     },
     {
-      field: "roll_no",
-      headerName: "Roll No",
-      width: "130px",
-      renderCell: ({ value }) => value || "-",
+      field: "tenth_avg_percentage",
+      headerName: "10th Avg",
+      width: "110px",
+      align: "center",
+      renderCell: ({ value }) => formatPercentage(value),
     },
     {
-      field: "cadet_percentage",
-      headerName: "%",
-      width: "100px",
+      field: "twelfth_pcm_avg_percentage",
+      headerName: "12th PCM Avg",
+      width: "130px",
       align: "center",
-      renderCell: ({ value }) =>
-        value || value === 0 ? `${Number(value).toFixed(2)}%` : "-",
+      renderCell: ({ value }) => formatPercentage(value),
+    },
+    {
+      field: "twelfth_std_english",
+      headerName: "12th English",
+      width: "120px",
+      align: "center",
+      renderCell: ({ value }) => formatPercentage(value),
     },
     {
       field: "status",
@@ -139,34 +155,20 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
       ),
     },
     {
-      field: "cv_needed",
-      headerName: "CV Needed",
-      width: "120px",
-      align: "center",
-      renderCell: ({ value }) => (
-        <span
-          className={`rounded-full px-2 py-1 text-xs font-semibold ${
-            value ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"
-          }`}
-        >
-          {value ? "Yes" : "No"}
-        </span>
-      ),
-    },
-    {
       field: "assessment_eligible",
       headerName: "Eligible for Assessment",
       width: "180px",
       align: "center",
-      renderCell: ({ value }) => (
-        <span
-          className={`rounded-full px-2 py-1 text-xs font-semibold ${
-            value ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-600"
-          }`}
-        >
-          {value ? "Yes" : "No"}
-        </span>
-      ),
+      renderCell: ({ row }) => {
+        const criteriaStatus = getShortlistCriteriaStatus(row);
+        return (
+          <span
+            className={`rounded-full px-2 py-1 text-xs font-semibold ${criteriaStatus.badgeClassName}`}
+          >
+            {criteriaStatus.type === "passed" ? "Yes" : "No"}
+          </span>
+        );
+      },
     },
     {
       field: "actions",
@@ -272,6 +274,7 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
             setPerPage(limit);
             setCurrentPage(1);
           }}
+          getRowClassName={(row) => getShortlistCriteriaStatus(row).rowClassName}
           pageSize={perPage}
         />
       </div>

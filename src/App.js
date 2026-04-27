@@ -9,6 +9,7 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import { PermissionProvider } from './context/PermissionContext';
 import Login from './pages/auth/Login';
+import InstituteLogin from './pages/auth/InstituteLogin';
 import Dashboard from './pages/Dashboard';
 import CadetManagement from './pages/CadetManagement';
 import CadetDetails from './pages/CadetManagement/CadetDetails';
@@ -44,6 +45,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
 import { PublicRoute } from './components/common/PublicRoute';
 import HomeRedirect from './components/common/HomeRedirect';
+import { getLoginRedirectPath } from './lib/utils/routeUtils';
 
 function App() {
   return (
@@ -59,6 +61,14 @@ function App() {
               element={
                 <PublicRoute>
                   <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path='/institute-login'
+              element={
+                <PublicRoute>
+                  <InstituteLogin />
                 </PublicRoute>
               }
             />
@@ -503,8 +513,11 @@ function App() {
               }
             />
 
-            {/* Catch all - redirect to login */}
-            <Route path='*' element={<Navigate to='/login' replace />} />
+            {/* Catch all - redirect to login based on context */}
+            <Route
+              path='*'
+              element={<Navigate to={getLoginRedirectPath(window.location.pathname)} replace />}
+            />
           </Routes>
         </Router>
       </PermissionProvider>

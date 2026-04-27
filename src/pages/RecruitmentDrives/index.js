@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
   Plus,
   Rocket,
   Trash2,
+  Upload,
   Users,
 } from "lucide-react";
 import api from "../../lib/utils/apiConfig";
@@ -268,6 +270,9 @@ const RecruitmentDrives = () => {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {drives.map((drive) => {
           const progress = calculateProgress(drive);
+          const hasPendingCadetDataRequest =
+            Number(drive.cadet_data_submit_request_pending || 0) === 1 ||
+            drive.cadet_data_request_status === "pending_submission";
           const progressBarColorClass =
             progress >= 80
               ? "bg-emerald-600"
@@ -315,6 +320,33 @@ const RecruitmentDrives = () => {
                     ) : null}
                   </div>
                 </div>
+
+                {hasPendingCadetDataRequest ? (
+                  <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-amber-900">
+                          {drive.cadet_data_request_message ||
+                            "Cadet data submit request is pending"}
+                        </p>
+                        {user?.role === "Institute" ? (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              navigate(`/drives/${drive.id}?tab=upload`);
+                            }}
+                            className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-950"
+                          >
+                            <Upload className="h-3.5 w-3.5" />
+                            Upload cadet data
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="mb-4 space-y-2">
                   <p className="text-sm text-slate-600">

@@ -29,7 +29,13 @@ import {
 } from './submitExcelValidation';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
-const SubmitExcel = () => {
+const SubmitExcel = ({
+  isEmbedded = false,
+  driveContext = null,
+  onSuccess = null,
+  disabled = false,
+  disabledMessage = 'Cadet data upload is disabled for this drive.',
+}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const instituteName = user?.first_name || 'Institute';
@@ -48,9 +54,9 @@ const SubmitExcel = () => {
 
   // Admin specific state
   const [institutes, setInstitutes] = useState([]);
-  const [selectedInstitute, setSelectedInstitute] = useState('');
-  const [selectedBatchYear, setSelectedBatchYear] = useState('');
-  const [selectedCourseType, setSelectedCourseType] = useState('');
+  const [selectedInstitute, setSelectedInstitute] = useState(driveContext?.instituteId || '');
+  const [selectedBatchYear, setSelectedBatchYear] = useState(driveContext?.batchYear || '');
+  const [selectedCourseType, setSelectedCourseType] = useState(driveContext?.courseType || '');
 
   const isAdmin = user?.role === 'SuperAdmin';
   const currentYear = new Date().getFullYear();
@@ -71,6 +77,11 @@ const SubmitExcel = () => {
   }, [isAdmin]);
 
   const handleFileChange = (e) => {
+    if (disabled) {
+      toast.error(disabledMessage);
+      return;
+    }
+
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       const fileError = validateFileType(selectedFile);
@@ -212,6 +223,11 @@ const SubmitExcel = () => {
 
   const startSubmit = (e) => {
     e.preventDefault();
+    if (disabled) {
+      toast.error(disabledMessage);
+      return;
+    }
+
     if (!file) {
       toast.error('Please select a file');
       return;
@@ -240,13 +256,25 @@ const SubmitExcel = () => {
   };
 
   const confirmSubmit = async () => {
+    if (disabled) {
+      toast.error(disabledMessage);
+      setShowConfirm(false);
+      return;
+    }
+
     setShowConfirm(false);
     setLoading(true);
 
     try {
       const formData = new FormData();
 
-      if (isAdmin) {
+      if (driveContext) {
+        formData.append('batch_year', driveContext.batchYear);
+        formData.append('course_type', driveContext.courseType);
+        if (isAdmin) {
+          formData.append('instituteId', driveContext.instituteId);
+        }
+      } else if (isAdmin) {
         formData.append('instituteId', selectedInstitute);
         formData.append('batch_year', selectedBatchYear);
         formData.append('course_type', selectedCourseType);
@@ -259,9 +287,12 @@ const SubmitExcel = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      setSubmittedDriveId(response.data?.drive_id || '');
+      setSubmittedDriveId(response.data?.drive_id || driveContext?.driveId || '');
       setSubmitted(true);
       toast.success('File submitted successfully');
+      if (onSuccess) {
+        onSuccess(response.data);
+      }
     } catch (error) {
       console.error('Error submitting file:', error);
       toast.error(
@@ -281,18 +312,28 @@ const SubmitExcel = () => {
           <div className='w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6'>
             <CheckCircle className='w-8 h-8 text-green-500' />
           </div>
-          <PageHeader
-            title="Submission Successful!"
-            subtitle={`Thank you, ${instituteName}. Your Excel file has been successfully uploaded and sent for processing. The MOLMI team has been notified automatically.`}
-            icon={CheckCircle}
-            className="mb-6 shadow-none border-none bg-transparent backdrop-blur-none"
-          />
+          {!isEmbedded && (
+            <PageHeader
+              title="Submission Successful!"
+              subtitle={`Thank you, ${instituteName}. Your Excel file has been successfully uploaded and sent for processing. The MOLMI team has been notified automatically.`}
+              icon={CheckCircle}
+              className="mb-6 shadow-none border-none bg-transparent backdrop-blur-none"
+            />
+          )}
+          {isEmbedded && (
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-slate-800">Submission Successful!</h3>
+              <p className="text-sm text-slate-600 mt-2">
+                Thank you. Your Excel file has been successfully uploaded and sent for processing.
+              </p>
+            </div>
+          )}
           <div className='space-y-3'>
             <p className='text-sm text-slate-600'>
               Next step: upload cadet CVs in the drive document workspace so MOLMI can review them.
             </p>
             <div className='flex flex-col gap-3 sm:flex-row sm:justify-center'>
-              {submittedDriveId ? (
+              {!isEmbedded && submittedDriveId ? (
                 <Button
                   onClick={() => navigate(`/drives/${submittedDriveId}`)}
                   className='bg-[#3a5f9e] text-white hover:bg-[#325186]'
@@ -300,18 +341,46 @@ const SubmitExcel = () => {
                   Open Recruitment Drive
                 </Button>
               ) : null}
-              <Button
-                variant='outline'
-                onClick={() => {
-                  setSubmitted(false);
-                  setSubmittedDriveId('');
-                  setRemarks('');
-                }}
-              >
-                Upload Another File
-              </Button>
+              {!isEmbedded ? (
+                <Button
+                  variant='outline'
+                  onClick={() => {
+                    setSubmitted(false);
+                    setSubmittedDriveId('');
+                    setRemarks('');
+                  }}
+                >
+                  Upload Another File
+                </Button>
+              ) : null}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (disabled) {
+    return (
+      <div className='mx-auto py-6'>
+        <PageHeader
+          title="Submit Cadet Data"
+          subtitle={
+            <span className='text-slate-600'>{disabledMessage}</span>
+          }
+          icon={Upload}
+        />
+
+        <div className='rounded-xl border border-slate-200 bg-slate-50 p-8 text-center'>
+          <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-200'>
+            <AlertCircle className='h-6 w-6 text-slate-600' />
+          </div>
+          <h3 className='text-lg font-bold text-slate-900'>
+            Upload unavailable
+          </h3>
+          <p className='mx-auto mt-2 max-w-lg text-sm text-slate-600'>
+            {disabledMessage}
+          </p>
         </div>
       </div>
     );

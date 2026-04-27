@@ -16,6 +16,32 @@ import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import StageInviteModal from "./StageInviteModal";
 
+const hasAssessmentValue = (value) => {
+  if (value === null || value === undefined) return false;
+  return String(value).trim() !== "";
+};
+
+const isAssessmentPassed = (cadet = {}) =>
+  String(cadet.assessment_status || cadet.status || "")
+    .trim()
+    .toLowerCase() === "pass" ||
+  String(cadet.status || "").trim().toLowerCase() === "assessment passed";
+
+const hasTwoCompletedAttempts = (cadet = {}) =>
+  hasAssessmentValue(cadet.ces_test) && hasAssessmentValue(cadet.ces_test_2);
+
+const isAssessmentCompletedStatus = (cadet = {}) =>
+  ["completed", "complete", "assessment completed"].includes(
+    String(cadet.assessment_status || cadet.status || "")
+      .trim()
+      .toLowerCase(),
+  );
+
+const isAssessmentLocked = (cadet = {}) =>
+  isAssessmentPassed(cadet) ||
+  hasTwoCompletedAttempts(cadet) ||
+  isAssessmentCompletedStatus(cadet);
+
 const AssessmentTab = ({ drive, onRefresh }) => {
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -203,28 +229,39 @@ const AssessmentTab = ({ drive, onRefresh }) => {
       sticky: "right",
       cellClassName: "bg-white",
       align: "right",
-      renderCell: ({ row }) => (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => (window.location.href = `/cadets/assess/${row.id}`)}
-            className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-            title={row.assessment_id ? "Edit assessment" : "Start assessment"}
-          >
-            {row.assessment_id ? <Edit size={16} /> : <Plus size={16} />}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => window.open(`/cadets/assess/${row.id}`, "_blank")}
-            className="h-8 w-8 p-0 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-            title="View assessment"
-          >
-            <Eye size={16} />
-          </Button>
-        </div>
-      ),
+      renderCell: ({ row }) => {
+        const disableStartAssessment = isAssessmentLocked(row);
+        
+        return (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={disableStartAssessment}
+              onClick={() => (window.location.href = `/cadets/assess/${row.id}`)}
+              className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              title={
+                disableStartAssessment
+                  ? "Assessment completed"
+                  : row.assessment_id
+                    ? "Edit assessment"
+                    : "Start assessment"
+              }
+            >
+              {row.assessment_id ? <Edit size={16} /> : <Plus size={16} />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open(`/cadets/assess/${row.id}`, "_blank")}
+              className="h-8 w-8 p-0 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+              title="View assessment"
+            >
+              <Eye size={16} />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -275,6 +312,7 @@ const AssessmentTab = ({ drive, onRefresh }) => {
           rows={paginatedCadets}
           loading={loading}
           checkboxSelection
+          isRowSelectable={(row) => !isAssessmentLocked(row)}
           rowSelectionModel={selectedCadets}
           onRowSelectionModelChange={setSelectedCadets}
           emptyMessage={

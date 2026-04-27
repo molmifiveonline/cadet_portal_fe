@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePermissionContext } from '../../context/PermissionContext';
 import { MenuItems } from '../../lib/utils/menu';
-import { getPrefixRoute } from '../../lib/utils/routeUtils';
+import { getPrefixRoute, getLoginRedirectPath } from '../../lib/utils/routeUtils';
 
 const HomeRedirect = () => {
   const { user, loading: authLoading } = useAuth();
@@ -23,7 +23,8 @@ const HomeRedirect = () => {
   }
 
   if (!user) {
-    return <Navigate to='/login' replace />;
+    const redirectPath = getLoginRedirectPath(window.location.pathname);
+    return <Navigate to={redirectPath} replace />;
   }
 
   const prefixRoute = getPrefixRoute(user);

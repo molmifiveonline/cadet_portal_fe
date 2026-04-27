@@ -12,6 +12,10 @@ import ReusableDataTable from '../../components/common/ReusableDataTable';
 import { Button } from '../../components/ui/button';
 import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 import {
+  getShortlistCriteriaStatus,
+  meetsShortlistCriteria,
+} from '../../lib/utils/shortlistCriteria';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -55,21 +59,7 @@ const CadetTable = ({
 
 
   // Check if cadet meets shortlisting criteria
-  const isShortlisted = (cadet) => {
-    return (
-      parseFloat(cadet.tenth_avg_percentage) >= 85 &&
-      parseFloat(cadet.tenth_std_maths) >= 80 &&
-      parseFloat(cadet.tenth_std_science) >= 80 &&
-      parseFloat(cadet.tenth_std_english) >= 80 &&
-      parseFloat(cadet.twelfth_pcm_avg_percentage) >= 80 &&
-      parseFloat(cadet.twelfth_std_english) >= 75 &&
-      parseFloat(cadet.twelfth_std_physics) >= 75 &&
-      parseFloat(cadet.twelfth_std_chemistry) >= 75 &&
-      parseFloat(cadet.twelfth_std_maths) >= 75 &&
-      parseInt(cadet.imu_rank) <= 3000 &&
-      parseFloat(cadet.bmi) < 25
-    );
-  };
+  const isShortlisted = (cadet) => meetsShortlistCriteria(cadet);
 
   const columns = [
     // {
@@ -459,7 +449,7 @@ const CadetTable = ({
           // checkboxSelection={true}
           rowSelectionModel={selectedCadets}
           onRowSelectionModelChange={onSelectionChange}
-          rowClassName={(row) => (isShortlisted(row) ? 'bg-green-50/50' : '')}
+          getRowClassName={(row) => getShortlistCriteriaStatus(row).rowClassName}
           emptyMessage={
             searchTerm
               ? `No cadets found matching "${searchTerm}"`
