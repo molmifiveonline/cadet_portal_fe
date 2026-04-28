@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import api from "../lib/utils/apiConfig";
+import { formatDateForDisplay } from "../lib/utils/dateUtils";
 
 // ─── Stage label + color mapping ────────────────────────────────────────────
 const STAGE_CONFIG = {
@@ -444,7 +445,7 @@ const Dashboard = () => {
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-500">
                       {doc.created_at
-                        ? new Date(doc.created_at).toLocaleDateString()
+                        ? formatDateForDisplay(doc.created_at)
                         : "—"}
                     </td>
                   </tr>
@@ -647,14 +648,7 @@ const Dashboard = () => {
                     </span>
                     <p className="text-xs text-slate-400 mt-1">
                       {alert.temp_expiry
-                        ? new Date(alert.temp_expiry).toLocaleDateString(
-                            "en-IN",
-                            {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            },
-                          )
+                        ? formatDateForDisplay(alert.temp_expiry)
                         : "—"}
                     </p>
                   </div>

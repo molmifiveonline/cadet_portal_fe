@@ -22,6 +22,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
+import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 
 const DOCUMENT_TYPES = [
   "CV",
@@ -227,6 +228,20 @@ const DocumentsTab = ({ drive }) => {
     };
   };
 
+  const canUploadForCadet = (cadet, summary) => {
+    if (!isInstituteUser) return true;
+
+    const documents = cadet.documents || [];
+    return (
+      summary.cvCount === 0 ||
+      documents.some(
+        (document) =>
+          document.status === "reupload_requested" ||
+          (document.status === "pending" && !document.original_filename),
+      )
+    );
+  };
+
   const documentColumns = [
     {
       field: "document_name",
@@ -281,7 +296,7 @@ const DocumentsTab = ({ drive }) => {
       headerName: "Requested",
       width: "130px",
       renderCell: ({ value }) =>
-        value ? new Date(value).toLocaleDateString() : "-",
+        value ? formatDateForDisplay(value) : "-",
     },
     {
       field: "status",
@@ -440,6 +455,7 @@ const DocumentsTab = ({ drive }) => {
           {filteredCadets.map((cadet) => {
             const isExpanded = !!expandedCadets[cadet.cadet_id];
             const summary = getCadetSummary(cadet.documents || []);
+            const canUpload = canUploadForCadet(cadet, summary);
 
             return (
               <div
@@ -487,6 +503,7 @@ const DocumentsTab = ({ drive }) => {
                 {isExpanded ? (
                   <div className="border-t border-slate-200 bg-slate-50/60 p-4">
                     {uploadingFor !== cadet.cadet_id ? (
+                      canUpload ? (
                       <Button
                         variant="outline"
                         size="sm"
@@ -503,6 +520,7 @@ const DocumentsTab = ({ drive }) => {
                         <Upload size={14} />
                         {isInstituteUser ? "Upload CV / Document" : "Upload Document"}
                       </Button>
+                      ) : null
                     ) : (
                       <div className="mb-4 space-y-3 rounded-lg border border-blue-200 bg-white p-4">
                         <h4 className="text-sm font-medium text-slate-700">

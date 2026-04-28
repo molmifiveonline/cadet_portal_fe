@@ -48,6 +48,8 @@ const CadetFormFields = ({
   const navigate = useNavigate();
   const isAdmin = user?.role?.toLowerCase() === 'superadmin';
   const isCadetOrInstitute = ['cadet', 'institute'].includes(user?.role?.toLowerCase());
+  const canViewStageDetails = isAdmin || user?.role?.toLowerCase() === 'institute';
+  const canManageStageDetails = isAdmin;
   const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
 
   // Watch current address to sync with permanent when checkbox is on
@@ -605,15 +607,15 @@ const CadetFormFields = ({
         </div>
       </section>
 
-      {/* 5. Screening & Assessment Status - Admin Only */}
-      {isAdmin && (
+      {/* 5. Screening & Assessment Status */}
+      {canViewStageDetails && (
         <section>
           <SectionTitle title='Screening & Assessment' icon={ClipboardList} />
           <div className='bg-gray-50/50 p-6 rounded-xl border border-gray-100 space-y-6'>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
               <DetailItem label='Current Stage' value={cadet.status} name='status' icon={Activity} />
               <DetailItem label='Shortlisted' value={cadet.is_shortlisted ? 'Yes' : 'No'} name='is_shortlisted' icon={Award} />
-              {!isEditing && (
+              {!isEditing && canManageStageDetails && (
                 <Button 
                   variant='outline' 
                   size='sm' 
@@ -653,12 +655,12 @@ const CadetFormFields = ({
         </section>
       )}
 
-      {/* 6. Interview Status - Admin Only */}
-      {isAdmin && (
+      {/* 6. Interview Status */}
+      {canViewStageDetails && (
         <section>
           <SectionTitle title='Interview Status' icon={Briefcase} />
           <div className='bg-gray-50/50 p-6 rounded-xl border border-gray-100'>
-            {!isEditing && (
+            {!isEditing && canManageStageDetails && (
               <div className='flex justify-end mb-4'>
                 <Button 
                   variant='outline' 
@@ -680,13 +682,13 @@ const CadetFormFields = ({
                <div className='bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow'>
                   <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
                     <DetailItem label='Interview Date' value={interviewData.interview_date ? formatDateForDisplay(interviewData.interview_date) : 'N/A'} icon={Calendar} />
-                    <DetailItem label='Interviewer' value={interviewData.interviewer_name} icon={User} />
+                    <DetailItem label='Interviewer' value={interviewData.interviewer_name || interviewData.panel_members} icon={User} />
                     
                     <div className='flex items-center gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100'>
                       <Target size={20} className='text-blue-600' />
                       <div>
                         <p className='text-[10px] text-blue-600 font-bold uppercase tracking-wider'>Interview Score</p>
-                        <p className='text-sm font-bold text-blue-900'>{interviewData.score}%</p>
+                        <p className='text-sm font-bold text-blue-900'>{interviewData.score || interviewData.evaluation_score || '-'}</p>
                       </div>
                     </div>
 
@@ -694,7 +696,7 @@ const CadetFormFields = ({
                       <CheckCircle size={20} className='text-indigo-600' />
                       <div>
                         <p className='text-[10px] text-indigo-600 font-bold uppercase tracking-wider'>Selection Status</p>
-                        <p className='text-sm font-bold text-indigo-900'>{interviewData.status}</p>
+                        <p className='text-sm font-bold text-indigo-900'>{interviewData.status || interviewData.final_decision || '-'}</p>
                       </div>
                     </div>
 

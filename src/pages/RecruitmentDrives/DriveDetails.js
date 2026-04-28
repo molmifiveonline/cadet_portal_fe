@@ -239,7 +239,7 @@ const DriveDetails = () => {
         label: "Interview Selected",
         value: stats?.interview_selected || 0,
         tone: "text-emerald-600",
-        onClick: () => setActiveTab("medical"),
+        onClick: () => setActiveTab("interview"),
       },
       {
         label: "Medical",
@@ -281,6 +281,8 @@ const DriveDetails = () => {
           disabledReason: instituteUploadDisabledMessage,
         },
         { id: "cadets", label: "Cadets", icon: Users },
+        { id: "assessment", label: "Assessment", icon: ListChecks },
+        { id: "interview", label: "Interview", icon: Users },
         { id: "documents", label: "Documents", icon: FileText },
       ]
     : [
@@ -507,6 +509,14 @@ const DriveDetails = () => {
                     {drive.intake_capacity || 0}
                   </p>
                 </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Eligibility Criteria
+                  </label>
+                  <p className="mt-1 text-sm text-slate-900 whitespace-pre-wrap">
+                    {drive.eligibility_criteria || "No criteria specified"}
+                  </p>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700">
                     Status
@@ -584,18 +594,6 @@ const DriveDetails = () => {
                 </div>
               </div>
 
-              {drive.eligibility_criteria ? (
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Eligibility Criteria
-                  </label>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                    <p className="whitespace-pre-wrap text-sm text-slate-900">
-                      {drive.eligibility_criteria}
-                    </p>
-                  </div>
-                </div>
-              ) : null}
             </div>
           ) : null}
 
@@ -635,12 +633,20 @@ const DriveDetails = () => {
             />
           ) : null}
 
-          {activeTab === "assessment" && !isInstituteUser ? (
-            <AssessmentTab drive={drive} onRefresh={fetchDriveData} />
+          {activeTab === "assessment" ? (
+            <AssessmentTab
+              drive={drive}
+              onRefresh={fetchDriveData}
+              readOnly={isInstituteUser}
+            />
           ) : null}
 
-          {activeTab === "interview" && !isInstituteUser ? (
-            <InterviewTab drive={drive} onRefresh={fetchDriveData} />
+          {activeTab === "interview" ? (
+            <InterviewTab
+              drive={drive}
+              onRefresh={fetchDriveData}
+              readOnly={isInstituteUser}
+            />
           ) : null}
 
           {activeTab === "medical" && !isInstituteUser ? (

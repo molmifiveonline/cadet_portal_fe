@@ -9,6 +9,7 @@ import {
 } from '../ui/table';
 import { Button } from '../ui/button';
 import { X, Check, Loader2, AlertCircle } from 'lucide-react';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const CadetPreviewModal = ({ isOpen, onClose, cadets, onConfirm, loading }) => {
   if (!isOpen) return null;
@@ -65,7 +66,7 @@ const CadetPreviewModal = ({ isOpen, onClose, cadets, onConfirm, loading }) => {
                     <TableCell className="text-slate-600">{cadet.gender || 'N/A'}</TableCell>
                     <TableCell className="text-blue-600 font-bold text-xs">{cadet.indos_number || 'N/A'}</TableCell>
                     <TableCell className="text-slate-500 text-xs">
-                      {cadet.dob ? new Date(cadet.dob).toLocaleDateString() : 'N/A'}
+                      {cadet.dob ? formatDateForDisplay(cadet.dob) : 'N/A'}
                     </TableCell>
                   </TableRow>
                 ))}

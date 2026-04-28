@@ -15,16 +15,17 @@ const INTENT_ROUTE_CONFIG = {
       '/drives/*',
       '/institute/submit-excel',
       '/institute/shortlisted-cadets',
+      '/cadets/view/*',
       '/cadets/fill-details/*',
     ],
   },
   institute_submit: {
     primary: '/drives',
-    allowed: ['/drives', '/drives/*', '/institute/submit-excel'],
+    allowed: ['/drives', '/drives/*', '/institute/submit-excel', '/cadets/view/*'],
   },
   institute_shortlist: {
     primary: '/drives',
-    allowed: ['/cadets/fill-details/*', '/drives', '/drives/*', '/institute/shortlisted-cadets'],
+    allowed: ['/cadets/fill-details/*', '/cadets/view/*', '/drives', '/drives/*', '/institute/shortlisted-cadets'],
   },
 };
 

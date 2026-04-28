@@ -15,6 +15,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import StageInviteModal from "./StageInviteModal";
+import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 
 const hasAssessmentValue = (value) => {
   if (value === null || value === undefined) return false;
@@ -42,7 +43,7 @@ const isAssessmentLocked = (cadet = {}) =>
   hasTwoCompletedAttempts(cadet) ||
   isAssessmentCompletedStatus(cadet);
 
-const AssessmentTab = ({ drive, onRefresh }) => {
+const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -143,7 +144,7 @@ const AssessmentTab = ({ drive, onRefresh }) => {
       field: "assessment_date",
       headerName: "Assessment Date",
       width: "130px",
-      renderCell: ({ value }) => value || "-",
+      renderCell: ({ value }) => formatDateForDisplay(value),
     },
     {
       field: "assessment_time",
@@ -221,7 +222,8 @@ const AssessmentTab = ({ drive, onRefresh }) => {
         </span>
       ),
     },
-    {
+    !readOnly
+      ? {
       field: "actions",
       headerName: "Actions",
       width: "120px",
@@ -262,8 +264,9 @@ const AssessmentTab = ({ drive, onRefresh }) => {
           </div>
         );
       },
-    },
-  ];
+    }
+      : null,
+  ].filter(Boolean);
 
   if (loading && cadets.length === 0) {
     return (
@@ -294,15 +297,17 @@ const AssessmentTab = ({ drive, onRefresh }) => {
             />
           </div>
 
-          <Button
-            variant="outline"
-            onClick={() => setIsInviteOpen(true)}
-            disabled={selectedRows.length === 0}
-            className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
-          >
-            <Send className="h-4 w-4" />
-            Send Assessment Invite
-          </Button>
+          {!readOnly ? (
+            <Button
+              variant="outline"
+              onClick={() => setIsInviteOpen(true)}
+              disabled={selectedRows.length === 0}
+              className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              <Send className="h-4 w-4" />
+              Send Assessment Invite
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -311,10 +316,10 @@ const AssessmentTab = ({ drive, onRefresh }) => {
           columns={columns}
           rows={paginatedCadets}
           loading={loading}
-          checkboxSelection
-          isRowSelectable={(row) => !isAssessmentLocked(row)}
-          rowSelectionModel={selectedCadets}
-          onRowSelectionModelChange={setSelectedCadets}
+          checkboxSelection={!readOnly}
+          isRowSelectable={!readOnly ? (row) => !isAssessmentLocked(row) : undefined}
+          rowSelectionModel={!readOnly ? selectedCadets : []}
+          onRowSelectionModelChange={!readOnly ? setSelectedCadets : undefined}
           emptyMessage={
             searchTerm
               ? `No cadets found matching "${searchTerm}"`
@@ -335,41 +340,43 @@ const AssessmentTab = ({ drive, onRefresh }) => {
         />
       </div>
 
-      <StageInviteModal
-        isOpen={isInviteOpen}
-        onClose={() => setIsInviteOpen(false)}
-        onSubmit={handleSendInvites}
-        title="Send Assessment Invites"
-        description="Add the assessment schedule, optional upload link, and remarks for each selected cadet."
-        cadets={selectedRows}
-        loading={sendingInvites}
-        fields={[
-          {
-            key: "assessment_date",
-            label: "Assessment Date",
-            type: "date",
-            required: true,
-          },
-          {
-            key: "assessment_time",
-            label: "Assessment Time",
-            type: "time",
-            required: true,
-          },
-          {
-            key: "document_link",
-            label: "Document Upload Link",
-            type: "url",
-            placeholder: "https://...",
-          },
-          {
-            key: "remarks",
-            label: "Remarks",
-            type: "textarea",
-            placeholder: "Add assessment instructions or remarks",
-          },
-        ]}
-      />
+      {!readOnly ? (
+        <StageInviteModal
+          isOpen={isInviteOpen}
+          onClose={() => setIsInviteOpen(false)}
+          onSubmit={handleSendInvites}
+          title="Send Assessment Invites"
+          description="Add the assessment schedule, optional upload link, and remarks for each selected cadet."
+          cadets={selectedRows}
+          loading={sendingInvites}
+          fields={[
+            {
+              key: "assessment_date",
+              label: "Assessment Date",
+              type: "date",
+              required: true,
+            },
+            {
+              key: "assessment_time",
+              label: "Assessment Time",
+              type: "time",
+              required: true,
+            },
+            {
+              key: "document_link",
+              label: "Document Upload Link",
+              type: "url",
+              placeholder: "https://...",
+            },
+            {
+              key: "remarks",
+              label: "Remarks",
+              type: "textarea",
+              placeholder: "Add assessment instructions or remarks",
+            },
+          ]}
+        />
+      ) : null}
     </div>
   );
 };

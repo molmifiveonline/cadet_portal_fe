@@ -40,6 +40,7 @@ const CadetDetails = () => {
     assessment: null
   });
   const fileInputRef = React.useRef(null);
+  const isInstituteUser = user?.role === 'Institute';
 
   const [returnPath] = useState(location.state?.returnPath || null);
   const [returnStatePayload] = useState(location.state?.returnState || null);
@@ -58,7 +59,7 @@ const CadetDetails = () => {
 
   useEffect(() => {
     // Check if we should start in edit mode
-    if (location.state?.editMode) {
+    if (location.state?.editMode && !isInstituteUser) {
       setIsEditing(true);
       // Clear editMode so refresh doesn't keep it, but keep return routing
       navigate(location.pathname, {
@@ -69,7 +70,7 @@ const CadetDetails = () => {
         },
       });
     }
-  }, [location, navigate]);
+  }, [isInstituteUser, location, navigate]);
 
   useEffect(() => {
     setImageError(false);
@@ -127,6 +128,11 @@ const CadetDetails = () => {
   }, [id, navigate, reset, returnPath, returnStatePayload, defaultBackPath]);
 
   const onSubmit = async (data) => {
+    if (isInstituteUser) {
+      toast.error('Institute users can view cadet details only');
+      return;
+    }
+
     try {
       let payload = { ...data };
       delete payload.declaration_accepted;
@@ -267,7 +273,7 @@ const CadetDetails = () => {
                 Save Changes
               </Button>
             </>
-          ) : (
+          ) : !isInstituteUser ? (
             <Button
               type='button'
               onClick={() => setIsEditing(true)}
@@ -275,7 +281,7 @@ const CadetDetails = () => {
             >
               <FileText size={16} /> Edit Profile
             </Button>
-          )}
+          ) : null}
         </div>
       </PageHeader>
 

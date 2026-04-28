@@ -419,17 +419,24 @@ const AssessmentForm = () => {
                   </Select>
                 </div>
 
-                <div className='flex items-center gap-2 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100'>
-                  <input
-                    type='checkbox'
-                    id='mark_for_interview'
-                    checked={formData.mark_for_interview}
-                    onChange={(e) => setFormData(prev => ({ ...prev, mark_for_interview: e.target.checked }))}
-                    className='h-4 w-4 text-[#3a5f9e] focus:ring-[#3a5f9e] border-gray-300 rounded'
-                  />
-                  <label htmlFor='mark_for_interview' className='text-sm font-medium text-indigo-900 cursor-pointer'>
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium text-gray-700'>
                     Mark for Interview
                   </label>
+                  <Select
+                    value={formData.mark_for_interview ? 'yes' : 'no'}
+                    onValueChange={(val) =>
+                      setFormData((prev) => ({ ...prev, mark_for_interview: val === 'yes' }))
+                    }
+                  >
+                    <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                      <SelectValue placeholder='Select' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='yes'>Yes</SelectItem>
+                      <SelectItem value='no'>No</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {formData.mark_for_interview && formData.status === 'pass' && (

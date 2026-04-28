@@ -45,16 +45,16 @@ const calculateProgress = (drive) => {
   const shortlisted = Number(drive.shortlisted_count || 0);
   const assessmentPassed = Number(drive.assessment_passed || 0);
   const interviewSelected = Number(drive.interview_selected || 0);
-  const ctvAssigned = Number(drive.ctv_assigned || 0);
-  const onboarded = Number(drive.onboarded || 0);
+  const medical = Number(drive.medical_queue_count || 0);
+  const documentCount = Number(drive.document_count || 0);
 
   const progress =
     10 +
     (shortlisted / totalUploaded) * 15 +
-    (assessmentPassed / totalUploaded) * 25 +
-    (interviewSelected / totalUploaded) * 25 +
-    (ctvAssigned / totalUploaded) * 10 +
-    (onboarded / totalUploaded) * 15;
+    (assessmentPassed / totalUploaded) * 20 +
+    (interviewSelected / totalUploaded) * 20 +
+    (medical / totalUploaded) * 20 +
+    (documentCount / totalUploaded) * 15;
 
   return Math.max(0, Math.min(100, Math.round(progress)));
 };
@@ -386,8 +386,8 @@ const RecruitmentDrives = () => {
                     <span>{drive.shortlisted_count || 0} shortlisted</span>
                     <span>{drive.assessment_passed || 0} assessment passed</span>
                     <span>{drive.interview_selected || 0} interview selected</span>
-                    <span>{drive.ctv_assigned || 0} CTV assigned</span>
-                    <span>{drive.onboarded || 0} onboarded</span>
+                    <span>{drive.medical_queue_count || 0} medical</span>
+                    <span>{drive.document_count || 0} document</span>
                   </div>
                 </div>
               </div>

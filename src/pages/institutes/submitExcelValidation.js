@@ -50,14 +50,14 @@ export const isDateColumn = (header) => {
   return DATE_COLUMN_KEYWORDS.some((kw) => lower === kw || lower.includes(kw));
 };
 
-// Check if a value is a valid date in dd-mm-yyyy format (dashes only)
+// Check if a value is a valid day-first date in dd-mm-yyyy or dd/mm/yyyy format.
 export const isValidDate = (value) => {
   if (!value) return false;
   const str = String(value).trim();
-  const match = str.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  const match = str.match(/^(\d{1,2})([-/])(\d{1,2})\2(\d{4})$/);
   if (!match) return false;
   const day = parseInt(match[1], 10);
-  const month = parseInt(match[2], 10);
+  const month = parseInt(match[3], 10);
   if (month < 1 || month > 12 || day < 1 || day > 31) return false;
   return true;
 };
@@ -97,7 +97,7 @@ export const validateExcelData = (rows, headers) => {
       const value = row[header];
 
       if (isDateColumn(header)) {
-        // Allow empty dates, but if present must be dd-mm-yyyy
+        // Allow empty dates, but if present must be day-first.
         if (
           value !== undefined &&
           value !== null &&
@@ -105,7 +105,7 @@ export const validateExcelData = (rows, headers) => {
           !isValidDate(value)
         ) {
           const key = `${rowIdx}-${header}`;
-          errors[key] = `Invalid format. Must be dd-mm-yyyy (e.g., 24-04-2005)`;
+          errors[key] = `Invalid format. Must be DD-MM-YYYY or DD/MM/YYYY (e.g., 24-04-2005)`;
           errorCount++;
         }
       }

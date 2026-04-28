@@ -15,6 +15,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import StageInviteModal from "./StageInviteModal";
+import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 
 const MedicalTab = ({ drive, onRefresh }) => {
   const [cadets, setCadets] = useState([]);
@@ -159,7 +160,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
       field: "medical_date",
       headerName: "Medical Date",
       width: "130px",
-      renderCell: ({ value }) => value || "-",
+      renderCell: ({ value }) => formatDateForDisplay(value),
     },
     {
       field: "medical_time",
@@ -284,118 +285,120 @@ const MedicalTab = ({ drive, onRefresh }) => {
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
           Post-Medical Actions
         </h3>
-        <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="space-y-2 lg:col-span-3">
-            <label className="text-sm font-medium text-slate-700">Shared Remarks</label>
+        <div className="mt-4 space-y-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Pending Academic Data Link
+              </label>
+              <Input
+                value={bulkFields.academicFormLink}
+                onChange={(event) =>
+                  setBulkFields((prev) => ({
+                    ...prev,
+                    academicFormLink: event.target.value,
+                  }))
+                }
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Candidate Document Link (OneDrive)
+              </label>
+              <Input
+                value={bulkFields.documentLink}
+                onChange={(event) =>
+                  setBulkFields((prev) => ({
+                    ...prev,
+                    documentLink: event.target.value,
+                  }))
+                }
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Remarks (Included in Emails)</label>
             <Input
               value={bulkFields.remarks}
               onChange={(event) =>
                 setBulkFields((prev) => ({ ...prev, remarks: event.target.value }))
               }
-              placeholder="Common remarks for the outgoing email actions"
+              placeholder="Enter remarks to be sent to the institute..."
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">
-              Pending Academic Data Link
-            </label>
-            <Input
-              value={bulkFields.academicFormLink}
-              onChange={(event) =>
-                setBulkFields((prev) => ({
-                  ...prev,
-                  academicFormLink: event.target.value,
-                }))
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Button
+              onClick={() =>
+                runBulkAction("confirm", async () => {
+                  await api.post("/medical-results/bulk/confirm", {
+                    drive_id: drive.id,
+                    remarks: bulkFields.remarks,
+                  });
+                  toast.success("Selected-candidate confirmation sent to institute");
+                })
               }
-              placeholder="https://..."
-            />
-          </div>
+              disabled={actionLoading.confirm}
+              className="gap-2 bg-green-600 text-white hover:bg-green-700 shadow-sm"
+            >
+              {actionLoading.confirm ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Users className="h-4 w-4" />
+              )}
+              Confirm Candidates
+            </Button>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">
-              Candidate Document Link
-            </label>
-            <Input
-              value={bulkFields.documentLink}
-              onChange={(event) =>
-                setBulkFields((prev) => ({
-                  ...prev,
-                  documentLink: event.target.value,
-                }))
+            <Button
+              variant="outline"
+              onClick={() =>
+                runBulkAction("academic", async () => {
+                  await api.post("/medical-results/bulk/collect-academic", {
+                    drive_id: drive.id,
+                    remarks: bulkFields.remarks,
+                    form_link: bulkFields.academicFormLink,
+                  });
+                  toast.success("Pending academic data request sent");
+                })
               }
-              placeholder="https://..."
-            />
+              disabled={actionLoading.academic}
+              className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+            >
+              {actionLoading.academic ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              Collect Academic Data
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() =>
+                runBulkAction("documents", async () => {
+                  await api.post("/medical-results/bulk/collect-documents", {
+                    drive_id: drive.id,
+                    remarks: bulkFields.remarks,
+                    document_link: bulkFields.documentLink,
+                  });
+                  toast.success("Candidate document request sent");
+                })
+              }
+              disabled={actionLoading.documents}
+              className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+            >
+              {actionLoading.documents ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Collect Documents
+            </Button>
           </div>
-        </div>
-
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <Button
-            onClick={() =>
-              runBulkAction("confirm", async () => {
-                await api.post("/medical-results/bulk/confirm", {
-                  drive_id: drive.id,
-                  remarks: bulkFields.remarks,
-                });
-                toast.success("Selected-candidate confirmation sent to institute");
-              })
-            }
-            disabled={actionLoading.confirm}
-            className="gap-2 bg-green-600 text-white hover:bg-green-700"
-          >
-            {actionLoading.confirm ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Users className="h-4 w-4" />
-            )}
-            Confirm Candidates
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() =>
-              runBulkAction("academic", async () => {
-                await api.post("/medical-results/bulk/collect-academic", {
-                  drive_id: drive.id,
-                  remarks: bulkFields.remarks,
-                  form_link: bulkFields.academicFormLink,
-                });
-                toast.success("Pending academic data request sent");
-              })
-            }
-            disabled={actionLoading.academic}
-            className="gap-2"
-          >
-            {actionLoading.academic ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileText className="h-4 w-4" />
-            )}
-            Collect Academic Data
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() =>
-              runBulkAction("documents", async () => {
-                await api.post("/medical-results/bulk/collect-documents", {
-                  drive_id: drive.id,
-                  remarks: bulkFields.remarks,
-                  document_link: bulkFields.documentLink,
-                });
-                toast.success("Candidate document request sent");
-              })
-            }
-            disabled={actionLoading.documents}
-            className="gap-2"
-          >
-            {actionLoading.documents ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            Collect Documents
-          </Button>
         </div>
       </div>
 

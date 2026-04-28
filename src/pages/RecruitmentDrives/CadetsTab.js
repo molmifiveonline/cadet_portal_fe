@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Edit, Eye, Loader2, Search } from "lucide-react";
 import api from "../../lib/utils/apiConfig";
+import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import {
@@ -48,6 +49,7 @@ const formatPercentage = (value) => {
 };
 
 const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
+  const { user } = useAuth();
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,6 +104,8 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
     return filteredCadets.slice(start, start + perPage);
   }, [filteredCadets, currentPage, perPage]);
 
+  const isInstituteUser = user?.role === "Institute";
+
   const columns = [
     {
       field: "cadet_unique_id",
@@ -124,23 +128,15 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
       ),
     },
     {
-      field: "tenth_avg_percentage",
-      headerName: "10th Avg",
-      width: "110px",
-      align: "center",
-      renderCell: ({ value }) => formatPercentage(value),
-    },
-    {
-      field: "twelfth_pcm_avg_percentage",
-      headerName: "12th PCM Avg",
-      width: "130px",
-      align: "center",
-      renderCell: ({ value }) => formatPercentage(value),
-    },
-    {
-      field: "twelfth_std_english",
-      headerName: "12th English",
+      field: "roll_no",
+      headerName: "Roll No",
       width: "120px",
+      renderCell: ({ value }) => value || "-",
+    },
+    {
+      field: "cadet_percentage",
+      headerName: "%",
+      width: "100px",
       align: "center",
       renderCell: ({ value }) => formatPercentage(value),
     },
@@ -183,21 +179,23 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => window.open(`/cadets/view/${row.id}`, "_blank")}
+            onClick={() => (window.location.href = `/cadets/view/${row.id}`)}
             className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             title="View details"
           >
             <Eye size={16} />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => (window.location.href = `/cadets/view/${row.id}`)}
-            className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
-            title="Edit cadet"
-          >
-            <Edit size={16} />
-          </Button>
+          {!isInstituteUser ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => (window.location.href = `/cadets/view/${row.id}`)}
+              className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
+              title="Edit cadet"
+            >
+              <Edit size={16} />
+            </Button>
+          ) : null}
         </div>
       ),
     },
