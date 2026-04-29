@@ -3,12 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   AlertCircle,
+  Anchor,
   ChevronLeft,
+  Building2,
+  Calendar,
   ChevronRight,
+  ClipboardList,
+  FileCheck,
+  GraduationCap,
+  HeartPulse,
   Plus,
   Rocket,
+  Stethoscope,
   Trash2,
   Upload,
+  UserCheck,
   Users,
 } from "lucide-react";
 import api from "../../lib/utils/apiConfig";
@@ -18,45 +27,104 @@ import DeleteConfirmationModal from "../../components/common/DeleteConfirmationM
 import PageHeader from "../../components/common/PageHeader";
 import Permission from "../../components/common/Permission";
 
-const STATUS_COLORS = {
-  Draft: "bg-yellow-100 text-yellow-800",
-  Requested: "bg-blue-100 text-blue-800",
-  Received: "bg-cyan-100 text-cyan-800",
-  Submitted: "bg-indigo-100 text-indigo-800",
-  Shortlisted: "bg-purple-100 text-purple-800",
-  "Assessment Completed": "bg-teal-100 text-teal-800",
-  "Interview Completed": "bg-emerald-100 text-emerald-800",
-  "Medical Completed": "bg-lime-100 text-lime-800",
-  Closed: "bg-slate-100 text-slate-800",
-  Cancelled: "bg-red-100 text-red-800",
+// ─── Status config ────────────────────────────────────────────────────────────
+const STATUS_CONFIG = {
+  Draft: {
+    dot: "bg-yellow-400",
+    badge: "bg-yellow-50 text-yellow-700 ring-yellow-200",
+  },
+  Requested: {
+    dot: "bg-blue-400",
+    badge: "bg-blue-50 text-blue-700 ring-blue-200",
+  },
+  Received: {
+    dot: "bg-cyan-400",
+    badge: "bg-cyan-50 text-cyan-700 ring-cyan-200",
+  },
+  Submitted: {
+    dot: "bg-indigo-400",
+    badge: "bg-indigo-50 text-indigo-700 ring-indigo-200",
+  },
+  Shortlisted: {
+    dot: "bg-purple-400",
+    badge: "bg-purple-50 text-purple-700 ring-purple-200",
+  },
+  "Assessment Completed": {
+    dot: "bg-teal-400",
+    badge: "bg-teal-50 text-teal-700 ring-teal-200",
+  },
+  "Interview Completed": {
+    dot: "bg-emerald-400",
+    badge: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  },
+  "Medical Completed": {
+    dot: "bg-lime-500",
+    badge: "bg-lime-50 text-lime-700 ring-lime-200",
+  },
+  Closed: {
+    dot: "bg-slate-400",
+    badge: "bg-slate-100 text-slate-600 ring-slate-200",
+  },
+  Cancelled: {
+    dot: "bg-red-400",
+    badge: "bg-red-50 text-red-700 ring-red-200",
+  },
 };
+const DEFAULT_STATUS = {
+  dot: "bg-slate-400",
+  badge: "bg-slate-100 text-slate-600 ring-slate-200",
+};
+const getStatusCfg = (s) => STATUS_CONFIG[s] || DEFAULT_STATUS;
 
-const getStatusColor = (status) => STATUS_COLORS[status] || "bg-slate-100 text-slate-800";
+const COURSE_CFG = {
+  Deck: { badge: "bg-sky-50 text-sky-700 ring-sky-200", icon: Anchor },
+  Engine: {
+    badge: "bg-orange-50 text-orange-700 ring-orange-200",
+    icon: GraduationCap,
+  },
+};
+const getCourseCfg = (t) =>
+  COURSE_CFG[t] || {
+    badge: "bg-slate-100 text-slate-600 ring-slate-200",
+    icon: GraduationCap,
+  };
 
-const getCourseTypeColor = (courseType) =>
-  courseType === "Deck"
-    ? "bg-blue-100 text-blue-800"
-    : "bg-orange-100 text-orange-800";
+// ─── Pipeline stages config ──────────────────────────────────────────────────
+const getPipelineStages = (drive) => [
+  { label: "Uploaded",    value: drive.total_uploaded     || 0, icon: Upload,        color: "text-indigo-600", bg: "bg-indigo-50/50" },
+  { label: "Shortlisted", value: drive.shortlisted_count  || 0, icon: UserCheck,     color: "text-purple-600", bg: "bg-purple-50/50" },
+  { label: "Assessment",  value: drive.assessment_passed  || 0, icon: ClipboardList, color: "text-cyan-600",   bg: "bg-cyan-50/50" },
+  { label: "Interview",   value: drive.interview_selected || 0, icon: Users,         color: "text-emerald-600", bg: "bg-emerald-50/50" },
+  { label: "Medical",     value: drive.medical_queue_count|| 0, icon: Stethoscope,   color: "text-lime-700",    bg: "bg-lime-50/50" },
+  { label: "Documents",   value: drive.document_count     || 0, icon: FileCheck,     color: "text-slate-600",   bg: "bg-slate-50/50" },
+];
 
 const calculateProgress = (drive) => {
   const totalUploaded = Number(drive.total_uploaded || 0);
-  if (!totalUploaded) return 0;
-
   const shortlisted = Number(drive.shortlisted_count || 0);
   const assessmentPassed = Number(drive.assessment_passed || 0);
   const interviewSelected = Number(drive.interview_selected || 0);
   const medical = Number(drive.medical_queue_count || 0);
   const documentCount = Number(drive.document_count || 0);
+  const ctvAssigned = Number(drive.ctv_assigned || 0);
+  const onboarded = Number(drive.onboarded || 0);
+  const status = drive.status || "";
 
-  const progress =
-    10 +
-    (shortlisted / totalUploaded) * 15 +
-    (assessmentPassed / totalUploaded) * 20 +
-    (interviewSelected / totalUploaded) * 20 +
-    (medical / totalUploaded) * 20 +
-    (documentCount / totalUploaded) * 15;
-
-  return Math.max(0, Math.min(100, Math.round(progress)));
+  if (
+    status === "Closed" ||
+    documentCount > 0 ||
+    ctvAssigned > 0 ||
+    onboarded > 0
+  )
+    return 100;
+  if (status === "Medical Completed" || medical > 0) return 85;
+  if (status === "Interview Completed" || interviewSelected > 0) return 70;
+  if (status === "Assessment Completed" || assessmentPassed > 0) return 55;
+  if (status === "Shortlisted" || shortlisted > 0) return 40;
+  if (status === "Submitted" || totalUploaded > 0) return 20;
+  if (status === "Received") return 10;
+  if (status === "Requested") return 5;
+  return 0;
 };
 
 const RecruitmentDrives = () => {
@@ -104,13 +172,18 @@ const RecruitmentDrives = () => {
           ...(filterInstituteId && { institute_id: filterInstituteId }),
         });
 
-        const response = await api.get(`/recruitment-drives?${params.toString()}`);
+        const response = await api.get(
+          `/recruitment-drives?${params.toString()}`,
+        );
         setDrives(response.data?.data || []);
         setPagination({
           current_page: response.data.page,
           per_page: response.data.limit,
           total: response.data.total,
-          last_page: Math.max(1, Math.ceil(response.data.total / response.data.limit)),
+          last_page: Math.max(
+            1,
+            Math.ceil(response.data.total / response.data.limit),
+          ),
         });
       } catch (error) {
         console.error("Error fetching recruitment drives:", error);
@@ -205,7 +278,10 @@ const RecruitmentDrives = () => {
         icon={Rocket}
       >
         <Permission module="recruitment_drives" action="create">
-          <Button onClick={() => navigate("/drives/new")} className="flex items-center gap-2">
+          <Button
+            onClick={() => navigate("/drives/new")}
+            className="flex items-center gap-2"
+          >
             <Plus className="h-4 w-4" />
             New Drive
           </Button>
@@ -224,7 +300,9 @@ const RecruitmentDrives = () => {
 
           <select
             value={filters.status}
-            onChange={(event) => handleFilterChange("status", event.target.value)}
+            onChange={(event) =>
+              handleFilterChange("status", event.target.value)
+            }
             className="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Status</option>
@@ -242,7 +320,9 @@ const RecruitmentDrives = () => {
 
           <select
             value={filters.course_type}
-            onChange={(event) => handleFilterChange("course_type", event.target.value)}
+            onChange={(event) =>
+              handleFilterChange("course_type", event.target.value)
+            }
             className="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Courses</option>
@@ -253,7 +333,9 @@ const RecruitmentDrives = () => {
           {user?.role !== "Institute" ? (
             <select
               value={filters.institute_id}
-              onChange={(event) => handleFilterChange("institute_id", event.target.value)}
+              onChange={(event) =>
+                handleFilterChange("institute_id", event.target.value)
+              }
               className="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Institutes</option>
@@ -267,38 +349,85 @@ const RecruitmentDrives = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {drives.map((drive) => {
           const progress = calculateProgress(drive);
+          const statusCfg = getStatusCfg(drive.status);
+          const courseCfg = getCourseCfg(drive.course_type);
+          const CourseIcon = courseCfg.icon;
+          const stages = getPipelineStages(drive);
           const hasPendingCadetDataRequest =
             Number(drive.cadet_data_submit_request_pending || 0) === 1 ||
             drive.cadet_data_request_status === "pending_submission";
-          const progressBarColorClass =
+
+          // Progress bar gradient
+          const barGradient =
             progress >= 80
-              ? "bg-emerald-600"
-              : progress >= 50
-                ? "bg-amber-500"
-                : progress > 0
-                  ? "bg-blue-600"
-                  : "bg-slate-300";
+              ? "from-emerald-400 to-green-500"
+              : progress >= 55
+                ? "from-amber-400 to-orange-400"
+                : progress >= 20
+                  ? "from-blue-400 to-indigo-500"
+                  : "from-slate-300 to-slate-400";
 
           return (
             <div
               key={drive.id}
-              className="cursor-pointer rounded-lg border bg-white shadow-sm transition-shadow hover:shadow-md"
+              className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm
+                         transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-slate-200"
               onClick={() => navigate(`/drives/${drive.id}`)}
             >
-              <div className="p-6">
-                <div className="mb-4 flex items-start justify-between gap-3">
-                  <h3 className="truncate text-lg font-semibold text-slate-900">
+              <div className="p-5">
+                {/* ── Header row ─────────────────────────────────────────── */}
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <h3 className="truncate text-base font-bold text-slate-800 leading-tight">
                     {drive.drive_name}
                   </h3>
-                  <div className="flex items-center gap-2">
+
+                  <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                    {/* Circular Progress Ring */}
+                    <div className="relative flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center">
+                      <svg className="h-full w-full -rotate-90 transform">
+                        <circle
+                          cx="50%"
+                          cy="50%"
+                          r="40%"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          fill="transparent"
+                          className="text-slate-100"
+                        />
+                        <circle
+                          cx="50%"
+                          cy="50%"
+                          r="40%"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          fill="transparent"
+                          strokeDasharray="100 100"
+                          strokeDashoffset={100 - progress}
+                          strokeLinecap="round"
+                          className={`transition-all duration-1000 ease-out ${
+                            progress >= 80 ? "text-emerald-500" : progress >= 50 ? "text-amber-500" : "text-blue-500"
+                          }`}
+                          pathLength="100"
+                        />
+                      </svg>
+                      <span className="absolute text-[9px] sm:text-[11px] font-black text-slate-800">
+                        {progress}%
+                      </span>
+                    </div>
+
+                    {/* Status badge with dot */}
                     <span
-                      className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(drive.status)}`}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${statusCfg.badge}`}
                     >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`}
+                      />
                       {drive.status}
                     </span>
+
                     {user?.role !== "Institute" ? (
                       <Permission module="recruitment_drives" action="delete">
                         <button
@@ -311,83 +440,89 @@ const RecruitmentDrives = () => {
                               driveName: drive.drive_name,
                             });
                           }}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400
+                                     transition-colors hover:bg-red-50 hover:text-red-600"
                           title="Delete drive"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </Permission>
                     ) : null}
                   </div>
                 </div>
 
+                {/* ── Pending alert ───────────────────────────────────────── */}
                 {hasPendingCadetDataRequest ? (
-                  <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-amber-900">
-                          {drive.cadet_data_request_message ||
-                            "Cadet data submit request is pending"}
-                        </p>
-                        {user?.role === "Institute" ? (
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              navigate(`/drives/${drive.id}?tab=upload`);
-                            }}
-                            className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 hover:text-amber-950"
-                          >
-                            <Upload className="h-3.5 w-3.5" />
-                            Upload cadet data
-                          </button>
-                        ) : null}
-                      </div>
+                  <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-amber-800">
+                        {drive.cadet_data_request_message ||
+                          "Cadet data submit request is pending"}
+                      </p>
+                      {user?.role === "Institute" ? (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            navigate(`/drives/${drive.id}?tab=upload`);
+                          }}
+                          className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-amber-700 hover:text-amber-900"
+                        >
+                          <Upload className="h-3 w-3" />
+                          Upload cadet data
+                        </button>
+                      ) : null}
                     </div>
                   </div>
                 ) : null}
 
-                <div className="mb-4 space-y-2">
-                  <p className="text-sm text-slate-600">
-                    <span className="font-medium">Institute:</span>{" "}
-                    {drive.institute_name}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs font-medium ${getCourseTypeColor(drive.course_type)}`}
-                    >
-                      {drive.course_type}
-                    </span>
-                    {drive.year ? (
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
-                        {drive.year}
-                      </span>
-                    ) : null}
-                    <span className="flex-1 text-right text-sm text-slate-600">
-                      Capacity: {drive.intake_capacity || 0}
-                    </span>
+                {/* ── Meta-data Icons Row ─────────────────────────────────── */}
+                <div className="mb-5 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 text-[11px] sm:text-[12px] text-slate-500">
+                  <div className="flex items-center gap-1.5 min-w-0 max-w-[150px] sm:max-w-none">
+                    <Building2 className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate font-medium">{drive.institute_name}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CourseIcon className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
+                    <span className="font-medium">{drive.course_type}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
+                    <span className="font-medium">{drive.year}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <HeartPulse className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
+                    <span className="font-bold text-slate-700">{drive.intake_capacity || 0}</span>
                   </div>
                 </div>
 
-                <div className="rounded-lg bg-slate-50 p-3">
-                  <div className="mb-2 flex items-center justify-between text-sm text-slate-600">
-                    <span>Progress</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-slate-200">
-                    <div
-                      className={`${progressBarColorClass} h-2 rounded-full transition-all`}
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
-                    <span>{drive.total_uploaded || 0} uploaded</span>
-                    <span>{drive.shortlisted_count || 0} shortlisted</span>
-                    <span>{drive.assessment_passed || 0} assessment passed</span>
-                    <span>{drive.interview_selected || 0} interview selected</span>
-                    <span>{drive.medical_queue_count || 0} medical</span>
-                    <span>{drive.document_count || 0} document</span>
+                {/* ── Metric Grid (The "Pucks") ────────────────────────────── */}
+                <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {stages.map((stage) => (
+                    <div 
+                      key={stage.label} 
+                      className={`flex flex-col items-center rounded-xl border border-slate-100 ${stage.bg} py-2.5 transition-all hover:border-slate-200 hover:shadow-sm`}
+                    >
+                      <stage.icon className={`mb-1 h-3.5 w-3.5 ${stage.color} opacity-80`} />
+                      <span className={`text-sm font-black ${stage.color}`}>
+                        {stage.value}
+                      </span>
+                      <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
+                        {stage.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* ── Footer ─────────────────────────────────────────────── */}
+                <div className="flex items-center justify-between border-t border-slate-50 pt-3">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Drive Details
+                  </span>
+                  <div className="flex items-center gap-2 text-blue-600 transition-all duration-300 group-hover:translate-x-1">
+                    <span className="text-[11px] font-bold opacity-0 group-hover:opacity-100">Manage</span>
+                    <ChevronRight className="h-4 w-4" />
                   </div>
                 </div>
               </div>
@@ -420,11 +555,15 @@ const RecruitmentDrives = () => {
         <div className="mt-6 flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
           <div className="hidden sm:block">
             <p className="text-sm text-slate-700">
-              Showing page <span className="font-medium">{pagination.current_page}</span> of{" "}
+              Showing page{" "}
+              <span className="font-medium">{pagination.current_page}</span> of{" "}
               <span className="font-medium">{pagination.last_page}</span>
             </p>
           </div>
-          <nav className="inline-flex items-center gap-2" aria-label="Pagination">
+          <nav
+            className="inline-flex items-center gap-2"
+            aria-label="Pagination"
+          >
             <Button
               variant="outline"
               className="h-9 px-2"

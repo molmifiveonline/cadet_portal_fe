@@ -718,7 +718,7 @@ const CadetFormFields = ({
       )}
 
       {/* 7. CTV Assignment - Admin Only */}
-      {isAdmin && (
+      {false && isAdmin && (
         <section>
           <SectionTitle title='CTV Assignment' icon={Globe} />
           <div className='bg-gray-50/50 p-6 rounded-xl border border-gray-100'>

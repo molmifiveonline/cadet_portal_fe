@@ -6,17 +6,17 @@ const stages = [
   { id: 'assessment', label: 'Assessment' },
   { id: 'interview', label: 'Interview' },
   { id: 'medical', label: 'Medical' },
-  { id: 'ctv', label: 'CTV Assigned' },
-  { id: 'onboarded', label: 'Onboarded' },
+  { id: 'document', label: 'Document' },
+  // { id: 'ctv', label: 'CTV Assigned' },
+  // { id: 'onboarded', label: 'Onboarded' },
 ];
 
 const StageTracker = ({ currentStage }) => {
   // Map internal status to high-level stages if needed
   const getActiveIndex = (status) => {
     const s = status?.toLowerCase() || '';
-    if (s.includes('onboarded') || s === 'joined') return 5;
-    if (s.includes('ctv')) return 4;
-    if (s.includes('medical')) return 3;
+    if (s.includes('document')) return 4;
+    if (s.includes('medical') || s.includes('selected')) return 3;
     if (s.includes('interview')) return 2;
     if (s.includes('assessment') || s.includes('test')) return 1;
     return 0; // default to imported

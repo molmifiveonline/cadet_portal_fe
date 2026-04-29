@@ -1,8 +1,8 @@
 const SHORTLIST_CRITERIA = {
   tenth_avg_percentage: 60,
-  tenth_std_maths: 60,
-  tenth_std_science: 60,
-  tenth_std_english: 60,
+  // tenth_std_maths: 60,
+  // tenth_std_science: 60,
+  // tenth_std_english: 60,
   twelfth_pcm_avg_percentage: 60,
   twelfth_std_english: 70,
 };
@@ -25,9 +25,9 @@ export const hasRequiredTwelfthMarks = (cadet = {}) =>
 export const meetsShortlistCriteria = (cadet = {}) =>
   hasRequiredTwelfthMarks(cadet) &&
   meetsMinimum(cadet, "tenth_avg_percentage") &&
-  meetsMinimum(cadet, "tenth_std_maths") &&
-  meetsMinimum(cadet, "tenth_std_science") &&
-  meetsMinimum(cadet, "tenth_std_english") &&
+  // meetsMinimum(cadet, "tenth_std_maths") &&
+  // meetsMinimum(cadet, "tenth_std_science") &&
+  // meetsMinimum(cadet, "tenth_std_english") &&
   meetsMinimum(cadet, "twelfth_pcm_avg_percentage") &&
   meetsMinimum(cadet, "twelfth_std_english");
 

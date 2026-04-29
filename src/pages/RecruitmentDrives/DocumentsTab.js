@@ -317,7 +317,7 @@ const DocumentsTab = ({ drive }) => {
     {
       field: "actions",
       headerName: "Actions",
-      width: isInstituteUser ? "110px" : "420px",
+      width: isInstituteUser ? "110px" : "auto",
       sortable: false,
       sticky: "right",
       cellClassName: "bg-white",
@@ -338,45 +338,52 @@ const DocumentsTab = ({ drive }) => {
 
           {!isInstituteUser ? (
             reviewingDoc === document.id ? (
-              <div className="ml-2 flex items-center gap-2 rounded border border-blue-100 bg-blue-50 p-1">
+              <div className="ml-2 flex flex-col gap-2 rounded-xl border border-blue-100 bg-blue-50/80 p-2 shadow-sm sm:flex-row sm:items-center">
                 <Input
-                  placeholder="Remarks..."
+                  placeholder="Remarks (optional)..."
                   value={reviewRemarks}
                   onChange={(event) => setReviewRemarks(event.target.value)}
-                  className="h-8 w-32 text-xs"
+                  className="h-9 w-full bg-white text-xs sm:w-40"
                 />
-                <div className="flex gap-1">
+                <div className="flex items-center justify-end gap-1.5">
                   <Button
                     size="sm"
-                    className="h-7 bg-green-600 px-2 text-[10px] text-white hover:bg-green-700"
+                    className="h-9 bg-emerald-600 px-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 sm:h-8"
                     onClick={() => handleReview(document.id, "accepted")}
+                    title="Accept Document"
                   >
-                    Accept
+                    <CheckCircle className="sm:mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden sm:inline">Accept</span>
                   </Button>
                   <Button
                     size="sm"
-                    className="h-7 bg-red-600 px-2 text-[10px] text-white hover:bg-red-700"
+                    className="h-9 bg-rose-600 px-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 sm:h-8"
                     onClick={() => handleReview(document.id, "rejected")}
+                    title="Reject Document"
                   >
-                    Reject
+                    <XCircle className="sm:mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden sm:inline">Reject</span>
                   </Button>
                   <Button
                     size="sm"
-                    className="h-7 bg-amber-500 px-2 text-[10px] text-white hover:bg-amber-600"
+                    className="h-9 bg-amber-500 px-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-600 sm:h-8"
                     onClick={() => handleReview(document.id, "reupload_requested")}
+                    title="Request Re-upload"
                   >
-                    Re-upload
+                    <RotateCcw className="sm:mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden sm:inline">Re-upload</span>
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 w-7 p-0"
+                    className="h-9 w-9 p-0 text-slate-400 hover:bg-white hover:text-slate-700 sm:h-8 sm:w-8"
                     onClick={() => {
                       setReviewingDoc(null);
                       setReviewRemarks("");
                     }}
+                    title="Cancel"
                   >
-                    <XCircle size={12} />
+                    <XCircle size={18} />
                   </Button>
                 </div>
               </div>

@@ -62,17 +62,6 @@ const CadetTable = ({
   const isShortlisted = (cadet) => meetsShortlistCriteria(cadet);
 
   const columns = [
-    // {
-    //   field: 'id',
-    //   headerName: 'Sr. No',
-    //   width: '70px',
-    //   sortable: false,
-    //   renderCell: ({ index }) => (
-    //     <span className='text-sm text-gray-500 font-medium'>
-    //       {(pagination?.current_page - 1) * pagination?.per_page + index + 1}
-    //     </span>
-    //   ),
-    // },
     {
       field: 'cadet_unique_id',
       headerName: 'Cadet ID',
@@ -90,7 +79,6 @@ const CadetTable = ({
       width: '140px',
       sortable: true,
       renderCell: ({ row }) => {
-        // Fallback to Shortlisted if organically computed and status is empty
         const effectiveStatus =
           row.status || (isShortlisted(row) ? 'Shortlisted' : undefined);
         return (
@@ -207,7 +195,6 @@ const CadetTable = ({
       width: '130px',
       valueGetter: (value) => {
         if (!value) return '-';
-        // Passing out date is now saved strictly as a 4-digit Year in DB
         const strVal = String(value);
         if (strVal.length >= 4) {
           return strVal.substring(0, 4);
@@ -359,12 +346,13 @@ const CadetTable = ({
       ),
     },
   ];
+
   return (
     <>
       <div className='bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6'>
         <div className='flex flex-col md:flex-row justify-between items-center gap-4'>
-          <div className='flex items-center gap-4 w-full md:w-auto flex-1'>
-            <div className='flex items-center bg-gray-50 rounded-lg px-3 border border-gray-400 w-full md:w-80'>
+          <div className='flex flex-wrap items-center gap-3 w-full md:w-auto flex-1'>
+            <div className='flex items-center bg-gray-50 rounded-lg px-3 border border-gray-400 w-full lg:w-80'>
               <Search className='text-gray-400' size={18} />
               <input
                 type='text'
@@ -379,7 +367,7 @@ const CadetTable = ({
               value={selectedInstitute}
               onValueChange={handleInstituteChange}
             >
-              <SelectTrigger className='w-[200px] bg-white border-gray-300'>
+              <SelectTrigger className='w-full sm:w-[200px] bg-white border-gray-300'>
                 <SelectValue placeholder='Filter by Institute' />
               </SelectTrigger>
               <SelectContent>
@@ -395,9 +383,8 @@ const CadetTable = ({
               </SelectContent>
             </Select>
 
-
             <Select value={selectedYear} onValueChange={handleYearChange}>
-              <SelectTrigger className='w-[150px] bg-white border-gray-300'>
+              <SelectTrigger className='w-full sm:w-[140px] bg-white border-gray-300'>
                 <SelectValue placeholder='Filter by Year' />
               </SelectTrigger>
               <SelectContent>
@@ -446,7 +433,6 @@ const CadetTable = ({
           handlePerPageChange={handlePerPageChange}
           sortConfig={sortConfig}
           handleSortChange={handleSortChange}
-          // checkboxSelection={true}
           rowSelectionModel={selectedCadets}
           onRowSelectionModelChange={onSelectionChange}
           getRowClassName={(row) => getShortlistCriteriaStatus(row).rowClassName}

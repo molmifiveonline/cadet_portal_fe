@@ -165,31 +165,31 @@ const getStageInfo = (stage) => {
 const StatsCard = ({ title, value, icon: Icon, gradient, subtitle }) => (
   <div
     className={cn(
-      "relative overflow-hidden rounded-3xl p-6 min-h-[180px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-white/40 shadow-lg",
+      "relative overflow-hidden rounded-3xl p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-white/40 shadow-lg",
       "bg-white/60 backdrop-blur-2xl",
     )}
   >
     <div
-      className={`absolute right-0 top-0 w-32 h-32 opacity-20 rounded-bl-full bg-gradient-to-br ${gradient} -mr-8 -mt-8`}
+      className={`absolute right-0 top-0 w-24 h-24 sm:w-32 sm:h-32 opacity-20 rounded-bl-full bg-gradient-to-br ${gradient} -mr-6 -mt-6 sm:-mr-8 sm:-mt-8`}
     />
     <div className="relative z-10">
       <div
         className={cn(
-          "inline-flex p-3 rounded-2xl bg-gradient-to-br text-white shadow-lg shadow-black/5",
+          "inline-flex p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br text-white shadow-lg shadow-black/5",
           gradient,
         )}
       >
-        <Icon className="w-6 h-6" />
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
       </div>
     </div>
-    <div className="absolute inset-x-6 bottom-6 z-10 flex items-end justify-between gap-4">
+    <div className="absolute inset-x-4 sm:inset-x-6 bottom-4 sm:bottom-6 z-10 flex items-end justify-between gap-2 sm:gap-4">
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-slate-500">{title}</p>
+        <p className="text-[11px] sm:text-sm font-semibold text-slate-500 truncate">{title}</p>
         {subtitle && (
-          <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
+          <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>
         )}
       </div>
-      <h3 className="text-4xl font-bold text-slate-800 tracking-tight text-right leading-none">
+      <h3 className="text-2xl sm:text-4xl font-bold text-slate-800 tracking-tight text-right leading-none">
         {value}
       </h3>
     </div>
@@ -303,7 +303,7 @@ const Dashboard = () => {
   return (
     <>
       {/* ── Stats Cards ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <StatsCard
           title="Total Institutes"
           value={(stats?.totalInstitutes ?? 0).toLocaleString()}

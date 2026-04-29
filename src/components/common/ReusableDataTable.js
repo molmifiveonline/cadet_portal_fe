@@ -227,7 +227,7 @@ export default function ReusableDataTable({
     selected.length > 0 && !isAllSelected;
 
   return (
-    <div className='w-full p-3'>
+    <div className='w-full p-1.5 sm:p-3'>
       {/* Header Section */}
       {(title || (checkboxSelection && selected.length > 0)) && (
         <div className='flex items-center justify-between'>

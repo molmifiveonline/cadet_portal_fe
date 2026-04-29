@@ -420,18 +420,18 @@ const DriveDetails = () => {
             <Rocket className="h-5 w-5 text-blue-600" />
             Pipeline Progress
           </h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
             {progressCards.map((card) => (
               <button
                 key={card.label}
                 type="button"
                 onClick={card.onClick}
-                className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-white hover:shadow-sm"
+                className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4 text-left transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-white hover:shadow-sm"
               >
-                <div className={`text-2xl font-black ${card.tone}`}>
+                <div className={`text-xl sm:text-2xl font-black ${card.tone}`}>
                   {card.value}
                 </div>
-                <div className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-500">
+                <div className="mt-1 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-500">
                   {card.label}
                 </div>
               </button>
