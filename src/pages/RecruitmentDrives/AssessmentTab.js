@@ -39,7 +39,6 @@ const isAssessmentCompletedStatus = (cadet = {}) =>
   );
 
 const isAssessmentLocked = (cadet = {}) =>
-  isAssessmentPassed(cadet) ||
   hasTwoCompletedAttempts(cadet) ||
   isAssessmentCompletedStatus(cadet);
 

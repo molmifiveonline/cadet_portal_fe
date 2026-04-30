@@ -38,6 +38,7 @@ const InterviewForm = () => {
   const [existingSheetMimeType, setExistingSheetMimeType] = useState('');
   const [previewUrl, setPreviewUrl] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     interview_date: new Date().toISOString().split('T')[0],
@@ -146,6 +147,9 @@ const InterviewForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -163,6 +167,38 @@ const InterviewForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation
+    const requiredFields = [
+      { key: 'interview_date', name: 'Interview Date' },
+      { key: 'panel_members', name: 'Interviewer Name / Panel' },
+      { key: 'interview_time', name: 'Interview Time' },
+      { key: 'evaluation_score', name: 'Interview Score (%)' },
+      { key: 'total_score', name: 'Total Score' },
+      { key: 'comments', name: 'Comments' },
+      { key: 'remarks', name: 'Remarks / Feedback' },
+    ];
+
+    const newErrors = {};
+    let hasError = false;
+
+    for (const field of requiredFields) {
+      if (
+        formData[field.key] === '' ||
+        formData[field.key] === null ||
+        formData[field.key] === undefined
+      ) {
+        newErrors[field.key] = `${field.name} is required`;
+        hasError = true;
+      }
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      toast.error('Please fill in all mandatory fields');
+      return;
+    }
+
     setSaving(true);
     try {
       const data = new FormData();
@@ -238,7 +274,7 @@ const InterviewForm = () => {
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Interview Date
+                Interview Date <span className="text-red-500">*</span>
               </label>
               <div className='relative'>
                 <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -247,15 +283,16 @@ const InterviewForm = () => {
                   name='interview_date'
                   value={formData.interview_date}
                   onChange={handleInputChange}
-                  className='pl-10'
+                  className={`pl-10 ${errors.interview_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                   required
                 />
               </div>
+              {errors.interview_date && <p className="text-red-500 text-xs mt-1">{errors.interview_date}</p>}
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Interviewer Name / Panel
+                Interviewer Name / Panel <span className="text-red-500">*</span>
               </label>
               <div className='relative'>
                 <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -264,14 +301,15 @@ const InterviewForm = () => {
                   value={formData.panel_members}
                   onChange={handleInputChange}
                   placeholder='Enter names'
-                  className='pl-10'
+                  className={`pl-10 ${errors.panel_members ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                 />
               </div>
+              {errors.panel_members && <p className="text-red-500 text-xs mt-1">{errors.panel_members}</p>}
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Interview Time
+                Interview Time <span className="text-red-500">*</span>
               </label>
               <div className='relative'>
                 <Clock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -280,14 +318,15 @@ const InterviewForm = () => {
                   name='interview_time'
                   value={formData.interview_time}
                   onChange={handleInputChange}
-                  className='pl-10'
+                  className={`pl-10 ${errors.interview_time ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                 />
               </div>
+              {errors.interview_time && <p className="text-red-500 text-xs mt-1">{errors.interview_time}</p>}
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Interview Score (%)
+                Interview Score (%) <span className="text-red-500">*</span>
               </label>
               <div className='relative'>
                 <Star className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -297,14 +336,15 @@ const InterviewForm = () => {
                   value={formData.evaluation_score}
                   onChange={handleInputChange}
                   placeholder='0-100'
-                  className='pl-10'
+                  className={`pl-10 ${errors.evaluation_score ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                 />
               </div>
+              {errors.evaluation_score && <p className="text-red-500 text-xs mt-1">{errors.evaluation_score}</p>}
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Total Score
+                Total Score <span className="text-red-500">*</span>
               </label>
               <div className='relative'>
                 <Star className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -315,9 +355,10 @@ const InterviewForm = () => {
                   value={formData.total_score}
                   onChange={handleInputChange}
                   placeholder='Total score'
-                  className='pl-10'
+                  className={`pl-10 ${errors.total_score ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                 />
               </div>
+              {errors.total_score && <p className="text-red-500 text-xs mt-1">{errors.total_score}</p>}
               {formData.total_score ? (
                 <p className='mt-2 text-xs text-slate-500'>
                   Recommendation remains manual until the final interview formula is provided.
@@ -440,31 +481,33 @@ const InterviewForm = () => {
           <div className='space-y-2'>
             <label className='text-sm font-medium text-gray-700 flex items-center gap-2'>
               <MessageSquare size={16} className='text-gray-400' />
-              Comments
+              Comments <span className="text-red-500">*</span>
             </label>
             <textarea
               name='comments'
               value={formData.comments}
               onChange={handleInputChange}
               rows={3}
-              className='w-full rounded-xl border border-gray-300 p-4 text-sm focus:ring-4 focus:ring-blue-100 outline-none resize-none'
+              className={`w-full rounded-xl border p-4 text-sm outline-none resize-none ${errors.comments ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' : 'border-gray-300 focus:ring-4 focus:ring-blue-100'}`}
               placeholder='Panel comments and observations...'
             />
+            {errors.comments && <p className="text-red-500 text-xs mt-1">{errors.comments}</p>}
           </div>
 
           <div className='space-y-2'>
             <label className='text-sm font-medium text-gray-700 flex items-center gap-2'>
               <MessageSquare size={16} className='text-gray-400' />
-              Remarks / Feedback
+              Remarks / Feedback <span className="text-red-500">*</span>
             </label>
             <textarea
               name='remarks'
               value={formData.remarks}
               onChange={handleInputChange}
               rows={4}
-              className='w-full rounded-xl border border-gray-300 p-4 text-sm focus:ring-4 focus:ring-blue-100 outline-none resize-none'
+              className={`w-full rounded-xl border p-4 text-sm outline-none resize-none ${errors.remarks ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' : 'border-gray-300 focus:ring-4 focus:ring-blue-100'}`}
               placeholder='Detailed feedback...'
             />
+            {errors.remarks && <p className="text-red-500 text-xs mt-1">{errors.remarks}</p>}
           </div>
 
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200'>

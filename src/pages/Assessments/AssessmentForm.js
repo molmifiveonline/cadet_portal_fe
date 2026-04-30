@@ -50,6 +50,7 @@ const AssessmentForm = () => {
   });
   const [existingEssay, setExistingEssay] = useState(null);
   const [previewScore, setPreviewScore] = useState(null);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     // Calculate preview score: CES1 + English + Essay
@@ -112,6 +113,9 @@ const AssessmentForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -129,6 +133,37 @@ const AssessmentForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation
+    const requiredFields = [
+      { key: 'assessment_date', name: 'Assessment Date' },
+      { key: 'assessment_time', name: 'Assessment Time' },
+      { key: 'ces_test', name: 'CES Test (Attempt 1)' },
+      { key: 'qa_test', name: 'QA Test Score' },
+      { key: 'english_test', name: 'English Test Score' },
+      { key: 'essay_writing_mark', name: 'Essay Writing Mark' },
+    ];
+
+    const newErrors = {};
+    let hasError = false;
+
+    for (const field of requiredFields) {
+      if (
+        formData[field.key] === '' ||
+        formData[field.key] === null ||
+        formData[field.key] === undefined
+      ) {
+        newErrors[field.key] = `${field.name} is required`;
+        hasError = true;
+      }
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      toast.error('Please fill in all mandatory fields');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -228,7 +263,7 @@ const AssessmentForm = () => {
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700'>
-                  Assessment Date
+                  Assessment Date <span className="text-red-500">*</span>
                 </label>
                 <div className='relative'>
                   <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -237,14 +272,15 @@ const AssessmentForm = () => {
                     type='date'
                     value={formData.assessment_date}
                     onChange={handleInputChange}
-                    className={inputClass}
+                    className={`${inputClass} ${errors.assessment_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                   />
                 </div>
+                {errors.assessment_date && <p className="text-red-500 text-xs mt-1">{errors.assessment_date}</p>}
               </div>
 
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700'>
-                  Assessment Time
+                  Assessment Time <span className="text-red-500">*</span>
                 </label>
                 <div className='relative'>
                   <Clock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -253,14 +289,15 @@ const AssessmentForm = () => {
                     type='time'
                     value={formData.assessment_time}
                     onChange={handleInputChange}
-                    className={inputClass}
+                    className={`${inputClass} ${errors.assessment_time ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                   />
                 </div>
+                {errors.assessment_time && <p className="text-red-500 text-xs mt-1">{errors.assessment_time}</p>}
               </div>
 
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700'>
-                  CES Test (Attempt 1)
+                  CES Test (Attempt 1) <span className="text-red-500">*</span>
                 </label>
                 <div className='relative'>
                   <Target className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -269,9 +306,10 @@ const AssessmentForm = () => {
                     value={formData.ces_test}
                     onChange={handleInputChange}
                     placeholder='Score 1'
-                    className={inputClass}
+                    className={`${inputClass} ${errors.ces_test ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                   />
                 </div>
+                {errors.ces_test && <p className="text-red-500 text-xs mt-1">{errors.ces_test}</p>}
               </div>
 
               <div className='space-y-2'>
@@ -295,7 +333,7 @@ const AssessmentForm = () => {
 
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700'>
-                  QA Test Score
+                  QA Test Score <span className="text-red-500">*</span>
                 </label>
                 <div className='relative'>
                   <ClipboardList className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -304,14 +342,15 @@ const AssessmentForm = () => {
                     value={formData.qa_test}
                     onChange={handleInputChange}
                     placeholder='Enter score'
-                    className={inputClass}
+                    className={`${inputClass} ${errors.qa_test ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                   />
                 </div>
+                {errors.qa_test && <p className="text-red-500 text-xs mt-1">{errors.qa_test}</p>}
               </div>
 
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700'>
-                  English Test Score
+                  English Test Score <span className="text-red-500">*</span>
                 </label>
                 <div className='relative'>
                   <Languages className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -320,14 +359,15 @@ const AssessmentForm = () => {
                     value={formData.english_test}
                     onChange={handleInputChange}
                     placeholder='Enter score'
-                    className={inputClass}
+                    className={`${inputClass} ${errors.english_test ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                   />
                 </div>
+                {errors.english_test && <p className="text-red-500 text-xs mt-1">{errors.english_test}</p>}
               </div>
 
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700'>
-                  Essay Writing Mark
+                  Essay Writing Mark <span className="text-red-500">*</span>
                 </label>
                 <div className='relative'>
                   <PencilLine className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -338,9 +378,10 @@ const AssessmentForm = () => {
                     value={formData.essay_writing_mark}
                     onChange={handleInputChange}
                     placeholder='Enter mark'
-                    className={inputClass}
+                    className={`${inputClass} ${errors.essay_writing_mark ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
                   />
                 </div>
+                {errors.essay_writing_mark && <p className="text-red-500 text-xs mt-1">{errors.essay_writing_mark}</p>}
               </div>
             </div>
           </div>
