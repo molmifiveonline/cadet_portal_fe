@@ -200,15 +200,19 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
       },
     },
     {
-      field: "mark_for_interview",
-      headerName: "Interview?",
-      width: "100px",
+      field: "institute_detail_filled",
+      headerName: "Inst. Details",
+      width: "120px",
       align: "center",
       renderCell: ({ value }) =>
-        value ? (
-          <CheckCircle className="mx-auto text-green-600" size={18} />
+        Number(value) ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold uppercase text-emerald-700">
+            Filled
+          </span>
         ) : (
-          <XCircle className="mx-auto text-red-600" size={18} />
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold uppercase text-amber-700">
+            Pending
+          </span>
         ),
     },
     {
@@ -231,7 +235,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
       cellClassName: "bg-white",
       align: "right",
       renderCell: ({ row }) => {
-        const disableStartAssessment = isAssessmentLocked(row);
+        const disableStartAssessment = isAssessmentLocked(row) || !Number(row.institute_detail_filled || 0);
         
         return (
           <div className="flex items-center justify-end gap-2">
@@ -242,11 +246,13 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
               onClick={() => (window.location.href = `/cadets/assess/${row.id}`)}
               className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
               title={
-                disableStartAssessment
-                  ? "Assessment completed"
-                  : row.assessment_id
-                    ? "Edit assessment"
-                    : "Start assessment"
+                !Number(row.institute_detail_filled || 0)
+                  ? "Pending institute details"
+                  : disableStartAssessment
+                    ? "Assessment completed"
+                    : row.assessment_id
+                      ? "Edit assessment"
+                      : "Start assessment"
               }
             >
               {row.assessment_id ? <Edit size={16} /> : <Plus size={16} />}
@@ -316,7 +322,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
           rows={paginatedCadets}
           loading={loading}
           checkboxSelection={!readOnly}
-          isRowSelectable={!readOnly ? (row) => !isAssessmentLocked(row) : undefined}
+          isRowSelectable={!readOnly ? (row) => !isAssessmentLocked(row) && Number(row.institute_detail_filled || 0) : undefined}
           rowSelectionModel={!readOnly ? selectedCadets : []}
           onRowSelectionModelChange={!readOnly ? setSelectedCadets : undefined}
           emptyMessage={

@@ -162,7 +162,7 @@ const DriveForm = () => {
             {/* Drive Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Drive Name *
+                Drive Name <span className="text-red-500">*</span>
               </label>
               <Input
                 {...register("drive_name", {
@@ -181,7 +181,7 @@ const DriveForm = () => {
             {/* Institute */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Institute *
+                Institute <span className="text-red-500">*</span>
               </label>
               <Controller
                 name="institute_id"
@@ -214,7 +214,7 @@ const DriveForm = () => {
             {/* Course Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Course Type *
+                Course Type <span className="text-red-500">*</span>
               </label>
               <Controller
                 name="course_type"
@@ -244,7 +244,7 @@ const DriveForm = () => {
             {/* Year */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Year *
+                Year <span className="text-red-500">*</span>
               </label>
               <Controller
                 name="year"

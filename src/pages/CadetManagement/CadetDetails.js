@@ -19,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
 import { formatDateForInput } from '../../lib/utils/dateUtils';
 import PageHeader from '../../components/common/PageHeader';
+import { sanitizePhoneValue } from '../../lib/utils/validationUtils';
 
 import StageTracker from '../../components/common/StageTracker';
 
@@ -136,6 +137,9 @@ const CadetDetails = () => {
     try {
       let payload = { ...data };
       delete payload.declaration_accepted;
+      if (payload.contact_number !== undefined) {
+        payload.contact_number = sanitizePhoneValue(payload.contact_number);
+      }
 
       let headers = {};
 
@@ -166,7 +170,7 @@ const CadetDetails = () => {
       setPreviewUrl(null);
     } catch (error) {
       console.error('Error updating cadet:', error);
-      toast.error('Failed to update cadet');
+      toast.error(error.response?.data?.message || 'Failed to update cadet');
     }
   };
 
@@ -210,6 +214,7 @@ const CadetDetails = () => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
+      noValidate
       className='py-6 space-y-6 animate-in fade-in slide-in-from-bottom-4'
     >
       {/* Header */}

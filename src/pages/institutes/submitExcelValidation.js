@@ -1,5 +1,19 @@
+import { getPhoneValidationMessage } from '../../lib/utils/validationUtils';
+
 // Date column keywords (case-insensitive match) for validation
 const DATE_COLUMN_KEYWORDS = ['date of birth', 'dob', 'birth date'];
+const PHONE_COLUMN_KEYWORDS = ['mobile', 'phone', 'whatsapp', 'contact'];
+
+const getPhoneFieldName = (header = '') => {
+  const lower = String(header).toLowerCase();
+  const matchedKeyword = PHONE_COLUMN_KEYWORDS.find((keyword) =>
+    lower.includes(keyword),
+  );
+
+  if (!matchedKeyword) return '';
+  if (matchedKeyword === 'whatsapp') return 'WhatsApp';
+  return matchedKeyword.charAt(0).toUpperCase() + matchedKeyword.slice(1);
+};
 
 // Standard column keywords to identify header row
 export const HEADER_KEYWORDS = [
@@ -49,6 +63,8 @@ export const isDateColumn = (header) => {
   const lower = header.toLowerCase();
   return DATE_COLUMN_KEYWORDS.some((kw) => lower === kw || lower.includes(kw));
 };
+
+export const isPhoneColumn = (header) => !!getPhoneFieldName(header);
 
 // Check if a value is a valid day-first date in dd-mm-yyyy or dd/mm/yyyy format.
 export const isValidDate = (value) => {
@@ -119,6 +135,18 @@ export const validateExcelData = (rows, headers) => {
         ) {
           const key = `${rowIdx}-${header}`;
           errors[key] = `Please enter marks without '%' sign`;
+          errorCount++;
+        }
+      }
+
+      if (isPhoneColumn(header)) {
+        const message = getPhoneValidationMessage(
+          value,
+          getPhoneFieldName(header),
+        );
+        if (message) {
+          const key = `${rowIdx}-${header}`;
+          errors[key] = message;
           errorCount++;
         }
       }

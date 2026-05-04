@@ -21,6 +21,10 @@ import {
   SelectValue,
 } from 'components/ui/select';
 import PageHeader from '../../components/common/PageHeader';
+import {
+  EMAIL_VALIDATION_MESSAGE,
+  getEmailValidationMessage,
+} from '../../lib/utils/validationUtils';
 
 const CONTACT_COUNT = 3;
 
@@ -221,7 +225,7 @@ const InstituteForm = () => {
       />
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500'>
-        <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className='space-y-6'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700 ml-1'>
@@ -307,10 +311,6 @@ const InstituteForm = () => {
                             {...register(`contact_emails.${index}.email`, {
                               required:
                                 index === 0 ? 'Contact email is required' : false,
-                              pattern: {
-                                value: /^\S+@\S+$/i,
-                                message: 'Invalid email',
-                              },
                               validate: (value, formValues) => {
                                 const contactName =
                                   formValues.contact_emails?.[index]?.name || '';
@@ -322,6 +322,12 @@ const InstituteForm = () => {
                                   !emailValue.trim()
                                 ) {
                                   return 'Email is required when contact person is provided';
+                                }
+
+                                const emailMessage =
+                                  getEmailValidationMessage(emailValue);
+                                if (emailMessage) {
+                                  return EMAIL_VALIDATION_MESSAGE;
                                 }
 
                                 return true;

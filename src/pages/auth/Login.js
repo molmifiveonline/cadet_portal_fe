@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import api from "../../lib/utils/apiConfig";
 import { getPrefixRoute } from "../../lib/utils/routeUtils";
 import ForgotPasswordModal from "./ForgotPasswordModal";
+import { getEmailValidationMessage } from "../../lib/utils/validationUtils";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -15,11 +16,13 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login } = useAuth();
 
   const handleChange = (e) => {
+    setFormErrors((prev) => ({ ...prev, [e.target.name]: "" }));
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -28,6 +31,21 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const nextErrors = {};
+    if (!formData.email.trim()) {
+      nextErrors.email = "Email address is required";
+    } else {
+      const emailMessage = getEmailValidationMessage(formData.email);
+      if (emailMessage) nextErrors.email = emailMessage;
+    }
+    if (!formData.password) {
+      nextErrors.password = "Password is required";
+    }
+
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     setIsLoading(true);
 
     try {
@@ -104,7 +122,7 @@ const Login = () => {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} noValidate className="space-y-6">
               <div>
                 <label className="text-sm font-semibold text-gray-700 block mb-2">
                   Email Address
@@ -114,15 +132,22 @@ const Login = () => {
                     <Mail size={20} />
                   </div>
                   <input
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm"
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm ${
+                      formErrors.email ? "border-red-400" : "border-gray-300"
+                    }`}
                     placeholder=""
                   />
                 </div>
+                {formErrors.email && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {formErrors.email}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -147,8 +172,9 @@ const Login = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    required
-                    className="w-full pl-10 pr-12 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm"
+                    className={`w-full pl-10 pr-12 py-3 rounded-xl bg-white/80 border focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm ${
+                      formErrors.password ? "border-red-400" : "border-gray-300"
+                    }`}
                     placeholder="Enter your password"
                   />
                   <button
@@ -159,6 +185,11 @@ const Login = () => {
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
+                {formErrors.password && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {formErrors.password}
+                  </p>
+                )}
               </div>
 
               <button

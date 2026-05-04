@@ -281,6 +281,7 @@ const DriveDetails = () => {
           disabledReason: instituteUploadDisabledMessage,
         },
         { id: "cadets", label: "Cadets", icon: Users },
+        { id: "shortlist", label: "Shortlisted", icon: ListChecks },
         { id: "assessment", label: "Assessment", icon: ListChecks },
         { id: "interview", label: "Interview", icon: Users },
         { id: "documents", label: "Documents", icon: FileText },
@@ -622,14 +623,15 @@ const DriveDetails = () => {
             />
           ) : null}
 
-          {activeTab === "shortlist" && !isInstituteUser ? (
+          {activeTab === "shortlist" ? (
             <ShortlistTab
               drive={drive}
-              canSendShortlistEmail={canSendShortlistEmail}
-              onSendShortlistEmail={handleSendShortlistEmail}
-              sendingShortlist={sendingShortlist}
+              canSendShortlistEmail={!isInstituteUser && canSendShortlistEmail}
+              onSendShortlistEmail={!isInstituteUser ? handleSendShortlistEmail : undefined}
+              sendingShortlist={!isInstituteUser ? sendingShortlist : false}
               refreshTrigger={shortlistRefreshTrigger}
               onRefresh={fetchDriveData}
+              isInstituteUser={isInstituteUser}
             />
           ) : null}
 

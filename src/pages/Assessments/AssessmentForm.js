@@ -15,6 +15,7 @@ import {
   Languages,
   PencilLine,
   MessageSquare,
+  AlertCircle,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import PageHeader from '../../components/common/PageHeader';
@@ -251,6 +252,19 @@ const AssessmentForm = () => {
           </button>
         }
       />
+
+      {cadet && !Number(cadet.institute_detail_filled || 0) && (
+        <div className='mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 text-amber-800 animate-in fade-in slide-in-from-top-2 duration-300'>
+          <AlertCircle className='shrink-0 mt-0.5' size={20} />
+          <div>
+            <p className='font-bold'>Institute Details Pending</p>
+            <p className='text-sm'>
+              The institute has not yet filled or completed all required details for this cadet. 
+              Assessment recording is blocked until the institute submits the complete profile.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500'>
         <form onSubmit={handleSubmit} className='space-y-8'>
@@ -544,7 +558,7 @@ const AssessmentForm = () => {
             <Button
               type='submit'
               className='bg-[#3a5f9e] hover:bg-[#325186] text-white px-8 py-2.5 h-auto rounded-lg shadow-sm font-medium transition-all active:scale-95'
-              disabled={saving}
+              disabled={saving || (cadet && !Number(cadet.institute_detail_filled || 0))}
             >
               {saving ? (
                 <>

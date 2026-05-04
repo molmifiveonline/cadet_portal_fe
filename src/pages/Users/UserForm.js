@@ -13,6 +13,12 @@ import {
 } from '../../components/ui/select';
 import api from '../../lib/utils/apiConfig';
 import PageHeader from '../../components/common/PageHeader';
+import {
+  EMAIL_VALIDATION_MESSAGE,
+  PASSWORD_LENGTH_MESSAGE,
+  getEmailValidationMessage,
+  isValidPasswordLength,
+} from '../../lib/utils/validationUtils';
 
 const UserForm = () => {
   const navigate = useNavigate();
@@ -22,6 +28,7 @@ const UserForm = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [roles, setRoles] = useState([]);
+  const [formErrors, setFormErrors] = useState({});
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -85,20 +92,52 @@ const UserForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    setFormErrors((prev) => ({ ...prev, [name]: '' }));
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!formData.first_name.trim()) {
+      nextErrors.first_name = 'First name is required';
+    }
+
+    if (!formData.last_name.trim()) {
+      nextErrors.last_name = 'Last name is required';
+    }
+
+    if (!formData.email.trim()) {
+      nextErrors.email = 'Email address is required';
+    } else {
+      const emailMessage = getEmailValidationMessage(formData.email);
+      if (emailMessage) {
+        nextErrors.email = EMAIL_VALIDATION_MESSAGE;
+      }
+    }
+
+    if (!formData.role) {
+      nextErrors.role = 'Role is required';
+    }
+
+    const shouldValidatePassword = !isEdit || formData.password.trim() !== '';
+    if (!isEdit && !formData.password) {
+      nextErrors.password = 'Password is required';
+    } else if (
+      shouldValidatePassword &&
+      !isValidPasswordLength(formData.password)
+    ) {
+      nextErrors.password = PASSWORD_LENGTH_MESSAGE;
+    }
+
+    setFormErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.first_name ||
-      !formData.last_name ||
-      !formData.email ||
-      !formData.role ||
-      (!isEdit && !formData.password)
-    ) {
-      toast.error('Please fill in all required fields');
+    if (!validateForm()) {
       return;
     }
 
@@ -161,7 +200,7 @@ const UserForm = () => {
       />
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
-        <form onSubmit={handleSubmit} className='space-y-6'>
+        <form onSubmit={handleSubmit} noValidate className='space-y-6'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
@@ -175,10 +214,16 @@ const UserForm = () => {
                   placeholder='John'
                   value={formData.first_name}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.first_name ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.first_name && (
+                <p className='text-xs text-red-500 mt-1'>
+                  {formErrors.first_name}
+                </p>
+              )}
             </div>
 
             <div className='space-y-2'>
@@ -193,10 +238,16 @@ const UserForm = () => {
                   placeholder='Doe'
                   value={formData.last_name}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.last_name ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.last_name && (
+                <p className='text-xs text-red-500 mt-1'>
+                  {formErrors.last_name}
+                </p>
+              )}
             </div>
 
             <div className='space-y-2'>
@@ -207,14 +258,19 @@ const UserForm = () => {
                 <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                 <Input
                   name='email'
-                  type='email'
+                  type='text'
+                  inputMode='email'
                   placeholder='user@example.com'
                   value={formData.email}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.email ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.email && (
+                <p className='text-xs text-red-500 mt-1'>{formErrors.email}</p>
+              )}
             </div>
 
             <div className='space-y-2'>
@@ -227,13 +283,19 @@ const UserForm = () => {
                 <Input
                   name='password'
                   type='password'
-                  placeholder='••••••••'
+                  placeholder='Enter password'
                   value={formData.password}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required={!isEdit}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.password ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.password && (
+                <p className='text-xs text-red-500 mt-1'>
+                  {formErrors.password}
+                </p>
+              )}
               {isEdit && (
                 <p className='text-xs text-slate-500 mt-1'>
                   Only enter a password if you want to change it.
@@ -247,11 +309,16 @@ const UserForm = () => {
               </label>
               <Select
                 onValueChange={(val) =>
-                  setFormData((prev) => ({ ...prev, role: val }))
+                  {
+                    setFormErrors((prev) => ({ ...prev, role: '' }));
+                    setFormData((prev) => ({ ...prev, role: val }));
+                  }
                 }
                 value={formData.role}
               >
-                <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                <SelectTrigger className={`w-full px-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                  formErrors.role ? 'border-red-400' : 'border-gray-300'
+                }`}>
                   <SelectValue placeholder='Select role' />
                 </SelectTrigger>
                 <SelectContent>
@@ -262,6 +329,9 @@ const UserForm = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {formErrors.role && (
+                <p className='text-xs text-red-500 mt-1'>{formErrors.role}</p>
+              )}
             </div>
           </div>
 

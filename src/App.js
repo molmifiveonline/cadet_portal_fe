@@ -40,6 +40,7 @@ import MedicalManagement from './pages/Assessments/MedicalManagement';
 import RecruitmentDrives from './pages/RecruitmentDrives';
 import DriveForm from './pages/RecruitmentDrives/DriveForm';
 import DriveDetails from './pages/RecruitmentDrives/DriveDetails';
+import NotificationHistory from './pages/Notifications/NotificationHistory';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
@@ -83,6 +84,17 @@ function App() {
                     <PermissionRoute module='dashboard' action='view'>
                       <Dashboard />
                     </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/notifications'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <NotificationHistory />
                   </MainLayout>
                 </ProtectedRoute>
               }

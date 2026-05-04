@@ -118,7 +118,9 @@ const CadetPendingDetails = () => {
       }
     } catch (error) {
       console.error('Error updating cadet:', error);
-      toast.error('Failed to update cadet details');
+      toast.error(
+        error.response?.data?.message || 'Failed to update cadet details',
+      );
     }
   };
 

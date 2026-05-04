@@ -590,8 +590,8 @@ const SubmitExcel = ({
                   </strong>{' '}
                   Cells highlighted in{' '}
                   <span className='text-red-600 font-semibold'>red</span>{' '}
-                  contain incorrect values (e.g., invalid date format). Please
-                  fix these in your Excel file and re-upload.
+                  contain incorrect values. Please fix these in your Excel file
+                  and re-upload.
                 </p>
               </div>
             )}
@@ -646,14 +646,14 @@ const SubmitExcel = ({
                               }`}
                               title={
                                 hasError
-                                  ? `⚠ ${cellErrors[errorKey]}`
+                                  ? `Error: ${cellErrors[errorKey]}`
                                   : formatCellValue(row[header], header)
                               }
                             >
                               {hasError && (
                                 <AlertCircle
                                   className='w-3 h-3 inline-block mr-1 text-red-500'
-                                  title={`⚠ ${cellErrors[errorKey]}`}
+                                  title={`Error: ${cellErrors[errorKey]}`}
                                 />
                               )}
                               {formatCellValue(row[header], header)}

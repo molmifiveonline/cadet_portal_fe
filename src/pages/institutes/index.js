@@ -183,7 +183,7 @@ const InstitutesManagement = () => {
         subtitle="Manage maritime training institutes and their details"
         icon={School}
       >
-        <Permission module='institutes' action='view'>
+        {/* <Permission module='institutes' action='view'>
           <Button
             variant='outline'
             onClick={() => navigate('/institutes/submissions')}
@@ -192,7 +192,7 @@ const InstitutesManagement = () => {
             <FileText size={20} />
             View Submissions
           </Button>
-        </Permission>
+        </Permission> */}
 
         {/* {selectedInstitutes.length === 0 && (
           <Button

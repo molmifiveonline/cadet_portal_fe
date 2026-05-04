@@ -15,6 +15,7 @@ import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import CadetFormFields from '../../components/cadet/CadetFormFields';
 import api from '../../lib/utils/apiConfig';
+import { sanitizePhoneValue } from '../../lib/utils/validationUtils';
 
 const AddCadetForm = () => {
   const navigate = useNavigate();
@@ -52,6 +53,9 @@ const AddCadetForm = () => {
     try {
       let payload = { ...data };
       delete payload.declaration_accepted;
+      if (payload.contact_number !== undefined) {
+        payload.contact_number = sanitizePhoneValue(payload.contact_number);
+      }
 
       let headers = {};
 
@@ -85,6 +89,7 @@ const AddCadetForm = () => {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
+      noValidate
       className='py-6 space-y-6 animate-in fade-in slide-in-from-bottom-4'
     >
       {/* Header */}

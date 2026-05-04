@@ -23,6 +23,7 @@ import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
+import DocumentRequestModal from "./DocumentRequestModal";
 
 const DOCUMENT_TYPES = [
   "CV",
@@ -91,6 +92,8 @@ const DocumentsTab = ({ drive }) => {
     isOpen: false,
     documentId: null,
   });
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [requestLoading, setRequestLoading] = useState(false);
 
   const isInstituteUser = user?.role === "Institute";
 
@@ -152,6 +155,24 @@ const DocumentsTab = ({ drive }) => {
     } catch (error) {
       console.error("Error uploading document:", error);
       toast.error(error.response?.data?.message || "Failed to upload document");
+    }
+  };
+
+  const handleSendRequest = async (requestData) => {
+    try {
+      setRequestLoading(true);
+      await api.post("/documents/request-upload", {
+        drive_id: drive.id,
+        ...requestData,
+      });
+      toast.success("Document requests sent successfully");
+      setIsRequestModalOpen(false);
+      await fetchDocuments();
+    } catch (error) {
+      console.error("Error sending document requests:", error);
+      toast.error(error.response?.data?.message || "Failed to send requests");
+    } finally {
+      setRequestLoading(false);
     }
   };
 
@@ -263,7 +284,7 @@ const DocumentsTab = ({ drive }) => {
       width: "110px",
       renderCell: ({ row }) => (
         <div className="space-y-1">
-          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+          <span className={`rounded-full px-2 py-1 text-xs font-semibold ${row.source === 'onedrive' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
             {row.source || "portal"}
           </span>
           {row.external_upload_link ? (
@@ -436,14 +457,25 @@ const DocumentsTab = ({ drive }) => {
           </p>
         </div>
 
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            placeholder="Search cadets..."
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            className="pl-10"
-          />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {!isInstituteUser ? (
+            <Button
+              onClick={() => setIsRequestModalOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Request Document Upload
+            </Button>
+          ) : null}
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="Search cadets..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
       </div>
 
@@ -622,6 +654,14 @@ const DocumentsTab = ({ drive }) => {
         onConfirm={handleConfirmDelete}
         title="Delete Document"
         message="Are you sure you want to delete this document? This action cannot be undone."
+      />
+
+      <DocumentRequestModal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+        onSubmit={handleSendRequest}
+        cadets={filteredCadets}
+        loading={requestLoading}
       />
     </div>
   );

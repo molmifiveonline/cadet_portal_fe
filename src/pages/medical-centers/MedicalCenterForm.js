@@ -23,6 +23,7 @@ import {
 } from '../../components/ui/select';
 import api from '../../lib/utils/apiConfig';
 import PageHeader from '../../components/common/PageHeader';
+import { getEmailValidationMessage } from '../../lib/utils/validationUtils';
 
 const MedicalCenterForm = () => {
   const { id } = useParams();
@@ -31,6 +32,7 @@ const MedicalCenterForm = () => {
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
+  const [formErrors, setFormErrors] = useState({});
 
   const [formData, setFormData] = useState({
     center_name: '',
@@ -63,6 +65,7 @@ const MedicalCenterForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    setFormErrors((prev) => ({ ...prev, [name]: '' }));
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -73,10 +76,20 @@ const MedicalCenterForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.center_name || !formData.location) {
-      toast.error(
-        'Please fill in the required fields (Center Name & Location)',
-      );
+    const nextErrors = {};
+    if (!formData.center_name.trim()) {
+      nextErrors.center_name = 'Center name is required';
+    }
+    if (!formData.location.trim()) {
+      nextErrors.location = 'Location is required';
+    }
+    const emailMessage = getEmailValidationMessage(formData.email);
+    if (emailMessage) {
+      nextErrors.email = emailMessage;
+    }
+
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
       return;
     }
 
@@ -126,7 +139,7 @@ const MedicalCenterForm = () => {
       />
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
-        <form onSubmit={handleSubmit} className='space-y-6'>
+        <form onSubmit={handleSubmit} noValidate className='space-y-6'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             {/* Center Name */}
             <div className='space-y-2'>
@@ -141,10 +154,16 @@ const MedicalCenterForm = () => {
                   placeholder='e.g., Balaji Medical Clinic'
                   value={formData.center_name}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.center_name ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.center_name && (
+                <p className='text-xs text-red-500 mt-1'>
+                  {formErrors.center_name}
+                </p>
+              )}
             </div>
 
             {/* Location */}
@@ -160,10 +179,16 @@ const MedicalCenterForm = () => {
                   placeholder='e.g., Andheri, Mumbai'
                   value={formData.location}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.location ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.location && (
+                <p className='text-xs text-red-500 mt-1'>
+                  {formErrors.location}
+                </p>
+              )}
             </div>
 
             {/* Tests Offered */}
@@ -211,13 +236,19 @@ const MedicalCenterForm = () => {
                 <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                 <Input
                   name='email'
-                  type='email'
+                  type='text'
+                  inputMode='email'
                   placeholder='clinic@example.com'
                   value={formData.email}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.email ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.email && (
+                <p className='text-xs text-red-500 mt-1'>{formErrors.email}</p>
+              )}
             </div>
 
             {/* Status */}

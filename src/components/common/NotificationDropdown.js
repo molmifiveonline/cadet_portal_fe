@@ -30,6 +30,11 @@ const NotificationDropdown = () => {
     }
   };
 
+  const handleViewHistory = () => {
+    setIsOpen(false);
+    navigate('/notifications');
+  };
+
   const formatTime = (dateStr) => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -138,11 +143,15 @@ const NotificationDropdown = () => {
             )}
           </div>
 
-          <div className="p-3 border-t border-slate-100 bg-slate-50/50 text-center">
-            <button className="text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors">
+          {/* <div className="p-3 border-t border-slate-100 bg-slate-50/50 text-center">
+            <button
+              type="button"
+              onClick={handleViewHistory}
+              className="text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors"
+            >
               View History
             </button>
-          </div>
+          </div> */}
         </div>
       )}
     </div>

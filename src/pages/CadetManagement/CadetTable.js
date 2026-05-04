@@ -36,20 +36,12 @@ const CadetTable = ({
   selectedInstitute = 'all',
   handleInstituteChange = () => {},
   institutes = [],
-  selectedDrive = 'all',
-  handleDriveChange = () => {},
-  drives = [],
-  selectedCourse = 'all',
-  handleCourseChange = () => {},
   selectedYear = 'all',
   handleYearChange = () => {},
   selectedCadets = [],
   onSelectionChange = () => {},
-  showShortlistedOnly = false,
-  onToggleShortlisted = () => {},
-  shortlistStats = null,
   onDelete = () => {},
-  onStatusChange = () => {},
+  onClearAll = () => {},
   showAssessmentScore = false,
 }) => {
   const navigate = useNavigate();
@@ -74,37 +66,15 @@ const CadetTable = ({
       ),
     },
     {
-      field: 'status',
-      headerName: 'Status',
-      width: '140px',
+      field: 'drive_name',
+      headerName: 'Recruitment Drive',
+      width: '180px',
       sortable: true,
-      renderCell: ({ row }) => {
-        const effectiveStatus =
-          row.status || (isShortlisted(row) ? 'Shortlisted' : undefined);
-        return (
-          <div onClick={(e) => e.stopPropagation()}>
-            <Select
-              value={effectiveStatus}
-              onValueChange={(val) =>
-                onStatusChange && onStatusChange(row.id, val)
-              }
-            >
-              <SelectTrigger className='h-8 w-full text-xs shrink-0'>
-                <SelectValue placeholder='Select Status' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='Shortlisted'>Shortlisted</SelectItem>
-                <SelectItem value='Assessment'>Assessment</SelectItem>
-                <SelectItem value='Interviewed'>Interviewed</SelectItem>
-                <SelectItem value='Selected'>Selected</SelectItem>
-                <SelectItem value='Rejected'>Rejected</SelectItem>
-                <SelectItem value='CTV Assigned'>CTV Assigned</SelectItem>
-                <SelectItem value='Onboarded'>Onboarded</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        );
-      },
+      renderCell: ({ value }) => (
+        <span className='truncate block w-full text-xs font-medium text-blue-700' title={value}>
+          {value || '-'}
+        </span>
+      ),
     },
     {
       field: 'institute_name',
@@ -291,7 +261,6 @@ const CadetTable = ({
                     searchTerm,
                     selectedInstitute,
                     selectedYear,
-                    showShortlistedOnly,
                   },
                 },
               })
@@ -315,7 +284,6 @@ const CadetTable = ({
                     searchTerm,
                     selectedInstitute,
                     selectedYear,
-                    showShortlistedOnly,
                   },
                 },
               })
@@ -323,15 +291,6 @@ const CadetTable = ({
             title='Edit'
           >
             <Edit size={16} />
-          </Button>
-          <Button
-            variant='ghost'
-            size='icon'
-            className='h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50'
-            onClick={() => navigate(`/cadets/assess/${row.id}`)}
-            title='Assess Cadet'
-          >
-            <ClipboardCheck size={16} />
           </Button>
           <Button
             variant='ghost'
@@ -400,24 +359,13 @@ const CadetTable = ({
 
           <div className='flex gap-2'>
             <Button
-              variant={showShortlistedOnly ? 'default' : 'outline'}
-              onClick={onToggleShortlisted}
-              className='flex items-center gap-2 h-10'
-              title={
-                showShortlistedOnly
-                  ? 'Show all cadets'
-                  : 'Show shortlisted only'
-              }
+              variant='outline'
+              onClick={onClearAll}
+              className='flex items-center gap-2 h-10 border-gray-300'
+              title='Clear all filters'
             >
-              <Filter size={16} />
-              <span className='hidden sm:inline'>
-                {showShortlistedOnly ? 'Shortlisted' : 'All'}
-              </span>
-              {shortlistStats?.total_shortlisted > 0 && (
-                <span className='ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs font-semibold'>
-                  {shortlistStats.total_shortlisted}
-                </span>
-              )}
+              <Trash2 size={16} />
+              <span className='hidden sm:inline'>Clear All</span>
             </Button>
           </div>
         </div>
@@ -439,9 +387,7 @@ const CadetTable = ({
           emptyMessage={
             searchTerm
               ? `No cadets found matching "${searchTerm}"`
-              : showShortlistedOnly
-                ? 'No shortlisted cadets found'
-                : 'No cadets available'
+              : 'No cadets available'
           }
         />
       </div>

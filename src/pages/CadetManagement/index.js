@@ -12,7 +12,6 @@ import PageHeader from '../../components/common/PageHeader';
 // Single-table logic with courseType parameter
 const CadetManagement = ({
   courseType,
-  showShortlistedOnlyDefault = false,
   initialStatus = 'all',
   pageTitle = null,
   showAssessmentScore = false,
@@ -28,7 +27,7 @@ const CadetManagement = ({
   const [selectedInstitute, setSelectedInstitute] = useState(
     returnState?.selectedInstitute || 'all',
   );
-  const [selectedYear, setSelectedYear] = useState();
+  const [selectedYear, setSelectedYear] = useState('all');
   const [searchTerm, setSearchTerm] = useState(returnState?.searchTerm || '');
 
   const [pagination, setPagination] = useState(
@@ -48,10 +47,6 @@ const CadetManagement = ({
   );
 
   const [selectedCadets, setSelectedCadets] = useState([]);
-  const [showShortlistedOnly, setShowShortlistedOnly] = useState(
-    returnState?.showShortlistedOnly ?? showShortlistedOnlyDefault,
-  );
-  const [shortlistStats, setShortlistStats] = useState(null);
 
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
@@ -63,7 +58,6 @@ const CadetManagement = ({
 
   useEffect(() => {
     fetchInstitutes();
-    fetchShortlistStats();
     return () => {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
@@ -80,7 +74,6 @@ const CadetManagement = ({
       sortConfig.sortOrder,
       searchTerm,
       selectedInstitute,
-      showShortlistedOnly,
       selectedYear,
     );
     // Reset selection when course changes
@@ -98,15 +91,6 @@ const CadetManagement = ({
     }
   };
 
-  const fetchShortlistStats = async () => {
-    try {
-      const response = await api.get('/cadets/shortlisted/stats');
-      setShortlistStats(response.data);
-    } catch (error) {
-      console.error('Error fetching shortlist stats:', error);
-    }
-  };
-
   const fetchCadets = async (
     page = pagination.current_page,
     limit = pagination.per_page,
@@ -114,7 +98,6 @@ const CadetManagement = ({
     sortOrder = sortConfig.sortOrder,
     search = searchTerm,
     instituteId = selectedInstitute,
-    shortlisted = showShortlistedOnly,
     batchYear = selectedYear,
   ) => {
     try {
@@ -133,8 +116,7 @@ const CadetManagement = ({
       if (instituteId !== 'all') params.instituteId = instituteId;
       if (batchYear !== 'all') params.batch_year = batchYear;
 
-      const endpoint = shortlisted ? '/cadets/shortlisted' : '/cadets';
-      const response = await api.get(endpoint, { params });
+      const response = await api.get('/cadets', { params });
 
       const data = response.data;
       const cadetList = Array.isArray(data.data)
@@ -203,30 +185,22 @@ const CadetManagement = ({
       sortConfig.sortOrder,
       searchTerm,
       selectedInstitute,
-      showShortlistedOnly,
       value,
     );
   };
 
-  const handleToggleShortlisted = () => {
-    const newValue = !showShortlistedOnly;
-    setShowShortlistedOnly(newValue);
-    fetchCadets(
-      1,
-      pagination.per_page,
-      sortConfig.sortBy,
-      sortConfig.sortOrder,
-      searchTerm,
-      selectedInstitute,
-      newValue,
-    );
+  const handleClearAll = () => {
+    setSearchTerm('');
+    setSelectedInstitute('all');
+    setSelectedYear('all');
+    fetchCadets(1, pagination.per_page, '', '', '', 'all', 'all');
   };
 
   const handleDeleteClick = (cadet) => {
     setDeleteModal({
       isOpen: true,
       cadetId: cadet.id,
-      cadetName: cadet.name,
+      cadetName: cadet.name_as_in_indos_cert || cadet.name,
     });
   };
 
@@ -248,22 +222,6 @@ const CadetManagement = ({
     }
   };
 
-  const handleStatusChange = async (cadetId, newStatus) => {
-    try {
-      await api.put(`/cadets/${cadetId}`, { status: newStatus });
-      toast.success('Status updated successfully');
-      // Update local state without full refetch for better UX
-      setCadets((prevCadets) =>
-        prevCadets.map((cadet) =>
-          cadet.id === cadetId ? { ...cadet, status: newStatus } : cadet,
-        ),
-      );
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Failed to update status');
-    }
-  };
-
   return (
     <div className='py-6'>
       {/* Header */}
@@ -274,30 +232,12 @@ const CadetManagement = ({
       >
         <Permission module='cadets' action='create'>
           <Button
-            variant='default'
-            onClick={() => navigate('/cadets/add')}
-            className='gap-2 bg-indigo-600 hover:bg-indigo-700'
-          >
-            <Plus size={18} />
-            Add Cadet
-          </Button>
-          <Button
             variant='outline'
             onClick={() => navigate('/institute/submit-excel')}
             className='gap-2'
           >
             <Upload size={18} />
             Import Cadets
-          </Button>
-        </Permission>
-        <Permission module='cadets' action='view'>
-          <Button
-            variant='outline'
-            onClick={() => navigate('/cadets/shortlist')}
-            className='gap-2'
-          >
-            <ListFilter size={18} />
-            View Shortlist
           </Button>
         </Permission>
       </PageHeader>
@@ -320,11 +260,8 @@ const CadetManagement = ({
           handleYearChange={handleYearChange}
           selectedCadets={selectedCadets}
           onSelectionChange={setSelectedCadets}
-          showShortlistedOnly={showShortlistedOnly}
-          onToggleShortlisted={handleToggleShortlisted}
-          shortlistStats={shortlistStats}
           onDelete={handleDeleteClick}
-          onStatusChange={handleStatusChange}
+          onClearAll={handleClearAll}
           showAssessmentScore={showAssessmentScore}
         />
       </div>

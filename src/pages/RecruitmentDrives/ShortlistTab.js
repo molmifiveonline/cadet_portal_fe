@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle, Eye, Loader2, Search, Send } from "lucide-react";
+import { CheckCircle, Eye, Loader2, Search, Send, Edit } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import api from "../../lib/utils/apiConfig";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -23,7 +24,9 @@ const ShortlistTab = ({
   sendingShortlist,
   refreshTrigger,
   onRefresh,
+  isInstituteUser = false,
 }) => {
+  const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,10 +43,12 @@ const ShortlistTab = ({
       );
       const driveCadets = (response.data?.data || []).filter(
         (cadet) =>
-          ["uploaded", "shortlisted"].includes(cadet.workflow_phase) ||
-          ["pass", "fail"].includes(
-            String(cadet.assessment_status || "").toLowerCase(),
-          ),
+          isInstituteUser
+            ? cadet.workflow_phase !== "uploaded"
+            : ["uploaded", "shortlisted"].includes(cadet.workflow_phase) ||
+              ["pass", "fail"].includes(
+                String(cadet.assessment_status || "").toLowerCase(),
+              ),
       );
       setCadets(driveCadets);
       setSelectedCadets([]);
@@ -232,6 +237,24 @@ const ShortlistTab = ({
         ),
     },
     {
+      field: "institute_detail_filled",
+      headerName: "Institute Details",
+      width: "150px",
+      align: "center",
+      renderCell: ({ value }) =>
+        Number(value) ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+            <CheckCircle size={12} />
+            Filled
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
+            <Loader2 size={12} className="animate-spin" />
+            Pending
+          </span>
+        ),
+    },
+    {
       field: "actions",
       headerName: "Actions",
       width: "100px",
@@ -240,15 +263,35 @@ const ShortlistTab = ({
       cellClassName: "bg-white",
       align: "right",
       renderCell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => window.open(`/cadets/view/${row.id}`, "_blank")}
-          className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-          title="View cadet"
-        >
-          <Eye size={16} />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.open(`/cadets/view/${row.id}`, "_blank")}
+            className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+            title="View cadet"
+          >
+            <Eye size={16} />
+          </Button>
+          {isInstituteUser && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                navigate(`/cadets/fill-details/${row.id}`, {
+                  state: {
+                    returnPath: `/drives/${drive.id}`,
+                    returnState: { activeTab: "shortlist" },
+                  },
+                })
+              }
+              className="h-8 w-8 p-0 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+              title="Edit details"
+            >
+              <Edit size={16} />
+            </Button>
+          )}
+        </div>
       ),
     },
   ];
@@ -285,46 +328,57 @@ const ShortlistTab = ({
             />
           </div>
 
-          <Button
-            onClick={handleShortlist}
-            disabled={submittingShortlist || selectedForShortlist.length === 0}
-            className="h-11 min-w-[178px] gap-2 whitespace-nowrap bg-purple-600 px-5 text-white hover:bg-purple-700"
-          >
-            {submittingShortlist ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle className="h-4 w-4" />
-            )}
-            Shortlist Selected
-          </Button>
+          {!isInstituteUser && (
+            <>
+              <Button
+                onClick={handleShortlist}
+                disabled={submittingShortlist || selectedForShortlist.length === 0}
+                className="h-11 min-w-[178px] gap-2 whitespace-nowrap bg-purple-600 px-5 text-white hover:bg-purple-700"
+              >
+                {submittingShortlist ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                Shortlist Selected
+              </Button>
 
-          {canSendShortlistEmail ? (
-            <Button
-              variant="outline"
-              onClick={handleSendEmail}
-              disabled={
-                sendingShortlist || shortlistedPendingEmail.length === 0
-              }
-              className="h-11 min-w-[230px] gap-2 whitespace-nowrap border-green-200 px-5 text-green-700 hover:bg-green-50"
-            >
-              {sendingShortlist ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              Send Shortlist Email ({shortlistedPendingEmail.length})
-            </Button>
-          ) : null}
+              {canSendShortlistEmail ? (
+                <Button
+                  variant="outline"
+                  onClick={handleSendEmail}
+                  disabled={
+                    sendingShortlist || shortlistedPendingEmail.length === 0
+                  }
+                  className="h-11 min-w-[230px] gap-2 whitespace-nowrap border-green-200 px-5 text-green-700 hover:bg-green-50"
+                >
+                  {sendingShortlist ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                  Send Shortlist Email ({shortlistedPendingEmail.length})
+                </Button>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
 
       <div className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-800">
-        <p>
-          <span className="font-semibold">Shortlist Selected</span> locks
-          uploaded cadets as shortlisted. Assessment results remain visible
-          here, and shortlist email sends only to shortlisted cadets still
-          pending email.
-        </p>
+        {isInstituteUser ? (
+          <p>
+            Review your shortlisted cadets for this drive. You can update their
+            pending details by clicking the edit icon in the actions column.
+          </p>
+        ) : (
+          <p>
+            <span className="font-semibold">Shortlist Selected</span> locks
+            uploaded cadets as shortlisted. Assessment results remain visible
+            here, and shortlist email sends only to shortlisted cadets still
+            pending email.
+          </p>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
@@ -332,10 +386,10 @@ const ShortlistTab = ({
           columns={columns}
           rows={paginatedCadets}
           loading={loading}
-          checkboxSelection
+          checkboxSelection={!isInstituteUser}
           rowSelectionModel={selectedCadets}
           onRowSelectionModelChange={setSelectedCadets}
-          isRowSelectable={(row) => row.workflow_phase === "uploaded"}
+          isRowSelectable={(row) => !isInstituteUser && row.workflow_phase === "uploaded"}
           emptyMessage={
             searchTerm
               ? `No cadets found matching "${searchTerm}"`

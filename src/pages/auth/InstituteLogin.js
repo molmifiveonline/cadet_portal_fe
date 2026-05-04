@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/utils/apiConfig';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
+import { getEmailValidationMessage } from '../../lib/utils/validationUtils';
 
 const InstituteLogin = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +13,8 @@ const InstituteLogin = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [emailError, setEmailError] = useState('');
+  const [otpError, setOtpError] = useState('');
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -27,12 +30,15 @@ const InstituteLogin = () => {
 
   const handleRequestOtp = async (e) => {
     e.preventDefault();
+    setEmailError('');
+
     if (!email.trim()) {
-      toast.error('Please enter your email address');
+      setEmailError('Email address is required');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      toast.error('Please enter a valid email address');
+    const emailMessage = getEmailValidationMessage(email);
+    if (emailMessage) {
+      setEmailError(emailMessage);
       return;
     }
 
@@ -53,8 +59,10 @@ const InstituteLogin = () => {
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
+    setOtpError('');
+
     if (!otp.trim() || otp.length !== 6) {
-      toast.error('Please enter the 6-digit OTP');
+      setOtpError('Please enter the 6-digit OTP');
       return;
     }
 
@@ -157,7 +165,7 @@ const InstituteLogin = () => {
 
             {/* Step 1: Email */}
             {!otpSent ? (
-              <form onSubmit={handleRequestOtp} className='space-y-6'>
+              <form onSubmit={handleRequestOtp} noValidate className='space-y-6'>
                 <div>
                   <label className='text-sm font-semibold text-gray-700 block mb-2'>
                     Email Address
@@ -167,15 +175,23 @@ const InstituteLogin = () => {
                       <Mail size={20} />
                     </div>
                     <input
-                      type='email'
+                      type='text'
+                      inputMode='email'
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
+                      onChange={(e) => {
+                        setEmailError('');
+                        setEmail(e.target.value);
+                      }}
                       autoFocus
-                      className='w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition-all outline-none shadow-sm'
+                      className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition-all outline-none shadow-sm ${
+                        emailError ? 'border-red-400' : 'border-gray-300'
+                      }`}
                       placeholder='you@institute.com'
                     />
                   </div>
+                  {emailError && (
+                    <p className='mt-1.5 text-xs text-red-500'>{emailError}</p>
+                  )}
                   <p className='mt-1.5 text-xs text-gray-400'>
                     Use your registered institute email address
                   </p>
@@ -194,7 +210,7 @@ const InstituteLogin = () => {
               </form>
             ) : (
               /* Step 2: OTP Entry */
-              <form onSubmit={handleVerifyOtp} className='space-y-6'>
+              <form onSubmit={handleVerifyOtp} noValidate className='space-y-6'>
                 {/* Show entered email with change option */}
                 <div className='bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 flex items-center justify-between'>
                   <div className='flex items-center space-x-2'>
@@ -234,14 +250,23 @@ const InstituteLogin = () => {
                     <input
                       type='text'
                       value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      required
+                      onChange={(e) => {
+                        setOtpError('');
+                        setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      }}
                       autoFocus
                       maxLength={6}
-                      className='w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition-all outline-none shadow-sm text-center text-2xl font-bold tracking-[0.6em]'
+                      className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition-all outline-none shadow-sm text-center text-2xl font-bold tracking-[0.6em] ${
+                        otpError ? 'border-red-400' : 'border-gray-300'
+                      }`}
                       placeholder='······'
                     />
                   </div>
+                  {otpError && (
+                    <p className='mt-1.5 text-xs text-red-500 text-center'>
+                      {otpError}
+                    </p>
+                  )}
                   <p className='mt-2 text-xs text-gray-400 text-center'>
                     OTP expires in 10 minutes. Check your registered contact email.
                   </p>

@@ -10,6 +10,7 @@ const RoleModal = ({ isOpen, onClose, onSave, role = null }) => {
     description: '',
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (role) {
@@ -25,12 +26,25 @@ const RoleModal = ({ isOpen, onClose, onSave, role = null }) => {
         description: '',
       });
     }
+    setErrors({});
   }, [role, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const nextErrors = {};
+    if (!role && !formData.name.trim()) {
+      nextErrors.name = 'Role system name is required';
+    }
+    if (!formData.display_name.trim()) {
+      nextErrors.display_name = 'Display name is required';
+    }
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     setLoading(true);
     try {
       await onSave(formData);
@@ -57,7 +71,7 @@ const RoleModal = ({ isOpen, onClose, onSave, role = null }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className='p-6 space-y-5'>
+        <form onSubmit={handleSubmit} noValidate className='p-6 space-y-5'>
           {!role && (
             <div className='space-y-2'>
               <label className='text-sm font-semibold text-gray-700'>
@@ -66,10 +80,17 @@ const RoleModal = ({ isOpen, onClose, onSave, role = null }) => {
               <Input
                 placeholder='e.g. HR_Manager'
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                className='h-11 rounded-xl'
+                onChange={(e) => {
+                  setErrors((prev) => ({ ...prev, name: '' }));
+                  setFormData({ ...formData, name: e.target.value });
+                }}
+                className={`h-11 rounded-xl ${
+                  errors.name ? 'border-red-400' : ''
+                }`}
               />
+              {errors.name && (
+                <p className='text-xs text-red-500'>{errors.name}</p>
+              )}
               <p className='text-[11px] text-gray-500'>
                 Unique identifier for the role. No spaces or special characters.
               </p>
@@ -83,12 +104,17 @@ const RoleModal = ({ isOpen, onClose, onSave, role = null }) => {
             <Input
               placeholder='e.g. HR Manager'
               value={formData.display_name}
-              onChange={(e) =>
-                setFormData({ ...formData, display_name: e.target.value })
-              }
-              required
-              className='h-11 rounded-xl'
+              onChange={(e) => {
+                setErrors((prev) => ({ ...prev, display_name: '' }));
+                setFormData({ ...formData, display_name: e.target.value });
+              }}
+              className={`h-11 rounded-xl ${
+                errors.display_name ? 'border-red-400' : ''
+              }`}
             />
+            {errors.display_name && (
+              <p className='text-xs text-red-500'>{errors.display_name}</p>
+            )}
           </div>
 
           <div className='space-y-2'>
