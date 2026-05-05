@@ -247,6 +247,12 @@ const DriveDetails = () => {
         tone: "text-lime-600",
         onClick: () => setActiveTab("medical"),
       },
+      {
+        label: "Documents",
+        value: stats?.document_count || 0,
+        tone: "text-indigo-600",
+        onClick: () => setActiveTab("documents"),
+      },
       // Phase 2: re-enable CTV Assigned and Onboarded progress cards.
       // {
       //   label: "CTV Assigned",
