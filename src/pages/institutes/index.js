@@ -150,25 +150,13 @@ const InstitutesManagement = () => {
     try {
       await api.delete(`/institutes/${id}`);
       toast.success('Institute deleted successfully');
-
-      // If deleting the last item on current page (and not on first page), go to previous page
-      if (institutes.length === 1 && pagination.current_page > 1) {
-        fetchInstitutes(
-          pagination.current_page - 1,
-          pagination.per_page,
-          sortConfig.sortBy,
-          sortConfig.sortOrder,
-          searchTerm,
-        );
-      } else {
-        fetchInstitutes(
-          pagination.current_page,
-          pagination.per_page,
-          sortConfig.sortBy,
-          sortConfig.sortOrder,
-          searchTerm,
-        );
-      }
+      fetchInstitutes(
+        pagination.current_page,
+        pagination.per_page,
+        sortConfig.sortBy,
+        sortConfig.sortOrder,
+        searchTerm,
+      );
     } catch (error) {
       console.error('Error deleting institute:', error);
       toast.error('Failed to delete institute');
@@ -178,21 +166,24 @@ const InstitutesManagement = () => {
   return (
     <div className='py-6'>
       {/* Header */}
-      <PageHeader
-        title="Institutes"
-        subtitle="Manage maritime training institutes and their details"
-        icon={School}
-      >
-        {/* <Permission module='institutes' action='view'>
-          <Button
-            variant='outline'
-            onClick={() => navigate('/institutes/submissions')}
-            className='gap-2'
-          >
-            <FileText size={20} />
-            View Submissions
-          </Button>
-        </Permission> */}
+      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 ml-2'>
+        <div>
+          <h1 className='text-2xl font-bold text-gray-800'>Institutes</h1>
+          <p className='text-gray-500 text-sm mt-1'>
+            Manage maritime training institutes and their details
+          </p>
+        </div>
+        <div className='flex gap-2'>
+          {/* <Permission module='institutes' action='view'>
+            <Button
+              variant='outline'
+              onClick={() => navigate('/institutes/submissions')}
+              className='gap-2'
+            >
+              <FileText size={20} />
+              View Submissions
+            </Button>
+          </Permission> */}
 
         {/* {selectedInstitutes.length === 0 && (
           <Button
