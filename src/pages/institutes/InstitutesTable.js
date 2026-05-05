@@ -272,7 +272,7 @@ const InstitutesTable = ({
                   {row.temp_expiry && (
                     <Permission module='institutes' action='edit'>
                       <Button
-                        variant='ghosy'
+                        variant='ghost'
                         size='icon'
                         onClick={() => handleExtendToken(row)}
                         className='p-2 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors'
@@ -284,7 +284,7 @@ const InstitutesTable = ({
                   )}
                   <Permission module='institutes' action='edit'>
                     <Button
-                      variant='ghosy'
+                      variant='ghost'
                       size='icon'
                       onClick={() => handleEdit(row)}
                       className='p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors'
@@ -295,7 +295,7 @@ const InstitutesTable = ({
                   </Permission>
                   <Permission module='institutes' action='delete'>
                     <Button
-                      variant='ghosy'
+                      variant='ghost'
                       size='icon'
                       onClick={() => setDeleteId(row.id)}
                       className='p-2 rounded-lg text-red-600 hover:bg-red-100 transition-colors'

@@ -136,7 +136,7 @@ function App() {
             />
 
             <Route
-              path='/institutes/addNewInstitue'
+              path='/institutes/addNewInstitute'
               element={
                 <ProtectedRoute>
                   <MainLayout>

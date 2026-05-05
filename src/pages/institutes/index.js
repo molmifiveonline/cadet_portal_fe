@@ -165,45 +165,15 @@ const InstitutesManagement = () => {
 
   return (
     <div className='py-6'>
-      {/* Header */}
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 ml-2'>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>Institutes</h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            Manage maritime training institutes and their details
-          </p>
-        </div>
-        <div className='flex gap-2'>
-          {/* <Permission module='institutes' action='view'>
-            <Button
-              variant='outline'
-              onClick={() => navigate('/institutes/submissions')}
-              className='gap-2'
-            >
-              <FileText size={20} />
-              View Submissions
-            </Button>
-          </Permission> */}
-
-        {/* {selectedInstitutes.length === 0 && (
-          <Button
-            variant='outline'
-            onClick={() => {
-              toast.error(
-                'Please select at least one institute to send an email',
-              );
-            }}
-            className='gap-2'
-          >
-            <Mail size={20} />
-            Send Email
-          </Button>
-        )} */}
-
+      <PageHeader
+        title="Institutes"
+        subtitle="Manage maritime training institutes and their details"
+        icon={School}
+      >
         <Permission module='institutes' action='create'>
           <Button
             variant='default'
-            onClick={() => navigate('/institutes/addNewInstitue')}
+            onClick={() => navigate('/institutes/addNewInstitute')}
           >
             <Plus size={20} />
             Add Institute
