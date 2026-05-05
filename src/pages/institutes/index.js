@@ -166,14 +166,14 @@ const InstitutesManagement = () => {
   return (
     <div className='py-6'>
       <PageHeader
-        title='Institutes'
-        subtitle='Manage maritime training institutes and their details'
+        title="Institutes"
+        subtitle="Manage maritime training institutes and their details"
         icon={School}
       >
         <Permission module='institutes' action='create'>
           <Button
             variant='default'
-            onClick={() => navigate('/institutes/addNewInstitue')}
+            onClick={() => navigate('/institutes/addNewInstitute')}
           >
             <Plus size={20} />
             Add Institute
