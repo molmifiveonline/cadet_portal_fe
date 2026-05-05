@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, Search, RotateCcw, Mail } from 'lucide-react';
+import { Edit, Trash2, Search, Mail } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import Permission from '../../components/common/Permission';
 import { Button } from '../../components/ui/button';
+import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const UsersTable = ({
   users,
@@ -17,7 +18,6 @@ const UsersTable = ({
   handlePerPageChange,
   handleSortChange,
   handleSearch,
-  handleRefresh,
   selectedUsers,
   onSelectionChange,
 }) => {
@@ -73,26 +73,36 @@ const UsersTable = ({
       headerName: 'Role',
       width: '150px',
       renderCell: ({ value }) => (
-        <span
-          className={`px-2.5 py-1 rounded-full text-xs font-semibold
-                    ${
-                      value === 'SuperAdmin'
-                        ? 'bg-purple-100 text-purple-700'
-                        : value === 'Institute'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-green-100 text-green-700'
-                    }`}
-        >
-          {value}
+        <span className='px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium'>
+          {value || 'Admin'}
         </span>
       ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: '130px',
+      sortable: false,
+      renderCell: ({ row }) => {
+        const isActive = row.status !== 'inactive';
+        return (
+          <span
+            className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
+              isActive
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-500'
+            }`}
+          >
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
+        );
+      },
     },
     {
       field: 'created_at',
       headerName: 'Joined Date',
       width: '150px',
-      renderCell: ({ value }) =>
-        value ? new Date(value).toLocaleDateString('en-GB') : '-',
+      renderCell: ({ value }) => formatDateForDisplay(value),
     },
     {
       field: 'actions',
@@ -106,22 +116,26 @@ const UsersTable = ({
       renderCell: ({ row }) => (
         <div className='flex items-center justify-end gap-2'>
           <Permission module='users' action='edit'>
-            <button
+            <Button
+              variant='ghosy'
+              size='icon'
               onClick={() => handleEdit(row)}
               className='p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors'
               title='Edit user'
             >
               <Edit size={16} />
-            </button>
+            </Button>
           </Permission>
           <Permission module='users' action='delete'>
-            <button
+            <Button
+              variant='ghosy'
+              size='icon'
               onClick={() => setDeleteUser(row)}
               className='p-2 rounded-lg text-red-600 hover:bg-red-100 transition-colors'
               title='Delete user'
             >
               <Trash2 size={16} />
-            </button>
+            </Button>
           </Permission>
         </div>
       ),
@@ -141,18 +155,6 @@ const UsersTable = ({
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
             />
-          </div>
-
-          <div className='flex gap-2'>
-            <Button
-              variant='outline'
-              onClick={handleRefresh}
-              className='flex items-center gap-2 h-10'
-              title='Refresh data'
-            >
-              <RotateCcw size={16} />
-              <span className='hidden sm:inline'>Refresh</span>
-            </Button>
           </div>
         </div>
       </div>

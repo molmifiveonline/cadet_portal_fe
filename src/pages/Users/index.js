@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { Plus } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import PageHeader from '../../components/common/PageHeader';
 import UsersTable from './UsersTable';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
@@ -131,13 +132,6 @@ const UserManagement = () => {
     }, 300);
   };
 
-  const handleRefresh = () => {
-    setSearchTerm('');
-    setSortConfig({ sortBy: '', sortOrder: '' });
-    fetchUsers(1, pagination.per_page, '', '', '');
-    toast.success('Data refreshed');
-  };
-
   const handleEditClick = (user) => {
     navigate(`/users/edit/${user.id}`);
   };
@@ -165,25 +159,21 @@ const UserManagement = () => {
   return (
     <div className='py-6'>
       {/* Header */}
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2 ml-2'>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>User Management</h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            Manage system users and their roles
-          </p>
-        </div>
-        <div className='flex gap-2'>
-          <Permission module='users' action='create'>
-            <Button
-              variant='default'
-              onClick={() => navigate('/users/addUser')}
-            >
-              <Plus size={20} className='mr-2' />
-              Add User
-            </Button>
-          </Permission>
-        </div>
-      </div>
+      <PageHeader
+        title="User Management"
+        subtitle="Manage system users and their roles"
+        icon={Users}
+      >
+        <Permission module='users' action='create'>
+          <Button
+            variant='default'
+            onClick={() => navigate('/users/addUser')}
+          >
+            <Plus size={20} className='mr-2' />
+            Add User
+          </Button>
+        </Permission>
+      </PageHeader>
 
       {selectedUsers.length > 0 && (
         <div className='mb-4 flex items-center gap-4 bg-blue-50 p-3 rounded-lg border border-blue-100 animate-in fade-in slide-in-from-top-2'>
@@ -216,7 +206,6 @@ const UserManagement = () => {
         handlePerPageChange={handleLimitChange}
         handleSortChange={handleSortChange}
         handleSearch={handleSearch}
-        handleRefresh={handleRefresh}
         selectedUsers={selectedUsers}
         onSelectionChange={setSelectedUsers}
       />

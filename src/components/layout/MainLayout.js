@@ -3,6 +3,7 @@ import { LayoutProvider, useLayout } from '../../context/LayoutContext';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { cn } from '../../lib/utils/utils';
+import TitleManager from '../common/TitleManager';
 
 const MainLayoutInner = ({ children }) => {
   const { isOpen } = useLayout();
@@ -25,20 +26,21 @@ const MainLayoutInner = ({ children }) => {
         }}
       />
 
+      <TitleManager />
       <Sidebar />
 
       <main
         className={cn(
-          'flex-1 flex flex-col transition-all duration-300 min-w-0 h-full overflow-y-auto relative',
-          isOpen ? 'md:pl-64' : 'md:pl-16',
+          'flex-1 flex flex-col transition-all duration-300 ease-in-out min-w-0 h-full overflow-y-auto relative',
+          isOpen ? 'md:pl-64' : 'md:pl-20',
           'pl-0',
         )}
       >
-        <div className='sticky top-0 z-30'>
+        <div className='sticky top-0 z-30 px-2 sm:px-0'>
           <Navbar />
         </div>
 
-        <div className='flex-1 p-4 md:p-8'>{children}</div>
+        <div className='flex-1 p-3 sm:p-6 md:p-8 w-full max-w-full overflow-x-hidden'>{children}</div>
       </main>
     </div>
   );

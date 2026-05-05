@@ -9,8 +9,17 @@ import {
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import * as xlsx from 'xlsx';
+import { useNavigate } from 'react-router-dom';
 import {
   isDateColumn,
   formatCellValue,
@@ -20,8 +29,15 @@ import {
 } from './submitExcelValidation';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
 
-const SubmitExcel = () => {
+const SubmitExcel = ({
+  isEmbedded = false,
+  driveContext = null,
+  onSuccess = null,
+  disabled = false,
+  disabledMessage = 'Cadet data upload is disabled for this drive.',
+}) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const instituteName = user?.first_name || 'Institute';
 
   const [file, setFile] = useState(null);
@@ -33,8 +49,39 @@ const SubmitExcel = () => {
   const [validationError, setValidationError] = useState('');
   const [cellErrors, setCellErrors] = useState({});
   const [errorCount, setErrorCount] = useState(0);
+  const [remarks, setRemarks] = useState('');
+  const [submittedDriveId, setSubmittedDriveId] = useState('');
+
+  // Admin specific state
+  const [institutes, setInstitutes] = useState([]);
+  const [selectedInstitute, setSelectedInstitute] = useState(driveContext?.instituteId || '');
+  const [selectedBatchYear, setSelectedBatchYear] = useState(driveContext?.batchYear || '');
+  const [selectedCourseType, setSelectedCourseType] = useState(driveContext?.courseType || '');
+
+  const isAdmin = user?.role === 'SuperAdmin';
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i);
+
+  React.useEffect(() => {
+    if (isAdmin) {
+      const fetchInstitutes = async () => {
+        try {
+          const response = await api.get('/institutes?limit=1000');
+          setInstitutes(response.data.data || []);
+        } catch (error) {
+          console.error('Error fetching institutes:', error);
+        }
+      };
+      fetchInstitutes();
+    }
+  }, [isAdmin]);
 
   const handleFileChange = (e) => {
+    if (disabled) {
+      toast.error(disabledMessage);
+      return;
+    }
+
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       const fileError = validateFileType(selectedFile);
@@ -176,6 +223,11 @@ const SubmitExcel = () => {
 
   const startSubmit = (e) => {
     e.preventDefault();
+    if (disabled) {
+      toast.error(disabledMessage);
+      return;
+    }
+
     if (!file) {
       toast.error('Please select a file');
       return;
@@ -188,23 +240,59 @@ const SubmitExcel = () => {
       toast.error('Please fix file errors before submitting');
       return;
     }
+    if (isAdmin && !selectedInstitute) {
+      toast.error('Please select an Institute');
+      return;
+    }
+    if (isAdmin && !selectedBatchYear) {
+      toast.error('Please select a Batch Year');
+      return;
+    }
+    if (isAdmin && !selectedCourseType) {
+      toast.error('Please select a Course Type');
+      return;
+    }
     setShowConfirm(true);
   };
 
   const confirmSubmit = async () => {
+    if (disabled) {
+      toast.error(disabledMessage);
+      setShowConfirm(false);
+      return;
+    }
+
     setShowConfirm(false);
     setLoading(true);
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
 
-      await api.post('/institutes/submit-excel', formData, {
+      if (driveContext) {
+        formData.append('batch_year', driveContext.batchYear);
+        formData.append('course_type', driveContext.courseType);
+        if (isAdmin) {
+          formData.append('instituteId', driveContext.instituteId);
+        }
+      } else if (isAdmin) {
+        formData.append('instituteId', selectedInstitute);
+        formData.append('batch_year', selectedBatchYear);
+        formData.append('course_type', selectedCourseType);
+      }
+
+      formData.append('file', file);
+      formData.append('remarks', remarks);
+
+      const response = await api.post('/institutes/submit-excel', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
+      setSubmittedDriveId(response.data?.drive_id || driveContext?.driveId || '');
       setSubmitted(true);
       toast.success('File submitted successfully');
+      if (onSuccess) {
+        onSuccess(response.data);
+      }
     } catch (error) {
       console.error('Error submitting file:', error);
       toast.error(
@@ -224,38 +312,160 @@ const SubmitExcel = () => {
           <div className='w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6'>
             <CheckCircle className='w-8 h-8 text-green-500' />
           </div>
-          <h1 className='text-2xl font-bold text-gray-900 mb-2'>
-            Submission Successful!
-          </h1>
-          <p className='text-gray-500 mb-6'>
-            Thank you, {instituteName}. Your Excel file has been successfully
-            uploaded and sent for processing.
+          {!isEmbedded && (
+            <PageHeader
+              title="Submission Successful!"
+              subtitle={`Thank you, ${instituteName}. Your Excel file has been successfully uploaded and sent for processing. The MOLMI team has been notified automatically.`}
+              icon={CheckCircle}
+              className="mb-6 shadow-none border-none bg-transparent backdrop-blur-none"
+            />
+          )}
+          {isEmbedded && (
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-slate-800">Submission Successful!</h3>
+              <p className="text-sm text-slate-600 mt-2">
+                Thank you. Your Excel file has been successfully uploaded and sent for processing.
+              </p>
+            </div>
+          )}
+          <div className='space-y-3'>
+            <p className='text-sm text-slate-600'>
+              Next step: upload cadet CVs in the drive document workspace so MOLMI can review them.
+            </p>
+            <div className='flex flex-col gap-3 sm:flex-row sm:justify-center'>
+              {!isEmbedded && submittedDriveId ? (
+                <Button
+                  onClick={() => navigate(`/drives/${submittedDriveId}`)}
+                  className='bg-[#3a5f9e] text-white hover:bg-[#325186]'
+                >
+                  Open Recruitment Drive
+                </Button>
+              ) : null}
+              {!isEmbedded ? (
+                <Button
+                  variant='outline'
+                  onClick={() => {
+                    setSubmitted(false);
+                    setSubmittedDriveId('');
+                    setRemarks('');
+                  }}
+                >
+                  Upload Another File
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (disabled) {
+    return (
+      <div className='mx-auto py-6'>
+        <PageHeader
+          title="Submit Cadet Data"
+          subtitle={
+            <span className='text-slate-600'>{disabledMessage}</span>
+          }
+          icon={Upload}
+        />
+
+        <div className='rounded-xl border border-slate-200 bg-slate-50 p-8 text-center'>
+          <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-200'>
+            <AlertCircle className='h-6 w-6 text-slate-600' />
+          </div>
+          <h3 className='text-lg font-bold text-slate-900'>
+            Upload unavailable
+          </h3>
+          <p className='mx-auto mt-2 max-w-lg text-sm text-slate-600'>
+            {disabledMessage}
           </p>
-          <Button
-            onClick={() => setSubmitted(false)}
-            className='bg-[#3a5f9e] hover:bg-[#325186] text-white'
-          >
-            Upload Another File
-          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className='max-w-6xl mx-auto py-8 px-4'>
-      <div className='mb-8'>
-        <h2 className='text-2xl font-bold text-slate-900'>Submit Cadet Data</h2>
-        <p className='mt-1 text-slate-600'>
-          Welcome,{' '}
-          <span className='font-medium text-blue-600'>{instituteName}</span>.
-          Please upload the requested Excel sheet containing cadet details.
-        </p>
-      </div>
+    <div className='mx-auto py-6'>
+      <PageHeader
+        title="Submit Cadet Data"
+        subtitle={
+          <>
+            Welcome, <span className='font-medium text-[#3a5f9e] capitalize'>{instituteName}</span>.
+            Please upload the requested Excel sheet containing cadet details.
+          </>
+        }
+        icon={Upload}
+      />
 
       <div className='bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden'>
         <div className='p-6 border-b border-gray-100 bg-slate-50'>
           <form onSubmit={startSubmit}>
+            {isAdmin && (
+              <div className='flex flex-col md:flex-row gap-4 mb-6'>
+                <div className='flex-1 space-y-2'>
+                  <label className='text-sm font-medium leading-none'>
+                    Select Institute <span className='text-red-500'>*</span>
+                  </label>
+                  <Select
+                    value={selectedInstitute}
+                    onValueChange={setSelectedInstitute}
+                  >
+                    <SelectTrigger className='bg-white'>
+                      <SelectValue placeholder='Choose an institute' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {institutes.map((inst) => (
+                        <SelectItem key={inst.id} value={inst.id.toString()}>
+                          {inst.institute_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className='flex-1 space-y-2'>
+                  <label className='text-sm font-medium leading-none'>
+                    Batch Year <span className='text-red-500'>*</span>
+                  </label>
+                  <Select
+                    value={selectedBatchYear}
+                    onValueChange={setSelectedBatchYear}
+                  >
+                    <SelectTrigger className='bg-white'>
+                      <SelectValue placeholder='Select year' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className='flex-1 space-y-2'>
+                  <label className='text-sm font-medium leading-none'>
+                    Course Type <span className='text-red-500'>*</span>
+                  </label>
+                  <Select
+                    value={selectedCourseType}
+                    onValueChange={setSelectedCourseType}
+                  >
+                    <SelectTrigger className='bg-white'>
+                      <SelectValue placeholder='Select course type' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='Deck'>Deck</SelectItem>
+                      <SelectItem value='Engine'>Engine</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
             <div className='border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-blue-500 hover:bg-blue-50/50 transition-all cursor-pointer relative group'>
               <input
                 type='file'
@@ -305,6 +515,19 @@ const SubmitExcel = () => {
                 <p className='text-sm'>{validationError}</p>
               </div>
             )}
+
+            <div className='mt-4 space-y-2'>
+              <label className='text-sm font-medium leading-none'>
+                Submission Remarks
+              </label>
+              <textarea
+                value={remarks}
+                onChange={(event) => setRemarks(event.target.value)}
+                rows={3}
+                className='w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500'
+                placeholder='Optional notes for MOLMI along with this submission'
+              />
+            </div>
 
             <div className='mt-6 flex justify-end gap-3'>
               {file && (
@@ -367,8 +590,8 @@ const SubmitExcel = () => {
                   </strong>{' '}
                   Cells highlighted in{' '}
                   <span className='text-red-600 font-semibold'>red</span>{' '}
-                  contain incorrect values (e.g., invalid date format). Please
-                  fix these in your Excel file and re-upload.
+                  contain incorrect values. Please fix these in your Excel file
+                  and re-upload.
                 </p>
               </div>
             )}
@@ -423,14 +646,14 @@ const SubmitExcel = () => {
                               }`}
                               title={
                                 hasError
-                                  ? `⚠ ${cellErrors[errorKey]}`
+                                  ? `Error: ${cellErrors[errorKey]}`
                                   : formatCellValue(row[header], header)
                               }
                             >
                               {hasError && (
                                 <AlertCircle
                                   className='w-3 h-3 inline-block mr-1 text-red-500'
-                                  title={`⚠ ${cellErrors[errorKey]}`}
+                                  title={`Error: ${cellErrors[errorKey]}`}
                                 />
                               )}
                               {formatCellValue(row[header], header)}

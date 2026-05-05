@@ -2,6 +2,8 @@ import React from 'react';
 import { Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLayout } from '../../context/LayoutContext';
+import { Button } from 'components/ui/button';
+import NotificationDropdown from '../common/NotificationDropdown';
 
 const Navbar = () => {
   const { toggleSidebar } = useLayout();
@@ -18,15 +20,17 @@ const Navbar = () => {
   return (
     <div className='flex justify-between items-center z-20 bg-white/30 backdrop-blur-xl border border-white/40 shadow-xl transition-all duration-300 py-2 px-3 mt-2 mx-2 rounded-xl md:py-3 md:px-4 md:mt-4 md:mx-4 md:rounded-3xl'>
       <div className='flex items-center gap-3'>
-        <button
+        <Button
+          variant='ghost'
           onClick={toggleSidebar}
           className='p-2 rounded-lg hover:bg-gray-100 transition-colors text-gray-600 active:bg-gray-200'
         >
           <Menu className='w-6 h-6' />
-        </button>
+        </Button>
       </div>
 
       <div className='flex items-center gap-2 sm:gap-4'>
+        <NotificationDropdown />
         <div className='flex items-center gap-3'>
           <div className='text-right hidden sm:block'>
             <p className='text-sm font-bold text-slate-700 leading-none mb-1 capitalize'>

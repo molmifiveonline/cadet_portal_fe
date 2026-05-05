@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, User, Mail, Shield, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, User, Mail, Lock } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import {
@@ -12,6 +12,13 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import api from '../../lib/utils/apiConfig';
+import PageHeader from '../../components/common/PageHeader';
+import {
+  EMAIL_VALIDATION_MESSAGE,
+  PASSWORD_LENGTH_MESSAGE,
+  getEmailValidationMessage,
+  isValidPasswordLength,
+} from '../../lib/utils/validationUtils';
 
 const UserForm = () => {
   const navigate = useNavigate();
@@ -20,6 +27,8 @@ const UserForm = () => {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [roles, setRoles] = useState([]);
+  const [formErrors, setFormErrors] = useState({});
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -27,14 +36,36 @@ const UserForm = () => {
     email: '',
     password: '',
     role: '',
+    status: 'active',
   });
 
   useEffect(() => {
+    fetchRoles();
     if (isEdit) {
       fetchUser();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, isEdit]);
+
+  const fetchRoles = async () => {
+    try {
+      const response = await api.get('/role-permissions/roles');
+      if (response.data.success) {
+        // Filter out Cadet and Institute roles for regular users
+        const filteredRoles = response.data.data.filter(
+          (role) => !['Cadet', 'Institute'].includes(role.name),
+        );
+        setRoles(filteredRoles);
+        // Set default role for new users if not set
+        if (!isEdit && !formData.role && filteredRoles.length > 0) {
+          setFormData((prev) => ({ ...prev, role: filteredRoles[0].name }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      toast.error('Failed to load roles');
+    }
+  };
 
   const fetchUser = async () => {
     setFetching(true);
@@ -46,8 +77,9 @@ const UserForm = () => {
         first_name: user.first_name || '',
         last_name: user.last_name || '',
         email: user.email || '',
-        password: '', // Leave blank for edit
+        password: '',
         role: user.role || '',
+        status: user.status || 'active',
       });
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -60,24 +92,52 @@ const UserForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    setFormErrors((prev) => ({ ...prev, [name]: '' }));
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleRoleChange = (val) => {
-    setFormData((prev) => ({ ...prev, role: val }));
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!formData.first_name.trim()) {
+      nextErrors.first_name = 'First name is required';
+    }
+
+    if (!formData.last_name.trim()) {
+      nextErrors.last_name = 'Last name is required';
+    }
+
+    if (!formData.email.trim()) {
+      nextErrors.email = 'Email address is required';
+    } else {
+      const emailMessage = getEmailValidationMessage(formData.email);
+      if (emailMessage) {
+        nextErrors.email = EMAIL_VALIDATION_MESSAGE;
+      }
+    }
+
+    if (!formData.role) {
+      nextErrors.role = 'Role is required';
+    }
+
+    const shouldValidatePassword = !isEdit || formData.password.trim() !== '';
+    if (!isEdit && !formData.password) {
+      nextErrors.password = 'Password is required';
+    } else if (
+      shouldValidatePassword &&
+      !isValidPasswordLength(formData.password)
+    ) {
+      nextErrors.password = PASSWORD_LENGTH_MESSAGE;
+    }
+
+    setFormErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.first_name ||
-      !formData.last_name ||
-      !formData.email ||
-      !formData.role ||
-      (!isEdit && !formData.password)
-    ) {
-      toast.error('Please fill in all required fields');
+    if (!validateForm()) {
       return;
     }
 
@@ -88,6 +148,7 @@ const UserForm = () => {
           first_name: formData.first_name,
           last_name: formData.last_name,
           email: formData.email,
+          status: formData.status,
           role: formData.role,
         };
 
@@ -124,27 +185,22 @@ const UserForm = () => {
 
   return (
     <div className='py-6'>
-      <div className='flex items-center gap-4 mb-6'>
-        <button
-          onClick={() => navigate('/users')}
-          className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
-        >
-          <ArrowLeft size={24} />
-        </button>
-        <div>
-          <h1 className='text-2xl font-bold text-gray-800'>
-            {isEdit ? 'Edit User' : 'Add New User'}
-          </h1>
-          <p className='text-gray-500 text-sm mt-1'>
-            {isEdit
-              ? 'Update user details and permissions'
-              : 'Create a new user account in the system'}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={isEdit ? 'Edit User' : 'Add New User'}
+        subtitle={isEdit ? 'Update user details' : 'Create a new user account in the system'}
+        icon={User}
+        backButton={
+          <button
+            onClick={() => navigate('/users')}
+            className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
+          >
+            <ArrowLeft size={24} />
+          </button>
+        }
+      />
 
-      <div className='bg-white rounded-2xl shadow-sm border border-gray-100 p-8'>
-        <form onSubmit={handleSubmit} className='space-y-6'>
+      <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
+        <form onSubmit={handleSubmit} noValidate className='space-y-6'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
@@ -158,10 +214,16 @@ const UserForm = () => {
                   placeholder='John'
                   value={formData.first_name}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.first_name ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.first_name && (
+                <p className='text-xs text-red-500 mt-1'>
+                  {formErrors.first_name}
+                </p>
+              )}
             </div>
 
             <div className='space-y-2'>
@@ -176,10 +238,16 @@ const UserForm = () => {
                   placeholder='Doe'
                   value={formData.last_name}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.last_name ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.last_name && (
+                <p className='text-xs text-red-500 mt-1'>
+                  {formErrors.last_name}
+                </p>
+              )}
             </div>
 
             <div className='space-y-2'>
@@ -190,33 +258,19 @@ const UserForm = () => {
                 <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                 <Input
                   name='email'
-                  type='email'
+                  type='text'
+                  inputMode='email'
                   placeholder='user@example.com'
                   value={formData.email}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.email ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Role <span className='text-red-500 ml-1'>*</span>
-              </label>
-              <div className='relative'>
-                <Shield className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10' />
-                <Select onValueChange={handleRoleChange} value={formData.role}>
-                  <SelectTrigger className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
-                    <SelectValue placeholder='Select a role' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='SuperAdmin'>SuperAdmin</SelectItem>
-                    <SelectItem value='Institute'>Institute</SelectItem>
-                    <SelectItem value='Cadet'>Cadet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {formErrors.email && (
+                <p className='text-xs text-red-500 mt-1'>{formErrors.email}</p>
+              )}
             </div>
 
             <div className='space-y-2'>
@@ -229,22 +283,59 @@ const UserForm = () => {
                 <Input
                   name='password'
                   type='password'
-                  placeholder='••••••••'
+                  placeholder='Enter password'
                   value={formData.password}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required={!isEdit}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                    formErrors.password ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
               </div>
+              {formErrors.password && (
+                <p className='text-xs text-red-500 mt-1'>
+                  {formErrors.password}
+                </p>
+              )}
               {isEdit && (
                 <p className='text-xs text-slate-500 mt-1'>
                   Only enter a password if you want to change it.
                 </p>
               )}
             </div>
+
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Role <span className='text-red-500 ml-1'>*</span>
+              </label>
+              <Select
+                onValueChange={(val) =>
+                  {
+                    setFormErrors((prev) => ({ ...prev, role: '' }));
+                    setFormData((prev) => ({ ...prev, role: val }));
+                  }
+                }
+                value={formData.role}
+              >
+                <SelectTrigger className={`w-full px-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
+                  formErrors.role ? 'border-red-400' : 'border-gray-300'
+                }`}>
+                  <SelectValue placeholder='Select role' />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.name}>
+                      {role.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formErrors.role && (
+                <p className='text-xs text-red-500 mt-1'>{formErrors.role}</p>
+              )}
+            </div>
           </div>
 
-          <div className='pt-6 flex justify-end gap-3 border-t border-gray-100 mt-8'>
+          <div className='pt-6 flex justify-end gap-3 border-t border-gray-200 mt-8'>
             <button
               type='button'
               onClick={() => navigate('/users')}

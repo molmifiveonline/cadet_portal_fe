@@ -9,11 +9,12 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import { PermissionProvider } from './context/PermissionContext';
 import Login from './pages/auth/Login';
+import InstituteLogin from './pages/auth/InstituteLogin';
 import Dashboard from './pages/Dashboard';
 import CadetManagement from './pages/CadetManagement';
 import CadetDetails from './pages/CadetManagement/CadetDetails';
+import CadetPendingDetails from './pages/CadetManagement/CadetPendingDetails';
 import AddCadetForm from './pages/CadetManagement/AddCadetForm';
-import AddCadetBasicForm from './pages/CadetManagement/AddCadetBasicForm';
 import ShortlistedCadetsView from './pages/CadetManagement/ShortlistedCadetsView';
 import MainLayout from './components/layout/MainLayout';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -23,13 +24,29 @@ import UserForm from './pages/Users/UserForm';
 import InstitutesManagement from 'pages/institutes';
 import InstituteForm from 'pages/institutes/InstituteForm';
 import SubmitExcel from 'pages/institutes/SubmitExcel';
+import InstituteShortlistedCadets from 'pages/institutes/InstituteShortlistedCadets';
 import InstituteSubmissions from 'pages/institutes/InstituteSubmissions';
 import RolePermissions from './pages/RolePermissions';
-import CVForm from './pages/CVForm';
+import VesselList from './pages/vessels';
+import VesselForm from './pages/vessels/VesselForm';
+import MedicalCenterList from './pages/medical-centers';
+import MedicalCenterForm from './pages/medical-centers/MedicalCenterForm';
+import AssessmentForm from './pages/Assessments/AssessmentForm';
+import AssessmentManagement from './pages/Assessments';
+import InterviewForm from './pages/Assessments/InterviewForm';
+import MedicalResultForm from './pages/Assessments/MedicalResultForm';
+import InterviewManagement from './pages/Assessments/InterviewManagement';
+import MedicalManagement from './pages/Assessments/MedicalManagement';
+import RecruitmentDrives from './pages/RecruitmentDrives';
+import DriveForm from './pages/RecruitmentDrives/DriveForm';
+import DriveDetails from './pages/RecruitmentDrives/DriveDetails';
+import NotificationHistory from './pages/Notifications/NotificationHistory';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
-import { PublicRoute } from 'components/common/PublicRoute';
+import { PublicRoute } from './components/common/PublicRoute';
+import HomeRedirect from './components/common/HomeRedirect';
+import { getLoginRedirectPath } from './lib/utils/routeUtils';
 
 function App() {
   return (
@@ -48,8 +65,15 @@ function App() {
                 </PublicRoute>
               }
             />
-            <Route path='/' element={<Navigate to='/login' replace />} />
-            <Route path='/cv-form/:token' element={<CVForm />} />
+            <Route
+              path='/institute-login'
+              element={
+                <PublicRoute>
+                  <InstituteLogin />
+                </PublicRoute>
+              }
+            />
+            <Route path='/' element={<HomeRedirect />} />
 
             {/* Protected Routes with Layout */}
             <Route
@@ -66,13 +90,33 @@ function App() {
             />
 
             <Route
+              path='/notifications'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <NotificationHistory />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path='/institute/submit-excel'
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <PermissionRoute module='submit-excel' action='view'>
-                      <SubmitExcel />
-                    </PermissionRoute>
+                    <SubmitExcel />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/institute/shortlisted-cadets'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <InstituteShortlistedCadets />
                   </MainLayout>
                 </ProtectedRoute>
               }
@@ -124,6 +168,58 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='institutes' action='edit'>
                       <InstituteForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='view'>
+                      <RecruitmentDrives />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives/new'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='create'>
+                      <DriveForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='edit'>
+                      <DriveForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='view'>
+                      <DriveDetails />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
@@ -183,12 +279,12 @@ function App() {
             />
 
             <Route
-              path='/cadets/add-basic'
+              path='/cadets/view/:id'
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <PermissionRoute module='cadets' action='create'>
-                      <AddCadetBasicForm />
+                    <PermissionRoute module='cadets' action='view'>
+                      <CadetDetails />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
@@ -196,12 +292,88 @@ function App() {
             />
 
             <Route
-              path='/cadets/view/:id'
+              path='/cadets/fill-details/:id'
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <PermissionRoute module='cadets' action='view'>
-                      <CadetDetails />
+                    <CadetPendingDetails />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/assessments'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='tests' action='view'>
+                      <AssessmentManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/assess/:cadet_id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='edit'>
+                      <AssessmentForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/interview/:cadet_id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='edit'>
+                      <InterviewForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/interviews'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='tests' action='view'>
+                      <InterviewManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical' action='view'>
+                      <MedicalManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/medical/:cadet_id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='edit'>
+                      <MedicalResultForm />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
@@ -273,8 +445,91 @@ function App() {
               }
             />
 
-            {/* Catch all - redirect to login */}
-            <Route path='*' element={<Navigate to='/login' replace />} />
+            {/* Vessel Master Routes */}
+            <Route
+              path='/vessels'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='view'>
+                      <VesselList />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/vessels/add'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='create'>
+                      <VesselForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/vessels/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='edit'>
+                      <VesselForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Medical Center Master Routes */}
+            <Route
+              path='/medical-centers'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='view'>
+                      <MedicalCenterList />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-centers/add'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='create'>
+                      <MedicalCenterForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-centers/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='edit'>
+                      <MedicalCenterForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Catch all - redirect to login based on context */}
+            <Route
+              path='*'
+              element={<Navigate to={getLoginRedirectPath(window.location.pathname)} replace />}
+            />
           </Routes>
         </Router>
       </PermissionProvider>

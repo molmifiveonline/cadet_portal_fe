@@ -1,15 +1,35 @@
 import React from 'react';
-import { Users, Loader2 } from 'lucide-react';
+import { Users, Loader2, Plus, Edit2, Trash2 } from 'lucide-react';
+import Permission from '../../components/common/Permission';
 
-const RoleSelector = ({ roles, selectedRole, onRoleSelect, loading }) => {
+const RoleSelector = ({
+  roles,
+  selectedRole,
+  onRoleSelect,
+  onAddRole,
+  onEditRole,
+  onDeleteRole,
+  loading,
+}) => {
   return (
     <div className='bg-white rounded-[24px] border border-[#E2E8F0] shadow-sm overflow-hidden flex flex-col h-full'>
       {/* Header */}
-      <div className='px-6 py-5 flex items-center gap-3'>
-        <Users className='w-5 h-5 text-[#64748B]' />
-        <h2 className='text-[14px] font-bold text-[#64748B] uppercase tracking-[0.05em]'>
-          Roles
-        </h2>
+      <div className='px-6 py-5 flex items-center justify-between gap-3'>
+        <div className='flex items-center gap-3'>
+          <Users className='w-5 h-5 text-[#64748B]' />
+          <h2 className='text-[14px] font-bold text-[#64748B] uppercase tracking-[0.05em]'>
+            Roles
+          </h2>
+        </div>
+        <Permission module='role-permissions' action='manage'>
+          <button
+            onClick={onAddRole}
+            className='p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors'
+            title='Add New Role'
+          >
+            <Plus size={18} />
+          </button>
+        </Permission>
       </div>
 
       {/* Role List */}
@@ -34,14 +54,38 @@ const RoleSelector = ({ roles, selectedRole, onRoleSelect, loading }) => {
                     : 'bg-white border-transparent hover:bg-[#F8FAFC]'
                 }`}
               >
-                <div
-                  className={`text-[15px] font-semibold transition-colors ${
-                    selectedRole?.id === role.id
-                      ? 'text-[#3a5f9e]'
-                      : 'text-[#64748B] group-hover:text-[#1E293B]'
-                  }`}
-                >
-                  {role.display_name}
+                <div className='flex items-center justify-between gap-2'>
+                  <div
+                    className={`text-[15px] font-semibold transition-colors truncate ${
+                      selectedRole?.id === role.id
+                        ? 'text-[#3a5f9e]'
+                        : 'text-[#64748B] group-hover:text-[#1E293B]'
+                    }`}
+                  >
+                    {role.display_name}
+                  </div>
+                  {!role.is_system_role && (
+                    <div className='flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity'>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditRole(role);
+                        }}
+                        className='p-1 hover:text-blue-600 text-gray-400 transition-colors'
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteRole(role);
+                        }}
+                        className='p-1 hover:text-red-600 text-gray-400 transition-colors'
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </button>
             ))}

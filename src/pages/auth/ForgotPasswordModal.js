@@ -4,6 +4,10 @@ import { X, Mail, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../lib/utils/apiConfig';
 import { useNavigate } from 'react-router-dom';
+import {
+  EMAIL_VALIDATION_MESSAGE,
+  getEmailValidationMessage,
+} from '../../lib/utils/validationUtils';
 
 const ForgotPasswordModal = ({ isOpen, onClose }) => {
   const {
@@ -67,7 +71,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
 
         {/* Body */}
         <div className='p-6'>
-          <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className='space-y-6'>
             <div className='space-y-2'>
               <label className='text-sm font-semibold text-gray-700 block'>
                 Email Address
@@ -77,13 +81,13 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
                   <Mail size={20} />
                 </div>
                 <input
-                  type='email'
+                  type='text'
+                  inputMode='email'
                   {...register('email', {
                     required: 'Email is required',
-                    pattern: {
-                      value: /^\S+@\S+$/i,
-                      message: 'Invalid email address',
-                    },
+                    validate: (value) =>
+                      getEmailValidationMessage(value) ||
+                      true,
                   })}
                   className='w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-sm'
                   placeholder='name@company.com'
@@ -91,7 +95,9 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
               </div>
               {errors.email && (
                 <span className='text-red-500 text-xs ml-1'>
-                  {errors.email.message}
+                  {errors.email.message === true
+                    ? EMAIL_VALIDATION_MESSAGE
+                    : errors.email.message}
                 </span>
               )}
             </div>

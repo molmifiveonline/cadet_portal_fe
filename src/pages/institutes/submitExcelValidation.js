@@ -1,5 +1,19 @@
+import { getPhoneValidationMessage } from '../../lib/utils/validationUtils';
+
 // Date column keywords (case-insensitive match) for validation
 const DATE_COLUMN_KEYWORDS = ['date of birth', 'dob', 'birth date'];
+const PHONE_COLUMN_KEYWORDS = ['mobile', 'phone', 'whatsapp', 'contact'];
+
+const getPhoneFieldName = (header = '') => {
+  const lower = String(header).toLowerCase();
+  const matchedKeyword = PHONE_COLUMN_KEYWORDS.find((keyword) =>
+    lower.includes(keyword),
+  );
+
+  if (!matchedKeyword) return '';
+  if (matchedKeyword === 'whatsapp') return 'WhatsApp';
+  return matchedKeyword.charAt(0).toUpperCase() + matchedKeyword.slice(1);
+};
 
 // Standard column keywords to identify header row
 export const HEADER_KEYWORDS = [
@@ -50,14 +64,16 @@ export const isDateColumn = (header) => {
   return DATE_COLUMN_KEYWORDS.some((kw) => lower === kw || lower.includes(kw));
 };
 
-// Check if a value is a valid date in dd-mm-yyyy format (dashes only)
+export const isPhoneColumn = (header) => !!getPhoneFieldName(header);
+
+// Check if a value is a valid day-first date in dd-mm-yyyy or dd/mm/yyyy format.
 export const isValidDate = (value) => {
   if (!value) return false;
   const str = String(value).trim();
-  const match = str.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  const match = str.match(/^(\d{1,2})([-/])(\d{1,2})\2(\d{4})$/);
   if (!match) return false;
   const day = parseInt(match[1], 10);
-  const month = parseInt(match[2], 10);
+  const month = parseInt(match[3], 10);
   if (month < 1 || month > 12 || day < 1 || day > 31) return false;
   return true;
 };
@@ -97,7 +113,7 @@ export const validateExcelData = (rows, headers) => {
       const value = row[header];
 
       if (isDateColumn(header)) {
-        // Allow empty dates, but if present must be dd-mm-yyyy
+        // Allow empty dates, but if present must be day-first.
         if (
           value !== undefined &&
           value !== null &&
@@ -105,7 +121,7 @@ export const validateExcelData = (rows, headers) => {
           !isValidDate(value)
         ) {
           const key = `${rowIdx}-${header}`;
-          errors[key] = `Invalid format. Must be dd-mm-yyyy (e.g., 24-04-2005)`;
+          errors[key] = `Invalid format. Must be DD-MM-YYYY or DD/MM/YYYY (e.g., 24-04-2005)`;
           errorCount++;
         }
       }
@@ -119,6 +135,18 @@ export const validateExcelData = (rows, headers) => {
         ) {
           const key = `${rowIdx}-${header}`;
           errors[key] = `Please enter marks without '%' sign`;
+          errorCount++;
+        }
+      }
+
+      if (isPhoneColumn(header)) {
+        const message = getPhoneValidationMessage(
+          value,
+          getPhoneFieldName(header),
+        );
+        if (message) {
+          const key = `${rowIdx}-${header}`;
+          errors[key] = message;
           errorCount++;
         }
       }

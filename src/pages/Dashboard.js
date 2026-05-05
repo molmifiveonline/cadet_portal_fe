@@ -1,299 +1,663 @@
-import React from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Users,
   GraduationCap,
-  BookOpen,
-  Search,
-  Filter,
-  MoreVertical,
-  AlertCircle,
+  FileText,
+  Ship,
+  UserCheck,
+  AlertTriangle,
+  Clock,
   CheckCircle,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { cn } from '../lib/utils/utils';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select';
+  XCircle,
+  Loader2,
+  BarChart3,
+  ClipboardList,
+  Anchor,
+  Bell,
+} from "lucide-react";
+import { cn } from "../lib/utils/utils";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from '../components/ui/card';
+} from "../components/ui/card";
+import api from "../lib/utils/apiConfig";
+import { formatDateForDisplay } from "../lib/utils/dateUtils";
 
-const StatsCard = ({ title, value, icon: Icon, gradient }) => {
-  return (
+// ─── Stage label + color mapping ────────────────────────────────────────────
+const STAGE_CONFIG = {
+  imported: {
+    label: "Imported",
+    color: "from-slate-400 to-slate-500",
+    bg: "bg-slate-50",
+    text: "text-slate-700",
+  },
+  cv_pending: {
+    label: "CV Pending",
+    color: "from-amber-400 to-amber-500",
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+  },
+  cv_submitted: {
+    label: "CV Submitted",
+    color: "from-yellow-400 to-yellow-500",
+    bg: "bg-yellow-50",
+    text: "text-yellow-700",
+  },
+  initial_screening: {
+    label: "Initial Screening",
+    color: "from-orange-400 to-orange-500",
+    bg: "bg-orange-50",
+    text: "text-orange-700",
+  },
+  test_scheduled: {
+    label: "Test Scheduled",
+    color: "from-cyan-400 to-cyan-500",
+    bg: "bg-cyan-50",
+    text: "text-cyan-700",
+  },
+  test_completed: {
+    label: "Test Completed",
+    color: "from-sky-400 to-sky-500",
+    bg: "bg-sky-50",
+    text: "text-sky-700",
+  },
+  interview_scheduled: {
+    label: "Interview Scheduled",
+    color: "from-blue-400 to-blue-500",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+  },
+  interview_completed: {
+    label: "Interview Completed",
+    color: "from-indigo-400 to-indigo-500",
+    bg: "bg-indigo-50",
+    text: "text-indigo-700",
+  },
+  final_evaluation: {
+    label: "Final Evaluation",
+    color: "from-violet-400 to-violet-500",
+    bg: "bg-violet-50",
+    text: "text-violet-700",
+  },
+  medical_scheduled: {
+    label: "Medical Scheduled",
+    color: "from-pink-400 to-pink-500",
+    bg: "bg-pink-50",
+    text: "text-pink-700",
+  },
+  medical_completed: {
+    label: "Medical Completed",
+    color: "from-green-400 to-green-500",
+    bg: "bg-green-50",
+    text: "text-green-700",
+  },
+  selected: {
+    label: "Selected",
+    color: "from-emerald-400 to-emerald-500",
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+  },
+  standby: {
+    label: "Standby",
+    color: "from-teal-400 to-teal-500",
+    bg: "bg-teal-50",
+    text: "text-teal-700",
+  },
+  rejected: {
+    label: "Rejected",
+    color: "from-red-400 to-red-500",
+    bg: "bg-red-50",
+    text: "text-red-700",
+  },
+  joined: {
+    label: "Joined",
+    color: "from-green-500 to-green-600",
+    bg: "bg-green-50",
+    text: "text-green-700",
+  },
+  interview_failed: {
+    label: "Interview Failed",
+    color: "from-red-500 to-red-600",
+    bg: "bg-red-50",
+    text: "text-red-700",
+  },
+  Assessment: {
+    label: "Assessment",
+    color: "from-blue-400 to-blue-500",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+  },
+};
+
+const getStageInfo = (stage) => {
+  if (!stage)
+    return {
+      label: "Unknown",
+      color: "from-slate-400 to-slate-500",
+      bg: "bg-slate-50",
+      text: "text-slate-700",
+    };
+
+  if (STAGE_CONFIG[stage]) return STAGE_CONFIG[stage];
+
+  // Try normalized string format (e.g., "CV Submitted" -> "cv_submitted")
+  const normalizedStage = stage.toLowerCase().replace(/\s+/g, "_");
+  if (STAGE_CONFIG[normalizedStage]) return STAGE_CONFIG[normalizedStage];
+
+  // Try match by label case-insensitive
+  const matchByLabel = Object.values(STAGE_CONFIG).find(
+    (config) => config.label.toLowerCase() === stage.toLowerCase(),
+  );
+  if (matchByLabel) return matchByLabel;
+
+  // Vibrant beautiful fallback instead of plain gray
+  return {
+    label: stage,
+    color: "from-indigo-400 to-purple-500",
+    bg: "bg-indigo-50",
+    text: "text-indigo-700",
+  };
+};
+
+// ─── Stats Card ─────────────────────────────────────────────────────────────
+const StatsCard = ({ title, value, icon: Icon, gradient, subtitle }) => (
+  <div
+    className={cn(
+      "relative overflow-hidden rounded-3xl p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-white/40 shadow-lg",
+      "bg-white/60 backdrop-blur-2xl",
+    )}
+  >
     <div
-      className={cn(
-        'relative overflow-hidden rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-white/40 shadow-lg',
-        'bg-white/60 backdrop-blur-2xl',
-      )}
-    >
+      className={`absolute right-0 top-0 w-24 h-24 sm:w-32 sm:h-32 opacity-20 rounded-bl-full bg-gradient-to-br ${gradient} -mr-6 -mt-6 sm:-mr-8 sm:-mt-8`}
+    />
+    <div className="relative z-10">
       <div
-        className={`absolute right-0 top-0 w-32 h-32 opacity-20 rounded-bl-full bg-gradient-to-br ${gradient} -mr-8 -mt-8`}
-      />
-
-      <div className='flex justify-between items-start relative z-10'>
-        <div
-          className={cn(
-            'p-3 rounded-2xl bg-gradient-to-br text-white shadow-lg shadow-black/5',
-            gradient,
-          )}
-        >
-          <Icon className='w-6 h-6' />
-        </div>
-      </div>
-
-      <div className='mt-4 relative z-10'>
-        <h3 className='text-4xl font-bold text-slate-800 tracking-tight'>
-          {value}
-        </h3>
-        <p className='text-sm font-semibold text-slate-500 mt-1'>{title}</p>
+        className={cn(
+          "inline-flex p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br text-white shadow-lg shadow-black/5",
+          gradient,
+        )}
+      >
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
       </div>
     </div>
-  );
-};
+    <div className="absolute inset-x-4 sm:inset-x-6 bottom-4 sm:bottom-6 z-10 flex items-end justify-between gap-2 sm:gap-4">
+      <div className="min-w-0">
+        <p className="text-[11px] sm:text-sm font-semibold text-slate-500 truncate">{title}</p>
+        {subtitle && (
+          <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>
+        )}
+      </div>
+      <h3 className="text-2xl sm:text-4xl font-bold text-slate-800 tracking-tight text-right leading-none">
+        {value}
+      </h3>
+    </div>
+  </div>
+);
 
-const FilterSection = () => {
-  const handleSearch = () => {
-    toast.info('Searching for records...');
-    // Add your search logic here
-  };
-
-  return (
-    <Card className='rounded-3xl border-white/40 bg-white/60 backdrop-blur-2xl shadow-lg mb-8 overflow-visible z-10'>
-      <CardHeader className='pb-4 border-b border-slate-100/50'>
-        <div className='flex items-center gap-2'>
-          <div className='p-2 bg-blue-50/80 text-blue-600 rounded-lg backdrop-blur-sm'>
-            <Filter className='w-4 h-4' />
+// ─── Section Wrapper ────────────────────────────────────────────────────────
+const Section = ({ title, icon: Icon, iconBg, children, badge }) => (
+  <Card className="rounded-3xl border-white/40 bg-white/60 backdrop-blur-2xl shadow-lg overflow-hidden">
+    <CardHeader className="pb-4 border-b border-slate-100/50">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={cn("p-2 rounded-lg backdrop-blur-sm", iconBg)}>
+            <Icon className="w-4 h-4" />
           </div>
-          <CardTitle className='text-lg font-bold text-slate-800'>
-            Filters
+          <CardTitle className="text-lg font-bold text-slate-800">
+            {title}
           </CardTitle>
         </div>
-      </CardHeader>
-      <CardContent className='p-6'>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end'>
-          <div className='space-y-2'>
-            <label className='text-xs font-semibold text-slate-500 uppercase tracking-wider'>
-              Institute
-            </label>
-            <Select>
-              <SelectTrigger className='bg-white/80 border-slate-200/60 focus:ring-blue-500/20'>
-                <SelectValue placeholder='Select Institute' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='t1'>Institute A</SelectItem>
-                <SelectItem value='t2'>Institute B</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        {badge !== undefined && (
+          <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
+            {badge}
+          </span>
+        )}
+      </div>
+    </CardHeader>
+    <CardContent className="p-0">{children}</CardContent>
+  </Card>
+);
 
-          <div className='space-y-2'>
-            <label className='text-xs font-semibold text-slate-500 uppercase tracking-wider'>
-              Master Course
-            </label>
-            <Select>
-              <SelectTrigger className='bg-white/80 border-slate-200/60 focus:ring-blue-500/20'>
-                <SelectValue placeholder='Select Course' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='c1'>Course A</SelectItem>
-                <SelectItem value='c2'>Course B</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+// ─── Empty State ────────────────────────────────────────────────────────────
+const EmptyState = ({ message, icon: Icon = CheckCircle }) => (
+  <div className="px-6 py-12 text-center">
+    <div className="flex flex-col items-center justify-center text-slate-400 gap-2">
+      <div className="p-3 bg-slate-50 rounded-full">
+        <Icon className="w-6 h-6 text-slate-300" />
+      </div>
+      <p className="font-medium">{message}</p>
+    </div>
+  </div>
+);
 
-          <div className='space-y-2'>
-            <label className='text-xs font-semibold text-slate-500 uppercase tracking-wider'>
-              Start Month
-            </label>
-            <div className='relative'>
-              <input
-                type='date'
-                className='w-full h-10 px-3 py-2 bg-white/80 border border-slate-200/60 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm'
-              />
-            </div>
-          </div>
+// ─── Table Wrapper ──────────────────────────────────────────────────────────
+const TableHeader = ({ columns }) => (
+  <thead>
+    <tr className="bg-slate-50/50 border-b border-slate-200">
+      {columns.map((col, i) => (
+        <th
+          key={i}
+          className={cn(
+            "px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider",
+            col.center && "text-center",
+          )}
+        >
+          {col.label}
+        </th>
+      ))}
+    </tr>
+  </thead>
+);
 
-          <div className='space-y-2'>
-            <label className='text-xs font-semibold text-slate-500 uppercase tracking-wider'>
-              End Month
-            </label>
-            <div className='relative'>
-              <input
-                type='date'
-                className='w-full h-10 px-3 py-2 bg-white/80 border border-slate-200/60 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm'
-              />
-            </div>
-          </div>
-
-          <div className='space-y-2'>
-            <label className='text-xs font-semibold text-slate-500 uppercase tracking-wider'>
-              Status
-            </label>
-            <Select>
-              <SelectTrigger className='bg-white/80 border-slate-200/60 focus:ring-blue-500/20'>
-                <SelectValue placeholder='All Status' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='active'>Active</SelectItem>
-                <SelectItem value='inactive'>Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className='mt-6 flex justify-end'>
-          <button
-            onClick={handleSearch}
-            className='bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-8 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-blue-600/30 flex items-center gap-2 active:scale-95 transform hover:-translate-y-0.5'
-          >
-            <Search className='w-4 h-4' />
-            Search Records
-          </button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
+// ─── Main Dashboard ─────────────────────────────────────────────────────────
 const Dashboard = () => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/dashboard/stats");
+        setStats(response.data.data);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+        setError("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+          <p className="text-slate-500 font-medium">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-3 text-red-500">
+          <XCircle className="w-8 h-8" />
+          <p className="font-medium">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const maxStageCount = Math.max(
+    ...(stats?.stageWiseCounts || []).map((s) => s.count),
+    1,
+  );
+
   return (
     <>
-      {/* Stats Grid */}
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-8'>
+      {/* ── Stats Cards ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <StatsCard
-          title='Total Cadets'
-          value='3,519'
-          icon={Users}
-          gradient='from-blue-500 to-indigo-600'
-        />
-        <StatsCard
-          title='Total Institutes'
-          value='22'
+          title="Total Institutes"
+          value={(stats?.totalInstitutes ?? 0).toLocaleString()}
           icon={GraduationCap}
-          gradient='from-violet-500 to-purple-600'
+          gradient="from-violet-500 to-purple-600"
         />
         <StatsCard
-          title='Total Active Courses'
-          value='211'
-          icon={BookOpen}
-          gradient='from-emerald-500 to-teal-600'
+          title="Total Candidates"
+          value={(stats?.totalCandidates ?? 0).toLocaleString()}
+          icon={Users}
+          gradient="from-blue-500 to-indigo-600"
+        />
+        <StatsCard
+          title="Pending Documents"
+          value={(stats?.pendingDocuments?.length ?? 0).toLocaleString()}
+          icon={FileText}
+          gradient="from-amber-500 to-orange-600"
+          subtitle="Awaiting review"
+        />
+        <StatsCard
+          title="CTV Ready"
+          value={(stats?.ctvReadyCandidates?.length ?? 0).toLocaleString()}
+          icon={Ship}
+          gradient="from-emerald-500 to-teal-600"
+          subtitle="Ready for CTV"
         />
       </div>
 
-      <FilterSection />
-
-      {/* Tables Section */}
-      <div className='grid grid-cols-1 gap-8'>
-        {/* Course List Table */}
-        <div className='bg-white/80 backdrop-blur-xl rounded-3xl border border-white/60 shadow-sm overflow-hidden flex flex-col'>
-          <div className='px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/50'>
-            <h3 className='font-bold text-slate-800 text-lg'>Course Details</h3>
-            <button className='p-2 hover:bg-slate-100 rounded-lg transition-colors'>
-              <MoreVertical className='w-4 h-4 text-slate-500' />
-            </button>
-          </div>
-          <div className='overflow-x-auto'>
-            <table className='w-full text-left border-collapse'>
-              <thead>
-                <tr className='bg-slate-50/50 border-b border-slate-200'>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    Course Name
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center'>
-                    Man Days
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    Start Date
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    End Date
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    Status
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center'>
-                    Candidates
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center'>
-                    Rating
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center'>
-                    Absent
-                  </th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-slate-100'>
-                <tr>
-                  <td colSpan='8' className='px-6 py-12 text-center'>
-                    <div className='flex flex-col items-center justify-center text-slate-400 gap-2'>
-                      <div className='p-3 bg-slate-50 rounded-full'>
-                        <Search className='w-6 h-6 text-slate-300' />
+      {/* ── Stage-wise Candidate Pipeline ───────────────────────────── */}
+      <Section
+        title="Stage-wise Candidate Pipeline"
+        icon={BarChart3}
+        iconBg="bg-indigo-50/80 text-indigo-600"
+        badge={`${stats?.totalCandidates ?? 0} Total`}
+      >
+        <div className="p-6">
+          {!stats?.stageWiseCounts?.length ? (
+            <EmptyState message="No candidate data available" />
+          ) : (
+            <div className="space-y-3">
+              {stats.stageWiseCounts.map((stage) => {
+                const info = getStageInfo(stage.stage);
+                const percentage = (
+                  (stage.count / maxStageCount) *
+                  100
+                ).toFixed(0);
+                return (
+                  <div key={stage.stage} className="group">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                      <div className="w-full sm:w-40 shrink-0 flex items-center gap-2 mb-1 sm:mb-0">
+                        <div
+                          className={cn(
+                            "w-2 h-2 rounded-full bg-gradient-to-r",
+                            info.color,
+                          )}
+                        />
+                        <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate">
+                          {info.label}
+                        </span>
                       </div>
-                      <p className='font-medium'>No course records found</p>
+                      <div className="flex-1 flex items-center gap-3">
+                        <div className="flex-1 h-6 sm:h-8 bg-slate-100 rounded-xl overflow-hidden relative">
+                          <div
+                            className={cn(
+                              "h-full rounded-xl bg-gradient-to-r transition-all duration-700 ease-out",
+                              info.color,
+                            )}
+                            style={{ width: `${Math.max(percentage, 3)}%` }}
+                          />
+                        </div>
+                        <div className="w-12 sm:w-16 text-right">
+                          <span
+                            className={cn(
+                              "text-xs sm:text-sm font-bold",
+                              info.text,
+                            )}
+                          >
+                            {stage.count}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Cadet List Table */}
-        <div className='bg-white/80 backdrop-blur-xl rounded-3xl border border-white/60 shadow-sm overflow-hidden flex flex-col'>
-          <div className='px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/50'>
-            <div className='flex items-center gap-2'>
-              <div className='p-1.5 bg-red-50 text-red-500 rounded-md'>
-                <AlertCircle className='w-4 h-4' />
-              </div>
-              <h3 className='font-bold text-slate-800 text-lg'>Cadet Alerts</h3>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-          <div className='overflow-x-auto'>
-            <table className='w-full text-left border-collapse'>
-              <thead>
-                <tr className='bg-slate-50/50 border-b border-slate-200'>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    Cadet ID
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    Name
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    Course Name
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    Emp ID
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider'>
-                    Expiry Date
-                  </th>
-                  <th className='px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center'>
-                    Alert
-                  </th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-slate-100'>
-                <tr>
-                  <td colSpan='6' className='px-6 py-12 text-center'>
-                    <div className='flex flex-col items-center justify-center text-slate-400 gap-2'>
-                      <div className='p-3 bg-slate-50 rounded-full'>
-                        <CheckCircle className='w-6 h-6 text-slate-300' />
-                      </div>
-                      <p className='font-medium'>No cadet alerts found</p>
-                    </div>
-                  </td>
-                </tr>
+          )}
+        </div>
+      </Section>
+
+      <div className="mt-8" />
+
+      {/* ── Pending Documents ────────────────────────────────────────── */}
+      <Section
+        title="Pending Documents"
+        icon={ClipboardList}
+        iconBg="bg-amber-50/80 text-amber-600"
+        badge={stats?.pendingDocuments?.length ?? 0}
+      >
+        {!stats?.pendingDocuments?.length ? (
+          <EmptyState message="No pending documents" icon={CheckCircle} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <TableHeader
+                columns={[
+                  { label: "Candidate" },
+                  { label: "Institute" },
+                  { label: "Document Type" },
+                  { label: "Document Name" },
+                  { label: "Status", center: true },
+                  { label: "Submitted" },
+                ]}
+              />
+              <tbody className="divide-y divide-slate-100">
+                {stats.pendingDocuments.map((doc) => (
+                  <tr
+                    key={doc.id}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-800">
+                      {doc.cadet_name || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {doc.institute_name || "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg">
+                        {doc.document_type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {doc.document_name}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded-lg inline-flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> Pending
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500">
+                      {doc.created_at
+                        ? formatDateForDisplay(doc.created_at)
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
+        )}
+      </Section>
+
+      <div className="mt-8" />
+
+      {/* ── CTV Ready Candidates ─────────────────────────────────────── */}
+      <Section
+        title="Candidates Ready for CTV"
+        icon={Anchor}
+        iconBg="bg-emerald-50/80 text-emerald-600"
+        badge={stats?.ctvReadyCandidates?.length ?? 0}
+      >
+        {!stats?.ctvReadyCandidates?.length ? (
+          <EmptyState message="No candidates ready for CTV" icon={Ship} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <TableHeader
+                columns={[
+                  { label: "Cadet ID" },
+                  { label: "Name" },
+                  { label: "Course" },
+                  { label: "Institute" },
+                  { label: "Contact" },
+                  { label: "Status", center: true },
+                ]}
+              />
+              <tbody className="divide-y divide-slate-100">
+                {stats.ctvReadyCandidates.map((candidate) => (
+                  <tr
+                    key={candidate.id}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
+                    <td className="px-6 py-4 text-sm font-mono text-blue-600 font-semibold">
+                      {candidate.cadet_unique_id || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-semibold text-slate-800">
+                      {candidate.name_as_in_indos_cert || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {candidate.course || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {candidate.institute_name || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {candidate.contact_number || "—"}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg inline-flex items-center gap-1">
+                        <UserCheck className="w-3 h-3" /> Selected
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
+
+      <div className="mt-8" />
+
+      {/* ── Onboarding Pending List ──────────────────────────────────── */}
+      <Section
+        title="Onboarding Pending"
+        icon={UserCheck}
+        iconBg="bg-teal-50/80 text-teal-600"
+        badge={stats?.onboardingPending?.length ?? 0}
+      >
+        {!stats?.onboardingPending?.length ? (
+          <EmptyState message="No onboarding pending" icon={CheckCircle} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <TableHeader
+                columns={[
+                  { label: "Cadet ID" },
+                  { label: "Name" },
+                  { label: "Course" },
+                  { label: "Batch" },
+                  { label: "Institute" },
+                  { label: "Status", center: true },
+                ]}
+              />
+              <tbody className="divide-y divide-slate-100">
+                {stats.onboardingPending.map((candidate) => {
+                  const info = getStageInfo(candidate.status);
+                  return (
+                    <tr
+                      key={candidate.id}
+                      className="hover:bg-slate-50/50 transition-colors"
+                    >
+                      <td className="px-6 py-4 text-sm font-mono text-blue-600 font-semibold">
+                        {candidate.cadet_unique_id || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-slate-800">
+                        {candidate.name_as_in_indos_cert || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {candidate.course || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {candidate.batch || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {candidate.institute_name || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={cn(
+                            "px-2.5 py-1 text-xs font-bold rounded-lg",
+                            info.bg,
+                            info.text,
+                          )}
+                        >
+                          {info.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
+
+      <div className="mt-8" />
+
+      {/* ── Alerts & Expiry Notifications ─────────────────────────────── */}
+      <Section
+        title="Alerts & Expiry Notifications"
+        icon={Bell}
+        iconBg="bg-red-50/80 text-red-600"
+        badge={stats?.expiryAlerts?.length ?? 0}
+      >
+        {!stats?.expiryAlerts?.length ? (
+          <EmptyState message="No active alerts" icon={CheckCircle} />
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {stats.expiryAlerts.map((alert) => {
+              const isExpired = alert.expiry_status === "expired";
+              return (
+                <div
+                  key={alert.id}
+                  className={cn(
+                    "px-6 py-4 flex items-center justify-between hover:bg-slate-50/30 transition-colors",
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={cn(
+                        "p-2 rounded-xl",
+                        isExpired
+                          ? "bg-red-100 text-red-600"
+                          : "bg-amber-100 text-amber-600",
+                      )}
+                    >
+                      {isExpired ? (
+                        <XCircle className="w-5 h-5" />
+                      ) : (
+                        <AlertTriangle className="w-5 h-5" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">
+                        {alert.institute_name}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Username: {alert.temp_username || "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-bold rounded-xl inline-flex items-center gap-1",
+                        isExpired
+                          ? "bg-red-50 text-red-700"
+                          : "bg-amber-50 text-amber-700",
+                      )}
+                    >
+                      {isExpired ? (
+                        <>
+                          <XCircle className="w-3 h-3" /> Expired
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-3 h-3" /> Expiring Soon
+                        </>
+                      )}
+                    </span>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {alert.temp_expiry
+                        ? formatDateForDisplay(alert.temp_expiry)
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Section>
     </>
   );
 };
