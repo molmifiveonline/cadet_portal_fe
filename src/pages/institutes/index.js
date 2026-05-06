@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
-import { Plus, Mail, FileText, School } from 'lucide-react';
+import { Plus, School } from 'lucide-react';
 import InstitutesTable from './InstitutesTable';
 import SendEmailModal from './SendEmailModal';
 import ExtendTokenModal from './ExtendTokenModal';

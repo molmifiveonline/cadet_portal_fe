@@ -360,16 +360,6 @@ const RecruitmentDrives = () => {
             Number(drive.cadet_data_submit_request_pending || 0) === 1 ||
             drive.cadet_data_request_status === "pending_submission";
 
-          // Progress bar gradient
-          const barGradient =
-            progress >= 80
-              ? "from-emerald-400 to-green-500"
-              : progress >= 55
-                ? "from-amber-400 to-orange-400"
-                : progress >= 20
-                  ? "from-blue-400 to-indigo-500"
-                  : "from-slate-300 to-slate-400";
-
           return (
             <div
               key={drive.id}
