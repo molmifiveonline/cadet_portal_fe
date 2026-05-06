@@ -91,12 +91,48 @@ const getCourseCfg = (t) =>
 
 // ─── Pipeline stages config ──────────────────────────────────────────────────
 const getPipelineStages = (drive) => [
-  { label: "Uploaded",    value: drive.total_uploaded     || 0, icon: Upload,        color: "text-indigo-600", bg: "bg-indigo-50/50" },
-  { label: "Shortlisted", value: drive.shortlisted_count  || 0, icon: UserCheck,     color: "text-purple-600", bg: "bg-purple-50/50" },
-  { label: "Assessment",  value: drive.assessment_passed  || 0, icon: ClipboardList, color: "text-cyan-600",   bg: "bg-cyan-50/50" },
-  { label: "Interview",   value: drive.interview_selected || 0, icon: Users,         color: "text-emerald-600", bg: "bg-emerald-50/50" },
-  { label: "Medical",     value: drive.medical_queue_count|| 0, icon: Stethoscope,   color: "text-lime-700",    bg: "bg-lime-50/50" },
-  { label: "Documents",   value: drive.document_count     || 0, icon: FileCheck,     color: "text-slate-600",   bg: "bg-slate-50/50" },
+  {
+    label: "Uploaded",
+    value: drive.total_uploaded || 0,
+    icon: Upload,
+    color: "text-indigo-600",
+    bg: "bg-indigo-50/50",
+  },
+  {
+    label: "Shortlisted",
+    value: drive.shortlisted_count || 0,
+    icon: UserCheck,
+    color: "text-purple-600",
+    bg: "bg-purple-50/50",
+  },
+  {
+    label: "Assessment",
+    value: drive.assessment_passed || 0,
+    icon: ClipboardList,
+    color: "text-cyan-600",
+    bg: "bg-cyan-50/50",
+  },
+  {
+    label: "Interview",
+    value: drive.interview_selected || 0,
+    icon: Users,
+    color: "text-emerald-600",
+    bg: "bg-emerald-50/50",
+  },
+  {
+    label: "Medical",
+    value: drive.medical_queue_count || 0,
+    icon: Stethoscope,
+    color: "text-lime-700",
+    bg: "bg-lime-50/50",
+  },
+  {
+    label: "Documents",
+    value: drive.document_count || 0,
+    icon: FileCheck,
+    color: "text-slate-600",
+    bg: "bg-slate-50/50",
+  },
 ];
 
 const calculateProgress = (drive) => {
@@ -398,7 +434,11 @@ const RecruitmentDrives = () => {
                           strokeDashoffset={100 - progress}
                           strokeLinecap="round"
                           className={`transition-all duration-1000 ease-out ${
-                            progress >= 80 ? "text-emerald-500" : progress >= 50 ? "text-amber-500" : "text-blue-500"
+                            progress >= 80
+                              ? "text-emerald-500"
+                              : progress >= 50
+                                ? "text-amber-500"
+                                : "text-blue-500"
                           }`}
                           pathLength="100"
                         />
@@ -471,7 +511,9 @@ const RecruitmentDrives = () => {
                 <div className="mb-5 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 text-[11px] sm:text-[12px] text-slate-500">
                   <div className="flex items-center gap-1.5 min-w-0 max-w-[150px] sm:max-w-none">
                     <Building2 className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate font-medium">{drive.institute_name}</span>
+                    <span className="truncate font-medium">
+                      {drive.institute_name}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <CourseIcon className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
@@ -483,18 +525,22 @@ const RecruitmentDrives = () => {
                   </div>
                   <div className="flex items-center gap-1.5 ml-auto">
                     <HeartPulse className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
-                    <span className="font-bold text-slate-700">{drive.intake_capacity || 0}</span>
+                    <span className="font-bold text-slate-700">
+                      {drive.intake_capacity || 0}
+                    </span>
                   </div>
                 </div>
 
                 {/* ── Metric Grid (The "Pucks") ────────────────────────────── */}
                 <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {stages.map((stage) => (
-                    <div 
-                      key={stage.label} 
+                    <div
+                      key={stage.label}
                       className={`flex flex-col items-center rounded-xl border border-slate-100 ${stage.bg} py-2.5 transition-all hover:border-slate-200 hover:shadow-sm`}
                     >
-                      <stage.icon className={`mb-1 h-3.5 w-3.5 ${stage.color} opacity-80`} />
+                      <stage.icon
+                        className={`mb-1 h-3.5 w-3.5 ${stage.color} opacity-80`}
+                      />
                       <span className={`text-sm font-black ${stage.color}`}>
                         {stage.value}
                       </span>
@@ -511,7 +557,9 @@ const RecruitmentDrives = () => {
                     Drive Details
                   </span>
                   <div className="flex items-center gap-2 text-blue-600 transition-all duration-300 group-hover:translate-x-1">
-                    <span className="text-[11px] font-bold opacity-0 group-hover:opacity-100">Manage</span>
+                    <span className="text-[11px] font-bold opacity-0 group-hover:opacity-100">
+                      Manage
+                    </span>
                     <ChevronRight className="h-4 w-4" />
                   </div>
                 </div>
