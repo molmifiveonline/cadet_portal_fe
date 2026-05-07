@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import PageHeader from "../../components/common/PageHeader";
+import { errorTextClass } from "../../lib/utils/formStyles";
 
 const DriveForm = () => {
   const { id } = useParams();
@@ -169,10 +170,10 @@ const DriveForm = () => {
                   required: "Drive name is required",
                 })}
                 placeholder="Enter drive name"
-                className={errors.drive_name ? "border-red-500" : ""}
+                invalid={!!errors.drive_name}
               />
               {errors.drive_name && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className={errorTextClass}>
                   {errors.drive_name.message}
                 </p>
               )}
@@ -190,7 +191,7 @@ const DriveForm = () => {
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger
-                      className={errors.institute_id ? "border-red-500" : ""}
+                      invalid={!!errors.institute_id}
                     >
                       <SelectValue placeholder="Select institute" />
                     </SelectTrigger>
@@ -205,7 +206,7 @@ const DriveForm = () => {
                 )}
               />
               {errors.institute_id && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className={errorTextClass}>
                   {errors.institute_id.message}
                 </p>
               )}
@@ -223,7 +224,7 @@ const DriveForm = () => {
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger
-                      className={errors.course_type ? "border-red-500" : ""}
+                      invalid={!!errors.course_type}
                     >
                       <SelectValue placeholder="Select course type" />
                     </SelectTrigger>
@@ -235,7 +236,7 @@ const DriveForm = () => {
                 )}
               />
               {errors.course_type && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className={errorTextClass}>
                   {errors.course_type.message}
                 </p>
               )}
@@ -253,7 +254,7 @@ const DriveForm = () => {
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger
-                      className={errors.year ? "border-red-500" : ""}
+                      invalid={!!errors.year}
                     >
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
@@ -268,7 +269,7 @@ const DriveForm = () => {
                 )}
               />
               {errors.year && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className={errorTextClass}>
                   {errors.year.message}
                 </p>
               )}
@@ -285,10 +286,10 @@ const DriveForm = () => {
                   min: { value: 0, message: "Capacity must be positive" },
                 })}
                 placeholder="0"
-                className={errors.intake_capacity ? "border-red-500" : ""}
+                invalid={!!errors.intake_capacity}
               />
               {errors.intake_capacity && (
-                <p className="mt-1 text-sm text-red-600">
+                <p className={errorTextClass}>
                   {errors.intake_capacity.message}
                 </p>
               )}

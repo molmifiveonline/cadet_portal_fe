@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import { errorTextClass } from '../../lib/utils/formStyles';
 
 const AssessmentForm = () => {
   const { cadet_id } = useParams();
@@ -286,10 +287,11 @@ const AssessmentForm = () => {
                     type='date'
                     value={formData.assessment_date}
                     onChange={handleInputChange}
-                    className={`${inputClass} ${errors.assessment_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                    invalid={!!errors.assessment_date}
+                    className={inputClass}
                   />
                 </div>
-                {errors.assessment_date && <p className="text-red-500 text-xs mt-1">{errors.assessment_date}</p>}
+                {errors.assessment_date && <p className={errorTextClass}>{errors.assessment_date}</p>}
               </div>
 
               <div className='space-y-2'>
@@ -303,10 +305,11 @@ const AssessmentForm = () => {
                     type='time'
                     value={formData.assessment_time}
                     onChange={handleInputChange}
-                    className={`${inputClass} ${errors.assessment_time ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                    invalid={!!errors.assessment_time}
+                    className={inputClass}
                   />
                 </div>
-                {errors.assessment_time && <p className="text-red-500 text-xs mt-1">{errors.assessment_time}</p>}
+                {errors.assessment_time && <p className={errorTextClass}>{errors.assessment_time}</p>}
               </div>
 
               <div className='space-y-2'>
@@ -320,10 +323,11 @@ const AssessmentForm = () => {
                     value={formData.ces_test}
                     onChange={handleInputChange}
                     placeholder='Score 1'
-                    className={`${inputClass} ${errors.ces_test ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                    invalid={!!errors.ces_test}
+                    className={inputClass}
                   />
                 </div>
-                {errors.ces_test && <p className="text-red-500 text-xs mt-1">{errors.ces_test}</p>}
+                {errors.ces_test && <p className={errorTextClass}>{errors.ces_test}</p>}
               </div>
 
               <div className='space-y-2'>
@@ -356,10 +360,11 @@ const AssessmentForm = () => {
                     value={formData.qa_test}
                     onChange={handleInputChange}
                     placeholder='Enter score'
-                    className={`${inputClass} ${errors.qa_test ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                    invalid={!!errors.qa_test}
+                    className={inputClass}
                   />
                 </div>
-                {errors.qa_test && <p className="text-red-500 text-xs mt-1">{errors.qa_test}</p>}
+                {errors.qa_test && <p className={errorTextClass}>{errors.qa_test}</p>}
               </div>
 
               <div className='space-y-2'>
@@ -373,10 +378,11 @@ const AssessmentForm = () => {
                     value={formData.english_test}
                     onChange={handleInputChange}
                     placeholder='Enter score'
-                    className={`${inputClass} ${errors.english_test ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                    invalid={!!errors.english_test}
+                    className={inputClass}
                   />
                 </div>
-                {errors.english_test && <p className="text-red-500 text-xs mt-1">{errors.english_test}</p>}
+                {errors.english_test && <p className={errorTextClass}>{errors.english_test}</p>}
               </div>
 
               <div className='space-y-2'>
@@ -392,10 +398,11 @@ const AssessmentForm = () => {
                     value={formData.essay_writing_mark}
                     onChange={handleInputChange}
                     placeholder='Enter mark'
-                    className={`${inputClass} ${errors.essay_writing_mark ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                    invalid={!!errors.essay_writing_mark}
+                    className={inputClass}
                   />
                 </div>
-                {errors.essay_writing_mark && <p className="text-red-500 text-xs mt-1">{errors.essay_writing_mark}</p>}
+                {errors.essay_writing_mark && <p className={errorTextClass}>{errors.essay_writing_mark}</p>}
               </div>
             </div>
           </div>

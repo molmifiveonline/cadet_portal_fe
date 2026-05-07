@@ -8,6 +8,10 @@ import {
   PASSWORD_LENGTH_MESSAGE,
   isValidPasswordLength,
 } from '../../lib/utils/validationUtils';
+import {
+  errorTextClass,
+  getInvalidFieldClass,
+} from '../../lib/utils/formStyles';
 
 const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -124,19 +128,21 @@ const ResetPassword = () => {
                           message: PASSWORD_LENGTH_MESSAGE,
                         },
                       })}
-                      className='w-full pl-10 pr-12 py-3 rounded-lg bg-white/70 border border-gray-300 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm'
+                      aria-invalid={errors.password ? true : undefined}
+                      className={`w-full pl-10 pr-12 py-3 rounded-lg bg-white/70 border border-gray-300 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm ${getInvalidFieldClass(errors.password)}`}
                       placeholder='Enter new password'
                     />
                     <button
                       type='button'
                       onClick={() => setShowPassword(!showPassword)}
                       className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600'
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
                   {errors.password && (
-                    <span className='text-red-500 text-xs mt-1 block'>
+                    <span className={`${errorTextClass} block`}>
                       {errors.password.message}
                     </span>
                   )}
@@ -162,7 +168,8 @@ const ResetPassword = () => {
                             return 'Passwords do not match';
                         },
                       })}
-                      className='w-full pl-10 pr-12 py-3 rounded-lg bg-white/70 border border-gray-300 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm'
+                      aria-invalid={errors.confirm_password ? true : undefined}
+                      className={`w-full pl-10 pr-12 py-3 rounded-lg bg-white/70 border border-gray-300 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm ${getInvalidFieldClass(errors.confirm_password)}`}
                       placeholder='Confirm new password'
                     />
                     <button
@@ -171,6 +178,11 @@ const ResetPassword = () => {
                         setShowConfirmPassword(!showConfirmPassword)
                       }
                       className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600'
+                      aria-label={
+                        showConfirmPassword
+                          ? 'Hide confirm password'
+                          : 'Show confirm password'
+                      }
                     >
                       {showConfirmPassword ? (
                         <EyeOff size={20} />
@@ -180,7 +192,7 @@ const ResetPassword = () => {
                     </button>
                   </div>
                   {errors.confirm_password && (
-                    <span className='text-red-500 text-xs mt-1 block'>
+                    <span className={`${errorTextClass} block`}>
                       {errors.confirm_password.message}
                     </span>
                   )}

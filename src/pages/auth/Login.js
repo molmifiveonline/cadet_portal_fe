@@ -7,6 +7,10 @@ import api from "../../lib/utils/apiConfig";
 import { getPrefixRoute } from "../../lib/utils/routeUtils";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import { getEmailValidationMessage } from "../../lib/utils/validationUtils";
+import {
+  errorTextClass,
+  getInvalidFieldClass,
+} from "../../lib/utils/formStyles";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -137,14 +141,13 @@ const Login = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm ${
-                      formErrors.email ? "border-red-400" : "border-gray-300"
-                    }`}
+                    aria-invalid={formErrors.email ? true : undefined}
+                    className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm ${getInvalidFieldClass(formErrors.email)}`}
                     placeholder=""
                   />
                 </div>
                 {formErrors.email && (
-                  <p className="text-xs text-red-500 mt-1">
+                  <p className={errorTextClass}>
                     {formErrors.email}
                   </p>
                 )}
@@ -172,21 +175,21 @@ const Login = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className={`w-full pl-10 pr-12 py-3 rounded-xl bg-white/80 border focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm ${
-                      formErrors.password ? "border-red-400" : "border-gray-300"
-                    }`}
+                    aria-invalid={formErrors.password ? true : undefined}
+                    className={`w-full pl-10 pr-12 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm ${getInvalidFieldClass(formErrors.password)}`}
                     placeholder="Enter your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
                 {formErrors.password && (
-                  <p className="text-xs text-red-500 mt-1">
+                  <p className={errorTextClass}>
                     {formErrors.password}
                   </p>
                 )}
