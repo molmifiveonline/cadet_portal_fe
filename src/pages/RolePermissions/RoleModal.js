@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { errorTextClass } from '../../lib/utils/formStyles';
 
 const RoleModal = ({ isOpen, onClose, onSave, role = null }) => {
   const [formData, setFormData] = useState({
@@ -84,12 +85,11 @@ const RoleModal = ({ isOpen, onClose, onSave, role = null }) => {
                   setErrors((prev) => ({ ...prev, name: '' }));
                   setFormData({ ...formData, name: e.target.value });
                 }}
-                className={`h-11 rounded-xl ${
-                  errors.name ? 'border-red-400' : ''
-                }`}
+                invalid={!!errors.name}
+                className='h-11 rounded-xl'
               />
               {errors.name && (
-                <p className='text-xs text-red-500'>{errors.name}</p>
+                <p className={errorTextClass}>{errors.name}</p>
               )}
               <p className='text-[11px] text-gray-500'>
                 Unique identifier for the role. No spaces or special characters.
@@ -108,12 +108,11 @@ const RoleModal = ({ isOpen, onClose, onSave, role = null }) => {
                 setErrors((prev) => ({ ...prev, display_name: '' }));
                 setFormData({ ...formData, display_name: e.target.value });
               }}
-              className={`h-11 rounded-xl ${
-                errors.display_name ? 'border-red-400' : ''
-              }`}
+              invalid={!!errors.display_name}
+              className='h-11 rounded-xl'
             />
             {errors.display_name && (
-              <p className='text-xs text-red-500'>{errors.display_name}</p>
+              <p className={errorTextClass}>{errors.display_name}</p>
             )}
           </div>
 

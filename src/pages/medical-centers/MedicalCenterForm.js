@@ -24,6 +24,7 @@ import {
 import api from '../../lib/utils/apiConfig';
 import PageHeader from '../../components/common/PageHeader';
 import { getEmailValidationMessage } from '../../lib/utils/validationUtils';
+import { errorTextClass } from '../../lib/utils/formStyles';
 
 const MedicalCenterForm = () => {
   const { id } = useParams();
@@ -154,13 +155,12 @@ const MedicalCenterForm = () => {
                   placeholder='e.g., Balaji Medical Clinic'
                   value={formData.center_name}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
-                    formErrors.center_name ? 'border-red-400' : 'border-gray-300'
-                  }`}
+                  invalid={!!formErrors.center_name}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
               </div>
               {formErrors.center_name && (
-                <p className='text-xs text-red-500 mt-1'>
+                <p className={errorTextClass}>
                   {formErrors.center_name}
                 </p>
               )}
@@ -179,13 +179,12 @@ const MedicalCenterForm = () => {
                   placeholder='e.g., Andheri, Mumbai'
                   value={formData.location}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
-                    formErrors.location ? 'border-red-400' : 'border-gray-300'
-                  }`}
+                  invalid={!!formErrors.location}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
               </div>
               {formErrors.location && (
-                <p className='text-xs text-red-500 mt-1'>
+                <p className={errorTextClass}>
                   {formErrors.location}
                 </p>
               )}
@@ -241,13 +240,12 @@ const MedicalCenterForm = () => {
                   placeholder='clinic@example.com'
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
-                    formErrors.email ? 'border-red-400' : 'border-gray-300'
-                  }`}
+                  invalid={!!formErrors.email}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
               </div>
               {formErrors.email && (
-                <p className='text-xs text-red-500 mt-1'>{formErrors.email}</p>
+                <p className={errorTextClass}>{formErrors.email}</p>
               )}
             </div>
 

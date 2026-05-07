@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, User, Mail, Lock } from 'lucide-react';
+import { ArrowLeft, Loader2, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import {
@@ -19,6 +19,7 @@ import {
   getEmailValidationMessage,
   isValidPasswordLength,
 } from '../../lib/utils/validationUtils';
+import { errorTextClass } from '../../lib/utils/formStyles';
 
 const UserForm = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const UserForm = () => {
   const [fetching, setFetching] = useState(false);
   const [roles, setRoles] = useState([]);
   const [formErrors, setFormErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -214,13 +216,12 @@ const UserForm = () => {
                   placeholder='John'
                   value={formData.first_name}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
-                    formErrors.first_name ? 'border-red-400' : 'border-gray-300'
-                  }`}
+                  invalid={!!formErrors.first_name}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
               </div>
               {formErrors.first_name && (
-                <p className='text-xs text-red-500 mt-1'>
+                <p className={errorTextClass}>
                   {formErrors.first_name}
                 </p>
               )}
@@ -238,13 +239,12 @@ const UserForm = () => {
                   placeholder='Doe'
                   value={formData.last_name}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
-                    formErrors.last_name ? 'border-red-400' : 'border-gray-300'
-                  }`}
+                  invalid={!!formErrors.last_name}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
               </div>
               {formErrors.last_name && (
-                <p className='text-xs text-red-500 mt-1'>
+                <p className={errorTextClass}>
                   {formErrors.last_name}
                 </p>
               )}
@@ -263,13 +263,12 @@ const UserForm = () => {
                   placeholder='user@example.com'
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
-                    formErrors.email ? 'border-red-400' : 'border-gray-300'
-                  }`}
+                  invalid={!!formErrors.email}
+                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
               </div>
               {formErrors.email && (
-                <p className='text-xs text-red-500 mt-1'>{formErrors.email}</p>
+                <p className={errorTextClass}>{formErrors.email}</p>
               )}
             </div>
 
@@ -282,17 +281,24 @@ const UserForm = () => {
                 <Lock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                 <Input
                   name='password'
-                  type='password'
+                  type={showPassword ? 'text' : 'password'}
                   placeholder='Enter password'
                   value={formData.password}
                   onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
-                    formErrors.password ? 'border-red-400' : 'border-gray-300'
-                  }`}
+                  invalid={!!formErrors.password}
+                  className='w-full pl-10 pr-12 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
+                <button
+                  type='button'
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors'
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
               {formErrors.password && (
-                <p className='text-xs text-red-500 mt-1'>
+                <p className={errorTextClass}>
                   {formErrors.password}
                 </p>
               )}
@@ -316,9 +322,10 @@ const UserForm = () => {
                 }
                 value={formData.role}
               >
-                <SelectTrigger className={`w-full px-4 py-2.5 rounded-xl border bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none ${
-                  formErrors.role ? 'border-red-400' : 'border-gray-300'
-                }`}>
+                <SelectTrigger
+                  invalid={!!formErrors.role}
+                  className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                >
                   <SelectValue placeholder='Select role' />
                 </SelectTrigger>
                 <SelectContent>
@@ -330,7 +337,7 @@ const UserForm = () => {
                 </SelectContent>
               </Select>
               {formErrors.role && (
-                <p className='text-xs text-red-500 mt-1'>{formErrors.role}</p>
+                <p className={errorTextClass}>{formErrors.role}</p>
               )}
             </div>
           </div>

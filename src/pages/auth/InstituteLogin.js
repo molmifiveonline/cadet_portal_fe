@@ -6,6 +6,10 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/utils/apiConfig';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
 import { getEmailValidationMessage } from '../../lib/utils/validationUtils';
+import {
+  errorTextClass,
+  getInvalidFieldClass,
+} from '../../lib/utils/formStyles';
 
 const InstituteLogin = () => {
   const [email, setEmail] = useState('');
@@ -183,14 +187,13 @@ const InstituteLogin = () => {
                         setEmail(e.target.value);
                       }}
                       autoFocus
-                      className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition-all outline-none shadow-sm ${
-                        emailError ? 'border-red-400' : 'border-gray-300'
-                      }`}
+                      aria-invalid={emailError ? true : undefined}
+                      className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition-all outline-none shadow-sm ${getInvalidFieldClass(emailError)}`}
                       placeholder='you@institute.com'
                     />
                   </div>
                   {emailError && (
-                    <p className='mt-1.5 text-xs text-red-500'>{emailError}</p>
+                    <p className={`${errorTextClass} mt-1.5`}>{emailError}</p>
                   )}
                   <p className='mt-1.5 text-xs text-gray-400'>
                     Use your registered institute email address
@@ -256,14 +259,13 @@ const InstituteLogin = () => {
                       }}
                       autoFocus
                       maxLength={6}
-                      className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition-all outline-none shadow-sm text-center text-2xl font-bold tracking-[0.6em] ${
-                        otpError ? 'border-red-400' : 'border-gray-300'
-                      }`}
+                      aria-invalid={otpError ? true : undefined}
+                      className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition-all outline-none shadow-sm text-center text-2xl font-bold tracking-[0.6em] ${getInvalidFieldClass(otpError)}`}
                       placeholder='······'
                     />
                   </div>
                   {otpError && (
-                    <p className='mt-1.5 text-xs text-red-500 text-center'>
+                    <p className={`${errorTextClass} mt-1.5 text-center`}>
                       {otpError}
                     </p>
                   )}

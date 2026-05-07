@@ -35,6 +35,7 @@ import {
   getPhoneValidationMessage,
   sanitizePhoneValue,
 } from '../../lib/utils/validationUtils';
+import { errorTextClass } from '../../lib/utils/formStyles';
 
 const CadetFormFields = ({
   cadet = {},
@@ -359,13 +360,16 @@ const CadetFormFields = ({
       <div className='pt-6 border-t border-gray-100'>
         {isCadetOrInstitute && (
           isEditing ? (
-            <div className={`bg-blue-50 p-4 rounded-lg flex items-start gap-3 text-blue-800 text-sm mb-6 ${errors.declaration_accepted ? 'border border-red-500' : ''}`}>
+            <div
+              aria-invalid={errors.declaration_accepted ? true : undefined}
+              className={`bg-blue-50 p-4 rounded-lg flex items-start gap-3 text-blue-800 text-sm mb-6 ${errors.declaration_accepted ? 'border border-red-500' : ''}`}
+            >
               <div className='mt-1 shrink-0'>
                 <input type='checkbox' id='declaration' {...register('declaration_accepted', { required: 'You must accept the declaration to submit' })} className='w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer' />
               </div>
               <label htmlFor='declaration' className='cursor-pointer flex-1'>
                 <strong>Declaration:</strong> I hereby declare that the information given in this application is true and correct to the best of my knowledge and belief.
-                {errors.declaration_accepted && ( <span className='block text-red-500 mt-1'>{errors.declaration_accepted.message}</span> )}
+                {errors.declaration_accepted && ( <span className={`block ${errorTextClass}`}>{errors.declaration_accepted.message}</span> )}
               </label>
             </div>
           ) : (

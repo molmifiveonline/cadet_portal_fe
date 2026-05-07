@@ -25,6 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import {
+  errorTextClass,
+  getInvalidFieldClass,
+} from '../../lib/utils/formStyles';
 
 const InterviewForm = () => {
   const { cadet_id } = useParams();
@@ -283,11 +287,12 @@ const InterviewForm = () => {
                   name='interview_date'
                   value={formData.interview_date}
                   onChange={handleInputChange}
-                  className={`pl-10 ${errors.interview_date ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                  invalid={!!errors.interview_date}
+                  className='pl-10'
                   required
                 />
               </div>
-              {errors.interview_date && <p className="text-red-500 text-xs mt-1">{errors.interview_date}</p>}
+              {errors.interview_date && <p className={errorTextClass}>{errors.interview_date}</p>}
             </div>
 
             <div className='space-y-2'>
@@ -301,10 +306,11 @@ const InterviewForm = () => {
                   value={formData.panel_members}
                   onChange={handleInputChange}
                   placeholder='Enter names'
-                  className={`pl-10 ${errors.panel_members ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                  invalid={!!errors.panel_members}
+                  className='pl-10'
                 />
               </div>
-              {errors.panel_members && <p className="text-red-500 text-xs mt-1">{errors.panel_members}</p>}
+              {errors.panel_members && <p className={errorTextClass}>{errors.panel_members}</p>}
             </div>
 
             <div className='space-y-2'>
@@ -318,10 +324,11 @@ const InterviewForm = () => {
                   name='interview_time'
                   value={formData.interview_time}
                   onChange={handleInputChange}
-                  className={`pl-10 ${errors.interview_time ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                  invalid={!!errors.interview_time}
+                  className='pl-10'
                 />
               </div>
-              {errors.interview_time && <p className="text-red-500 text-xs mt-1">{errors.interview_time}</p>}
+              {errors.interview_time && <p className={errorTextClass}>{errors.interview_time}</p>}
             </div>
 
             <div className='space-y-2'>
@@ -336,10 +343,11 @@ const InterviewForm = () => {
                   value={formData.evaluation_score}
                   onChange={handleInputChange}
                   placeholder='0-100'
-                  className={`pl-10 ${errors.evaluation_score ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                  invalid={!!errors.evaluation_score}
+                  className='pl-10'
                 />
               </div>
-              {errors.evaluation_score && <p className="text-red-500 text-xs mt-1">{errors.evaluation_score}</p>}
+              {errors.evaluation_score && <p className={errorTextClass}>{errors.evaluation_score}</p>}
             </div>
 
             <div className='space-y-2'>
@@ -355,10 +363,11 @@ const InterviewForm = () => {
                   value={formData.total_score}
                   onChange={handleInputChange}
                   placeholder='Total score'
-                  className={`pl-10 ${errors.total_score ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`}
+                  invalid={!!errors.total_score}
+                  className='pl-10'
                 />
               </div>
-              {errors.total_score && <p className="text-red-500 text-xs mt-1">{errors.total_score}</p>}
+              {errors.total_score && <p className={errorTextClass}>{errors.total_score}</p>}
               {formData.total_score ? (
                 <p className='mt-2 text-xs text-slate-500'>
                   Recommendation remains manual until the final interview formula is provided.
@@ -488,10 +497,11 @@ const InterviewForm = () => {
               value={formData.comments}
               onChange={handleInputChange}
               rows={3}
-              className={`w-full rounded-xl border p-4 text-sm outline-none resize-none ${errors.comments ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' : 'border-gray-300 focus:ring-4 focus:ring-blue-100'}`}
+              aria-invalid={errors.comments ? true : undefined}
+              className={`w-full rounded-xl border border-gray-300 p-4 text-sm outline-none resize-none focus:ring-4 focus:ring-blue-100 ${getInvalidFieldClass(errors.comments)}`}
               placeholder='Panel comments and observations...'
             />
-            {errors.comments && <p className="text-red-500 text-xs mt-1">{errors.comments}</p>}
+            {errors.comments && <p className={errorTextClass}>{errors.comments}</p>}
           </div>
 
           <div className='space-y-2'>
@@ -504,10 +514,11 @@ const InterviewForm = () => {
               value={formData.remarks}
               onChange={handleInputChange}
               rows={4}
-              className={`w-full rounded-xl border p-4 text-sm outline-none resize-none ${errors.remarks ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' : 'border-gray-300 focus:ring-4 focus:ring-blue-100'}`}
+              aria-invalid={errors.remarks ? true : undefined}
+              className={`w-full rounded-xl border border-gray-300 p-4 text-sm outline-none resize-none focus:ring-4 focus:ring-blue-100 ${getInvalidFieldClass(errors.remarks)}`}
               placeholder='Detailed feedback...'
             />
-            {errors.remarks && <p className="text-red-500 text-xs mt-1">{errors.remarks}</p>}
+            {errors.remarks && <p className={errorTextClass}>{errors.remarks}</p>}
           </div>
 
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200'>

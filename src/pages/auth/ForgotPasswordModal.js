@@ -8,6 +8,10 @@ import {
   EMAIL_VALIDATION_MESSAGE,
   getEmailValidationMessage,
 } from '../../lib/utils/validationUtils';
+import {
+  errorTextClass,
+  getInvalidFieldClass,
+} from '../../lib/utils/formStyles';
 
 const ForgotPasswordModal = ({ isOpen, onClose }) => {
   const {
@@ -89,12 +93,13 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
                       getEmailValidationMessage(value) ||
                       true,
                   })}
-                  className='w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-sm'
+                  aria-invalid={errors.email ? true : undefined}
+                  className={`w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all shadow-sm ${getInvalidFieldClass(errors.email)}`}
                   placeholder='name@company.com'
                 />
               </div>
               {errors.email && (
-                <span className='text-red-500 text-xs ml-1'>
+                <span className={`${errorTextClass} ml-1`}>
                   {errors.email.message === true
                     ? EMAIL_VALIDATION_MESSAGE
                     : errors.email.message}

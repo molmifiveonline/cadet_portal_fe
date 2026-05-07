@@ -25,6 +25,10 @@ import {
   EMAIL_VALIDATION_MESSAGE,
   getEmailValidationMessage,
 } from '../../lib/utils/validationUtils';
+import {
+  errorTextClass,
+  getInvalidFieldClass,
+} from '../../lib/utils/formStyles';
 
 const CONTACT_COUNT = 3;
 
@@ -237,12 +241,13 @@ const InstituteForm = () => {
                   {...register('institute_name', {
                     required: 'Name is required',
                   })}
+                  invalid={!!errors.institute_name}
                   className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                   placeholder='Enter institute name'
                 />
               </div>
               {errors.institute_name && (
-                <span className='text-red-500 text-xs ml-1'>
+                <span className={`${errorTextClass} ml-1`}>
                   {errors.institute_name.message}
                 </span>
               )}
@@ -258,12 +263,13 @@ const InstituteForm = () => {
                   {...register('location', {
                     required: 'Location is required',
                   })}
+                  invalid={!!errors.location}
                   className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                   placeholder='e.g. Mumbai, Maharashtra'
                 />
               </div>
               {errors.location && (
-                <span className='text-red-500 text-xs ml-1'>
+                <span className={`${errorTextClass} ml-1`}>
                   {errors.location.message}
                 </span>
               )}
@@ -333,12 +339,13 @@ const InstituteForm = () => {
                                 return true;
                               },
                             })}
-                            className={`w-full pl-9 pr-3 py-2 text-sm rounded-lg border bg-gray-50/50 focus:bg-white h-9 ${errors?.contact_emails?.[index]?.email ? 'border-red-400 ring-1 ring-red-400/30' : 'border-gray-300'}`}
+                            invalid={!!errors?.contact_emails?.[index]?.email}
+                            className='w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 bg-gray-50/50 focus:bg-white h-9'
                             placeholder='contact@institute.com'
                           />
                         </div>
                         {errors?.contact_emails?.[index]?.email && (
-                          <span className='text-red-500 text-[10px] ml-1'>
+                          <span className={`${errorTextClass} ml-1`}>
                             {errors.contact_emails[index].email.message}
                           </span>
                         )}
@@ -426,12 +433,13 @@ const InstituteForm = () => {
               <textarea
                 {...register('address', { required: 'Address is required' })}
                 rows={3}
-                className='w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none resize-none'
+                aria-invalid={errors.address ? true : undefined}
+                className={`w-full pl-10 pr-4 py-2 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none resize-none ${getInvalidFieldClass(errors.address)}`}
                 placeholder='Enter full address...'
               />
             </div>
             {errors.address && (
-              <span className='text-red-500 text-xs ml-1'>
+              <span className={`${errorTextClass} ml-1`}>
                 {errors.address.message}
               </span>
             )}

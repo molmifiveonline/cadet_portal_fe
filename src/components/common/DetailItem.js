@@ -1,6 +1,7 @@
 import React from 'react';
 import { Input } from '../ui/input';
 import { getEmailValidationMessage } from '../../lib/utils/validationUtils';
+import { errorTextClass, getInvalidFieldClass } from '../../lib/utils/formStyles';
 
 const DetailItem = ({
   label,
@@ -56,7 +57,8 @@ const DetailItem = ({
           {type === 'select' ? (
             <select
               {...getFieldRegistration()}
-              className={`w-full h-9 rounded-md border-2 border-gray-400 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${errors[name] ? 'border-red-500' : ''}`}
+              aria-invalid={errors[name] ? true : undefined}
+              className={`w-full h-9 rounded-md border-2 border-gray-400 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${getInvalidFieldClass(errors[name])}`}
             >
               <option value=''>Select {label}</option>
               {options.map((opt) => (
@@ -71,7 +73,8 @@ const DetailItem = ({
               disabled={disabled}
               rows={3}
               {...getFieldRegistration()}
-              className={`w-full rounded-md border-2 border-gray-400 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${errors[name] ? 'border-red-500' : ''}`}
+              aria-invalid={errors[name] ? true : undefined}
+              className={`w-full rounded-md border-2 border-gray-400 bg-white px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${getInvalidFieldClass(errors[name])}`}
             />
           ) : (() => {
             const inputRegistration = getFieldRegistration({
@@ -108,6 +111,7 @@ const DetailItem = ({
                 }}
                 placeholder={placeholder || `Enter ${label}`}
                 disabled={disabled}
+                invalid={!!errors[name]}
                 {...inputRegistration}
                 onChange={(event) => {
                   if (sanitize) {
@@ -115,12 +119,12 @@ const DetailItem = ({
                   }
                   inputRegistration.onChange(event);
                 }}
-                className={`h-9 bg-white border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : ''} ${errors[name] ? 'border-red-500' : ''}`}
+                className={`h-9 bg-white border-2 border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 ${disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' : ''}`}
               />
             );
           })()}
           {errors[name] && (
-            <span className='text-red-500 text-xs mt-1 block'>
+            <span className={`${errorTextClass} block`}>
               {errors[name].message}
             </span>
           )}
