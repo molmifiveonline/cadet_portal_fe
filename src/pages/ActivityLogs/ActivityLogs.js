@@ -6,6 +6,7 @@ import { Search, History } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 import PageHeader from '../../components/common/PageHeader';
+import PageLoader from '../../components/common/PageLoader';
 
 const ActivityLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -207,23 +208,27 @@ const ActivityLogs = () => {
       </div>
 
       <div className='bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden'>
-        <ReusableDataTable
-          columns={columns}
-          rows={logs}
-          loading={loading}
-          pagination={pagination}
-          sortConfig={sortConfig}
-          handleSortChange={handleSortChange}
-          handlePageChange={handlePageChange}
-          handlePerPageChange={handlePerPageChange}
-          pageSize={rowsPerPage}
-          checkboxSelection={false}
-          emptyMessage={
-            searchTerm
-              ? 'No activity logs found matching your search.'
-              : 'No activity logs found in the last 3 months.'
-          }
-        />
+        {loading && logs.length === 0 ? (
+          <PageLoader />
+        ) : (
+          <ReusableDataTable
+            columns={columns}
+            rows={logs}
+            loading={loading}
+            pagination={pagination}
+            sortConfig={sortConfig}
+            handleSortChange={handleSortChange}
+            handlePageChange={handlePageChange}
+            handlePerPageChange={handlePerPageChange}
+            pageSize={rowsPerPage}
+            checkboxSelection={false}
+            emptyMessage={
+              searchTerm
+                ? 'No activity logs found matching your search.'
+                : 'No activity logs found in the last 3 months.'
+            }
+          />
+        )}
       </div>
     </div>
   );

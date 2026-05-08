@@ -7,6 +7,7 @@ import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import Permission from '../../components/common/Permission';
 import MedicalCenterTable from './MedicalCenterTable';
+import PageLoader from '../../components/common/PageLoader';
 
 const MedicalCenterList = () => {
   const navigate = useNavigate();
@@ -154,19 +155,23 @@ const MedicalCenterList = () => {
         </Permission>
       </PageHeader>
 
-      <MedicalCenterTable
-        centers={centers}
-        loading={loading}
-        searchTerm={searchTerm}
-        pagination={pagination}
-        sortConfig={sortConfig}
-        handleEdit={handleEditClick}
-        handleDelete={handleDelete}
-        handlePageChange={handlePageChange}
-        handlePerPageChange={handleLimitChange}
-        handleSortChange={handleSortChange}
-        handleSearch={handleSearch}
-      />
+      {loading && centers.length === 0 ? (
+        <PageLoader />
+      ) : (
+        <MedicalCenterTable
+          centers={centers}
+          loading={loading}
+          searchTerm={searchTerm}
+          pagination={pagination}
+          sortConfig={sortConfig}
+          handleEdit={handleEditClick}
+          handleDelete={handleDelete}
+          handlePageChange={handlePageChange}
+          handlePerPageChange={handleLimitChange}
+          handleSortChange={handleSortChange}
+          handleSearch={handleSearch}
+        />
+      )}
     </div>
   );
 };

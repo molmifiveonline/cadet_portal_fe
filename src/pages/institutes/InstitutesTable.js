@@ -151,7 +151,7 @@ const InstitutesTable = ({
                 const expired = isExpired(row.temp_expiry);
                 return expired ? (
                   <span
-                    className='text-xs font-medium text-red-600 flex items-center gap-1 cursor-pointer'
+                    className='text-xs font-medium text-red-600 flex items-center gap-1'
                     title='Token Expired'
                   >
                     ⚠ {formatDateForDisplay(row.temp_expiry)}
@@ -314,9 +314,9 @@ const InstitutesTable = ({
           handlePageChange={handlePageChange}
           handlePerPageChange={handlePerPageChange}
           handleSortChange={handleSortChange}
-          checkboxSelection={true}
-          rowSelectionModel={selectedInstitutes}
-          onRowSelectionModelChange={onSelectionChange}
+          // checkboxSelection={true}
+          // rowSelectionModel={selectedInstitutes}
+          // onRowSelectionModelChange={onSelectionChange}
           emptyMessage={
             searchTerm
               ? `No matches for "${searchTerm}"`

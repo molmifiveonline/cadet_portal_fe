@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import PageLoader from '../../components/common/PageLoader';
 import PermissionCard from './PermissionCard';
 
 const PermissionMatrix = ({
@@ -39,16 +39,7 @@ const PermissionMatrix = ({
   };
 
   if (loading) {
-    return (
-      <div className='bg-white rounded-[24px] border border-[#E2E8F0] p-24 shadow-sm flex items-center justify-center'>
-        <div className='text-center'>
-          <Loader2 className='w-10 h-10 text-[#3a5f9e] animate-spin mx-auto mb-4' />
-          <p className='text-[15px] font-medium text-gray-500'>
-            Fetching permissions details...
-          </p>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!permissions || permissions.length === 0) {

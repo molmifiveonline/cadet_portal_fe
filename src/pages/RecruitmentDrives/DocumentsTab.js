@@ -9,13 +9,13 @@ import {
   Eye,
   ExternalLink,
   FileText,
-  Loader2,
   RotateCcw,
   Search,
   Trash2,
   Upload,
   XCircle,
 } from "lucide-react";
+import PageLoader from "../../components/common/PageLoader";
 import api from "../../lib/utils/apiConfig";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
@@ -440,11 +440,7 @@ const DocumentsTab = ({ drive }) => {
   ];
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center p-20">
-        <Loader2 className="animate-spin text-[#3a5f9e]" size={40} />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

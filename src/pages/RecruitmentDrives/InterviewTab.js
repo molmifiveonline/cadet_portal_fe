@@ -4,11 +4,11 @@ import { toast } from "sonner";
 import {
   Edit,
   Eye,
-  Loader2,
   Plus,
   Search,
   Send,
 } from "lucide-react";
+import PageLoader from "../../components/common/PageLoader";
 import api from "../../lib/utils/apiConfig";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -247,11 +247,7 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
   ].filter(Boolean);
 
   if (loading && cadets.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-20">
-        <Loader2 className="animate-spin text-[#3a5f9e]" size={40} />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

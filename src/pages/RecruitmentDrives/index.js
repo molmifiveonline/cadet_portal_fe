@@ -25,6 +25,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import PageHeader from "../../components/common/PageHeader";
+import PageLoader from "../../components/common/PageLoader";
 import Permission from "../../components/common/Permission";
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -298,14 +299,6 @@ const RecruitmentDrives = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -385,263 +378,275 @@ const RecruitmentDrives = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {drives.map((drive) => {
-          const progress = calculateProgress(drive);
-          const statusCfg = getStatusCfg(drive.status);
-          const courseCfg = getCourseCfg(drive.course_type);
-          const CourseIcon = courseCfg.icon;
-          const stages = getPipelineStages(drive);
-          const hasPendingCadetDataRequest =
-            Number(drive.cadet_data_submit_request_pending || 0) === 1 ||
-            drive.cadet_data_request_status === "pending_submission";
+      {loading && drives.length === 0 ? (
+        <PageLoader />
+      ) : (
+        <div className="relative">
+          {loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[2px] rounded-2xl">
+              <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-600" />
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {drives.map((drive) => {
+              const progress = calculateProgress(drive);
+              const statusCfg = getStatusCfg(drive.status);
+              const courseCfg = getCourseCfg(drive.course_type);
+              const CourseIcon = courseCfg.icon;
+              const stages = getPipelineStages(drive);
+              const hasPendingCadetDataRequest =
+                Number(drive.cadet_data_submit_request_pending || 0) === 1 ||
+                drive.cadet_data_request_status === "pending_submission";
 
-          return (
-            <div
-              key={drive.id}
-              className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm
-                         transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-slate-200"
-              onClick={() => navigate(`/drives/${drive.id}`)}
-            >
-              <div className="p-5">
-                {/* ── Header row ─────────────────────────────────────────── */}
-                <div className="mb-3 flex items-start justify-between gap-2">
-                  <h3 className="truncate text-base font-bold text-slate-800 leading-tight">
-                    {drive.drive_name}
-                  </h3>
+              return (
+                <div
+                  key={drive.id}
+                  className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm
+                             transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-slate-200"
+                  onClick={() => navigate(`/drives/${drive.id}`)}
+                >
+                  <div className="p-5">
+                    {/* ── Header row ─────────────────────────────────────────── */}
+                    <div className="mb-3 flex items-start justify-between gap-2">
+                      <h3 className="truncate text-base font-bold text-slate-800 leading-tight">
+                        {drive.drive_name}
+                      </h3>
 
-                  <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                    {/* Circular Progress Ring */}
-                    <div className="relative flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center">
-                      <svg className="h-full w-full -rotate-90 transform">
-                        <circle
-                          cx="50%"
-                          cy="50%"
-                          r="40%"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          fill="transparent"
-                          className="text-slate-100"
-                        />
-                        <circle
-                          cx="50%"
-                          cy="50%"
-                          r="40%"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          fill="transparent"
-                          strokeDasharray="100 100"
-                          strokeDashoffset={100 - progress}
-                          strokeLinecap="round"
-                          className={`transition-all duration-1000 ease-out ${
-                            progress >= 80
-                              ? "text-emerald-500"
-                              : progress >= 50
-                                ? "text-amber-500"
-                                : "text-blue-500"
-                          }`}
-                          pathLength="100"
-                        />
-                      </svg>
-                      <span className="absolute text-[9px] sm:text-[11px] font-black text-slate-800">
-                        {progress}%
-                      </span>
+                      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                        {/* Circular Progress Ring */}
+                        <div className="relative flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center">
+                          <svg className="h-full w-full -rotate-90 transform">
+                            <circle
+                              cx="50%"
+                              cy="50%"
+                              r="40%"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              fill="transparent"
+                              className="text-slate-100"
+                            />
+                            <circle
+                              cx="50%"
+                              cy="50%"
+                              r="40%"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              fill="transparent"
+                              strokeDasharray="100 100"
+                              strokeDashoffset={100 - progress}
+                              strokeLinecap="round"
+                              className={`transition-all duration-1000 ease-out ${
+                                progress >= 80
+                                  ? "text-emerald-500"
+                                  : progress >= 50
+                                    ? "text-amber-500"
+                                    : "text-blue-500"
+                              }`}
+                              pathLength="100"
+                            />
+                          </svg>
+                          <span className="absolute text-[9px] sm:text-[11px] font-black text-slate-800">
+                            {progress}%
+                          </span>
+                        </div>
+
+                        {/* Status badge with dot */}
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${statusCfg.badge}`}
+                        >
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`}
+                          />
+                          {drive.status}
+                        </span>
+
+                        {user?.role !== "Institute" ? (
+                          <Permission module="recruitment_drives" action="delete">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setDeleteModal({
+                                  isOpen: true,
+                                  driveId: drive.id,
+                                  driveName: drive.drive_name,
+                                });
+                              }}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400
+                                         transition-colors hover:bg-red-50 hover:text-red-600"
+                              title="Delete drive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </Permission>
+                        ) : null}
+                      </div>
                     </div>
 
-                    {/* Status badge with dot */}
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${statusCfg.badge}`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`}
-                      />
-                      {drive.status}
-                    </span>
-
-                    {user?.role !== "Institute" ? (
-                      <Permission module="recruitment_drives" action="delete">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setDeleteModal({
-                              isOpen: true,
-                              driveId: drive.id,
-                              driveName: drive.drive_name,
-                            });
-                          }}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400
-                                     transition-colors hover:bg-red-50 hover:text-red-600"
-                          title="Delete drive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </Permission>
+                    {/* ── Pending alert ───────────────────────────────────────── */}
+                    {hasPendingCadetDataRequest ? (
+                      <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-amber-800">
+                            {drive.cadet_data_request_message ||
+                              "Cadet data submit request is pending"}
+                          </p>
+                          {user?.role === "Institute" ? (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                navigate(`/drives/${drive.id}?tab=upload`);
+                              }}
+                              className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-amber-700 hover:text-amber-900"
+                            >
+                              <Upload className="h-3 w-3" />
+                              Upload cadet data
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
                     ) : null}
-                  </div>
-                </div>
 
-                {/* ── Pending alert ───────────────────────────────────────── */}
-                {hasPendingCadetDataRequest ? (
-                  <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-amber-800">
-                        {drive.cadet_data_request_message ||
-                          "Cadet data submit request is pending"}
-                      </p>
-                      {user?.role === "Institute" ? (
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            navigate(`/drives/${drive.id}?tab=upload`);
-                          }}
-                          className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-amber-700 hover:text-amber-900"
+                    {/* ── Meta-data Icons Row ─────────────────────────────────── */}
+                    <div className="mb-5 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 text-[11px] sm:text-[12px] text-slate-500">
+                      <div className="flex items-center gap-1.5 min-w-0 max-w-[150px] sm:max-w-none">
+                        <Building2 className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate font-medium">
+                          {drive.institute_name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <CourseIcon className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
+                        <span className="font-medium">{drive.course_type}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
+                        <span className="font-medium">{drive.year}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <HeartPulse className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
+                        <span className="font-bold text-slate-700">
+                          {drive.intake_capacity || 0}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* ── Metric Grid (The "Pucks") ────────────────────────────── */}
+                    <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {stages.map((stage) => (
+                        <div
+                          key={stage.label}
+                          className={`flex flex-col items-center rounded-xl border border-slate-100 ${stage.bg} py-2.5 transition-all hover:border-slate-200 hover:shadow-sm`}
                         >
-                          <Upload className="h-3 w-3" />
-                          Upload cadet data
-                        </button>
-                      ) : null}
+                          <stage.icon
+                            className={`mb-1 h-3.5 w-3.5 ${stage.color} opacity-80`}
+                          />
+                          <span className={`text-sm font-black ${stage.color}`}>
+                            {stage.value}
+                          </span>
+                          <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
+                            {stage.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ── Footer ─────────────────────────────────────────────── */}
+                    <div className="flex items-center justify-between border-t border-slate-50 pt-3">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        Drive Details
+                      </span>
+                      <div className="flex items-center gap-2 text-blue-600 transition-all duration-300 group-hover:translate-x-1">
+                        <span className="text-[11px] font-bold opacity-0 group-hover:opacity-100">
+                          Manage
+                        </span>
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
                     </div>
                   </div>
-                ) : null}
-
-                {/* ── Meta-data Icons Row ─────────────────────────────────── */}
-                <div className="mb-5 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 text-[11px] sm:text-[12px] text-slate-500">
-                  <div className="flex items-center gap-1.5 min-w-0 max-w-[150px] sm:max-w-none">
-                    <Building2 className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate font-medium">
-                      {drive.institute_name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CourseIcon className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
-                    <span className="font-medium">{drive.course_type}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
-                    <span className="font-medium">{drive.year}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <HeartPulse className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
-                    <span className="font-bold text-slate-700">
-                      {drive.intake_capacity || 0}
-                    </span>
-                  </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {/* ── Metric Grid (The "Pucks") ────────────────────────────── */}
-                <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {stages.map((stage) => (
-                    <div
-                      key={stage.label}
-                      className={`flex flex-col items-center rounded-xl border border-slate-100 ${stage.bg} py-2.5 transition-all hover:border-slate-200 hover:shadow-sm`}
-                    >
-                      <stage.icon
-                        className={`mb-1 h-3.5 w-3.5 ${stage.color} opacity-80`}
-                      />
-                      <span className={`text-sm font-black ${stage.color}`}>
-                        {stage.value}
-                      </span>
-                      <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
-                        {stage.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ── Footer ─────────────────────────────────────────────── */}
-                <div className="flex items-center justify-between border-t border-slate-50 pt-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    Drive Details
-                  </span>
-                  <div className="flex items-center gap-2 text-blue-600 transition-all duration-300 group-hover:translate-x-1">
-                    <span className="text-[11px] font-bold opacity-0 group-hover:opacity-100">
-                      Manage
-                    </span>
-                    <ChevronRight className="h-4 w-4" />
-                  </div>
-                </div>
+          {drives.length === 0 ? (
+            <div className="py-12 text-center">
+              <Users className="mx-auto h-12 w-12 text-slate-400" />
+              <h3 className="mt-2 text-sm font-medium text-slate-900">
+                No recruitment drives
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                Create a new drive to start managing recruitment workflow.
+              </p>
+              <div className="mt-6">
+                <Permission module="recruitment_drives" action="create">
+                  <Button onClick={() => navigate("/drives/new")}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Drive
+                  </Button>
+                </Permission>
               </div>
             </div>
-          );
-        })}
-      </div>
+          ) : null}
 
-      {drives.length === 0 ? (
-        <div className="py-12 text-center">
-          <Users className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-2 text-sm font-medium text-slate-900">
-            No recruitment drives
-          </h3>
-          <p className="mt-1 text-sm text-slate-500">
-            Create a new drive to start managing recruitment workflow.
-          </p>
-          <div className="mt-6">
-            <Permission module="recruitment_drives" action="create">
-              <Button onClick={() => navigate("/drives/new")}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Drive
-              </Button>
-            </Permission>
-          </div>
-        </div>
-      ) : null}
-
-      {pagination.last_page > 1 ? (
-        <div className="mt-6 flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
-          <div className="hidden sm:block">
-            <p className="text-sm text-slate-700">
-              Showing page{" "}
-              <span className="font-medium">{pagination.current_page}</span> of{" "}
-              <span className="font-medium">{pagination.last_page}</span>
-            </p>
-          </div>
-          <nav
-            className="inline-flex items-center gap-2"
-            aria-label="Pagination"
-          >
-            <Button
-              variant="outline"
-              className="h-9 px-2"
-              onClick={() =>
-                fetchDrives(
-                  pagination.current_page - 1,
-                  pagination.per_page,
-                  searchTerm,
-                  filters.status,
-                  filters.course_type,
-                  filters.institute_id,
-                )
-              }
-              disabled={pagination.current_page === 1}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <div className="flex h-9 items-center border-y border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900">
-              {pagination.current_page} / {pagination.last_page}
+          {pagination.last_page > 1 ? (
+            <div className="mt-6 flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
+              <div className="hidden sm:block">
+                <p className="text-sm text-slate-700">
+                  Showing page{" "}
+                  <span className="font-medium">{pagination.current_page}</span> of{" "}
+                  <span className="font-medium">{pagination.last_page}</span>
+                </p>
+              </div>
+              <nav
+                className="inline-flex items-center gap-2"
+                aria-label="Pagination"
+              >
+                <Button
+                  variant="outline"
+                  className="h-9 px-2"
+                  onClick={() =>
+                    fetchDrives(
+                      pagination.current_page - 1,
+                      pagination.per_page,
+                      searchTerm,
+                      filters.status,
+                      filters.course_type,
+                      filters.institute_id,
+                    )
+                  }
+                  disabled={pagination.current_page === 1}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <div className="flex h-9 items-center border-y border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900">
+                  {pagination.current_page} / {pagination.last_page}
+                </div>
+                <Button
+                  variant="outline"
+                  className="h-9 px-2"
+                  onClick={() =>
+                    fetchDrives(
+                      pagination.current_page + 1,
+                      pagination.per_page,
+                      searchTerm,
+                      filters.status,
+                      filters.course_type,
+                      filters.institute_id,
+                    )
+                  }
+                  disabled={pagination.current_page === pagination.last_page}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </nav>
             </div>
-            <Button
-              variant="outline"
-              className="h-9 px-2"
-              onClick={() =>
-                fetchDrives(
-                  pagination.current_page + 1,
-                  pagination.per_page,
-                  searchTerm,
-                  filters.status,
-                  filters.course_type,
-                  filters.institute_id,
-                )
-              }
-              disabled={pagination.current_page === pagination.last_page}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </nav>
+          ) : null}
         </div>
-      ) : null}
+      )}
 
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}

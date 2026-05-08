@@ -7,6 +7,7 @@ import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import Permission from '../../components/common/Permission';
 import VesselTable from './VesselTable';
+import PageLoader from '../../components/common/PageLoader';
 
 const VesselList = () => {
   const navigate = useNavigate();
@@ -146,19 +147,23 @@ const VesselList = () => {
         </Permission>
       </PageHeader>
 
-      <VesselTable
-        vessels={vessels}
-        loading={loading}
-        searchTerm={searchTerm}
-        pagination={pagination}
-        sortConfig={sortConfig}
-        handleEdit={handleEditClick}
-        handleDelete={handleDelete}
-        handlePageChange={handlePageChange}
-        handlePerPageChange={handleLimitChange}
-        handleSortChange={handleSortChange}
-        handleSearch={handleSearch}
-      />
+      {loading && vessels.length === 0 ? (
+        <PageLoader />
+      ) : (
+        <VesselTable
+          vessels={vessels}
+          loading={loading}
+          searchTerm={searchTerm}
+          pagination={pagination}
+          sortConfig={sortConfig}
+          handleEdit={handleEditClick}
+          handleDelete={handleDelete}
+          handlePageChange={handlePageChange}
+          handlePerPageChange={handleLimitChange}
+          handleSortChange={handleSortChange}
+          handleSearch={handleSearch}
+        />
+      )}
     </div>
   );
 };

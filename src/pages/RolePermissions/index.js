@@ -208,7 +208,7 @@ const RolePermissions = () => {
             disabled={!selectedRole || saving || loading}
             className='px-6 py-2.5 text-[14px] font-semibold text-white bg-[#3a5f9e] rounded-xl hover:bg-[#325186] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] active:scale-95 disabled:opacity-50 flex items-center gap-2'
           >
-            {saving && <Loader2 className='w-4 h-4 animate-spin' />}
+            {saving && <div className='w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent' />}
             Save Changes
           </button>
         </Permission>

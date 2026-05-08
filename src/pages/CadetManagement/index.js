@@ -8,6 +8,7 @@ import DeleteConfirmationModal from '../../components/common/DeleteConfirmationM
 import { Button } from '../../components/ui/button';
 import Permission from '../../components/common/Permission';
 import PageHeader from '../../components/common/PageHeader';
+import PageLoader from '../../components/common/PageLoader';
 
 // Single-table logic with courseType parameter
 const CadetManagement = ({
@@ -242,29 +243,33 @@ const CadetManagement = ({
         </Permission>
       </PageHeader>
 
-      <div className='mt-6'>
-        <CadetTable
-          cadets={cadets}
-          loading={loading}
-          pagination={pagination}
-          handlePageChange={handlePageChange}
-          handlePerPageChange={handleLimitChange}
-          sortConfig={sortConfig}
-          handleSortChange={handleSortChange}
-          searchTerm={searchTerm}
-          handleSearch={handleSearch}
-          selectedInstitute={selectedInstitute}
-          handleInstituteChange={handleInstituteChange}
-          institutes={filteredInstitutes}
-          selectedYear={selectedYear}
-          handleYearChange={handleYearChange}
-          selectedCadets={selectedCadets}
-          onSelectionChange={setSelectedCadets}
-          onDelete={handleDeleteClick}
-          onClearAll={handleClearAll}
-          showAssessmentScore={showAssessmentScore}
-        />
-      </div>
+      {loading && cadets.length === 0 ? (
+        <PageLoader />
+      ) : (
+        <div className='mt-6'>
+          <CadetTable
+            cadets={cadets}
+            loading={loading}
+            pagination={pagination}
+            handlePageChange={handlePageChange}
+            handlePerPageChange={handleLimitChange}
+            sortConfig={sortConfig}
+            handleSortChange={handleSortChange}
+            searchTerm={searchTerm}
+            handleSearch={handleSearch}
+            selectedInstitute={selectedInstitute}
+            handleInstituteChange={handleInstituteChange}
+            institutes={filteredInstitutes}
+            selectedYear={selectedYear}
+            handleYearChange={handleYearChange}
+            selectedCadets={selectedCadets}
+            onSelectionChange={setSelectedCadets}
+            onDelete={handleDeleteClick}
+            onClearAll={handleClearAll}
+            showAssessmentScore={showAssessmentScore}
+          />
+        </div>
+      )}
 
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
