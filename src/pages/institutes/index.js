@@ -9,6 +9,7 @@ import ExtendTokenModal from './ExtendTokenModal';
 import { Button } from 'components/ui/button';
 import Permission from 'components/common/Permission';
 import PageHeader from '../../components/common/PageHeader';
+import PageLoader from '../../components/common/PageLoader';
 
 const InstitutesManagement = () => {
   const [institutes, setInstitutes] = useState([]);
@@ -209,22 +210,26 @@ const InstitutesManagement = () => {
       )} */}
 
       {/* Table Component */}
-      <InstitutesTable
-        institutes={institutes}
-        loading={loading}
-        searchTerm={searchTerm}
-        pagination={pagination}
-        sortConfig={sortConfig}
-        handleEdit={handleEdit}
-        handleDelete={handleDelete}
-        handleExtendToken={handleExtendToken}
-        handlePageChange={handlePageChange}
-        handlePerPageChange={handleLimitChange}
-        handleSortChange={handleSortChange}
-        handleSearch={handleSearch}
-        selectedInstitutes={selectedInstitutes}
-        onSelectionChange={setSelectedInstitutes}
-      />
+      {loading && institutes.length === 0 ? (
+        <PageLoader />
+      ) : (
+        <InstitutesTable
+          institutes={institutes}
+          loading={loading}
+          searchTerm={searchTerm}
+          pagination={pagination}
+          sortConfig={sortConfig}
+          handleEdit={handleEdit}
+          handleDelete={handleDelete}
+          handleExtendToken={handleExtendToken}
+          handlePageChange={handlePageChange}
+          handlePerPageChange={handleLimitChange}
+          handleSortChange={handleSortChange}
+          handleSearch={handleSearch}
+          selectedInstitutes={selectedInstitutes}
+          onSelectionChange={setSelectedInstitutes}
+        />
+      )}
 
       <SendEmailModal
         isOpen={isEmailModalOpen}

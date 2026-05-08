@@ -9,7 +9,6 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Loader2,
   BarChart3,
   ClipboardList,
   Anchor,
@@ -24,6 +23,8 @@ import {
 } from "../components/ui/card";
 import api from "../lib/utils/apiConfig";
 import { formatDateForDisplay } from "../lib/utils/dateUtils";
+
+import PageLoader from "../components/common/PageLoader";
 
 // ─── Stage label + color mapping ────────────────────────────────────────────
 const STAGE_CONFIG = {
@@ -274,14 +275,7 @@ const Dashboard = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-          <p className="text-slate-500 font-medium">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (error) {

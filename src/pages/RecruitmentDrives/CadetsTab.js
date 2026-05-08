@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Edit, Eye, Loader2, Search } from "lucide-react";
+import { Edit, Eye, Search } from "lucide-react";
+import PageLoader from "../../components/common/PageLoader";
 import api from "../../lib/utils/apiConfig";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
@@ -207,11 +208,7 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
   };
 
   if (loading && cadets.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-20">
-        <Loader2 className="animate-spin text-[#3a5f9e]" size={40} />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

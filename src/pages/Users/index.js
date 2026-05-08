@@ -4,6 +4,7 @@ import { Plus, Users } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import PageHeader from '../../components/common/PageHeader';
 import UsersTable from './UsersTable';
+import PageLoader from '../../components/common/PageLoader';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
 import Permission from 'components/common/Permission';
@@ -194,21 +195,25 @@ const UserManagement = () => {
         </div>
       )}
 
-      <UsersTable
-        users={users}
-        loading={loading}
-        searchTerm={searchTerm}
-        pagination={pagination}
-        sortConfig={sortConfig}
-        handleEdit={handleEditClick}
-        handleDelete={handleDelete}
-        handlePageChange={handlePageChange}
-        handlePerPageChange={handleLimitChange}
-        handleSortChange={handleSortChange}
-        handleSearch={handleSearch}
-        selectedUsers={selectedUsers}
-        onSelectionChange={setSelectedUsers}
-      />
+      {loading && users.length === 0 ? (
+        <PageLoader />
+      ) : (
+        <UsersTable
+          users={users}
+          loading={loading}
+          searchTerm={searchTerm}
+          pagination={pagination}
+          sortConfig={sortConfig}
+          handleEdit={handleEditClick}
+          handleDelete={handleDelete}
+          handlePageChange={handlePageChange}
+          handlePerPageChange={handleLimitChange}
+          handleSortChange={handleSortChange}
+          handleSearch={handleSearch}
+          selectedUsers={selectedUsers}
+          onSelectionChange={setSelectedUsers}
+        />
+      )}
     </div>
   );
 };

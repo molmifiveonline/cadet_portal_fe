@@ -4,12 +4,12 @@ import {
   Edit,
   Eye,
   FileText,
-  Loader2,
   Plus,
   Search,
   Send,
   Users,
 } from "lucide-react";
+import PageLoader from "../../components/common/PageLoader";
 import api from "../../lib/utils/apiConfig";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -241,11 +241,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
   }));
 
   if (loading && cadets.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-20">
-        <Loader2 className="animate-spin text-[#3a5f9e]" size={40} />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
@@ -346,7 +342,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
               className="gap-2 bg-green-600 text-white hover:bg-green-700 shadow-sm"
             >
               {actionLoading.confirm ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
                 <Users className="h-4 w-4" />
               )}
@@ -369,7 +365,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
               className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
             >
               {actionLoading.academic ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
               ) : (
                 <FileText className="h-4 w-4" />
               )}
@@ -392,7 +388,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
               className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
             >
               {actionLoading.documents ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
               ) : (
                 <Send className="h-4 w-4" />
               )}

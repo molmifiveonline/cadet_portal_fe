@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle, Eye, Loader2, Search, Send, Edit } from "lucide-react";
+import { CheckCircle, Eye, Search, Send, Edit } from "lucide-react";
+import PageLoader from "../../components/common/PageLoader";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/utils/apiConfig";
 import { Button } from "../../components/ui/button";
@@ -249,7 +250,7 @@ const ShortlistTab = ({
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
-            <Loader2 size={12} className="animate-spin" />
+            <div className="h-3 w-3 animate-spin rounded-full border-2 border-amber-700 border-t-transparent" />
             Pending
           </span>
         ),
@@ -297,11 +298,7 @@ const ShortlistTab = ({
   ];
 
   if (loading && cadets.length === 0) {
-    return (
-      <div className="flex items-center justify-center p-20">
-        <Loader2 className="animate-spin text-[#3a5f9e]" size={40} />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
@@ -336,7 +333,7 @@ const ShortlistTab = ({
                 className="h-11 min-w-[178px] gap-2 whitespace-nowrap bg-purple-600 px-5 text-white hover:bg-purple-700"
               >
                 {submittingShortlist ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
                   <CheckCircle className="h-4 w-4" />
                 )}
@@ -353,7 +350,7 @@ const ShortlistTab = ({
                   className="h-11 min-w-[230px] gap-2 whitespace-nowrap border-green-200 px-5 text-green-700 hover:bg-green-50"
                 >
                   {sendingShortlist ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-700 border-t-transparent" />
                   ) : (
                     <Send className="h-4 w-4" />
                   )}

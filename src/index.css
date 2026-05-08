@@ -44,3 +44,17 @@ body {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+input[type='date'] {
+  position: relative;
+  padding-right: 2.75rem;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0.875rem;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  cursor: pointer;
+}

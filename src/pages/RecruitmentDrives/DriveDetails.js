@@ -19,6 +19,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import Permission from "../../components/common/Permission";
 import PageHeader from "../../components/common/PageHeader";
+import PageLoader from "../../components/common/PageLoader";
 import AssessmentTab from "./AssessmentTab";
 import CadetsTab from "./CadetsTab";
 import DocumentsTab from "./DocumentsTab";
@@ -303,11 +304,7 @@ const DriveDetails = () => {
       ];
 
   if (loading && !drive) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!drive) {

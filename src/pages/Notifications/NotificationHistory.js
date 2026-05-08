@@ -3,6 +3,7 @@ import { Bell, Check, Clock, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../lib/utils/apiConfig';
 import { cn } from '../../lib/utils/utils';
+import PageLoader from '../../components/common/PageLoader';
 
 const NotificationHistory = () => {
   const [notifications, setNotifications] = useState([]);
@@ -101,10 +102,7 @@ const NotificationHistory = () => {
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {loading ? (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-slate-400">
-            <Clock className="mb-3 h-8 w-8 animate-spin opacity-30" />
-            <p className="text-sm font-medium">Loading notification history...</p>
-          </div>
+          <PageLoader />
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center text-slate-400">
             <Bell className="mb-3 h-12 w-12 opacity-20" />
