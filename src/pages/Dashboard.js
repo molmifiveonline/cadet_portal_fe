@@ -317,13 +317,13 @@ const Dashboard = () => {
           gradient="from-amber-500 to-orange-600"
           subtitle="Awaiting review"
         />
-        <StatsCard
+        {/* <StatsCard
           title="CTV Ready"
           value={(stats?.ctvReadyCandidates?.length ?? 0).toLocaleString()}
           icon={Ship}
           gradient="from-emerald-500 to-teal-600"
           subtitle="Ready for CTV"
-        />
+        /> */}
       </div>
 
       {/* ── Stage-wise Candidate Pipeline ───────────────────────────── */}
@@ -453,7 +453,7 @@ const Dashboard = () => {
       <div className="mt-8" />
 
       {/* ── CTV Ready Candidates ─────────────────────────────────────── */}
-      <Section
+      {/* <Section
         title="Candidates Ready for CTV"
         icon={Anchor}
         iconBg="bg-emerald-50/80 text-emerald-600"
@@ -506,7 +506,7 @@ const Dashboard = () => {
             </table>
           </div>
         )}
-      </Section>
+      </Section> */}
 
       <div className="mt-8" />
 

@@ -86,7 +86,7 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
   const filteredCadets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return cadets.filter((cadet) => {
+    const filtered = cadets.filter((cadet) => {
       const matchesStatus =
         selectedStatus === "all" || cadet.status === selectedStatus;
 
@@ -97,6 +97,14 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
         cadet.email_id?.toLowerCase().includes(normalizedSearch);
 
       return matchesStatus && matchesSearch;
+    });
+
+    const statusOrder = { passed: 1, missing_twelfth: 2, failed: 3 };
+
+    return filtered.sort((a, b) => {
+      const statusA = getShortlistCriteriaStatus(a).type;
+      const statusB = getShortlistCriteriaStatus(b).type;
+      return (statusOrder[statusA] || 4) - (statusOrder[statusB] || 4);
     });
   }, [cadets, searchTerm, selectedStatus]);
 

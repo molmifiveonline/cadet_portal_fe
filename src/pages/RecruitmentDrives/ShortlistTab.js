@@ -71,7 +71,7 @@ const ShortlistTab = ({
 
   const filteredCadets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
-    return cadets.filter((cadet) => {
+    const filtered = cadets.filter((cadet) => {
       if (!normalizedSearch) return true;
 
       return (
@@ -79,6 +79,14 @@ const ShortlistTab = ({
         cadet.cadet_unique_id?.toLowerCase().includes(normalizedSearch) ||
         cadet.email_id?.toLowerCase().includes(normalizedSearch)
       );
+    });
+
+    const statusOrder = { passed: 1, missing_twelfth: 2, failed: 3 };
+
+    return filtered.sort((a, b) => {
+      const statusA = getShortlistCriteriaStatus(a).type;
+      const statusB = getShortlistCriteriaStatus(b).type;
+      return (statusOrder[statusA] || 4) - (statusOrder[statusB] || 4);
     });
   }, [cadets, searchTerm]);
 
@@ -115,10 +123,17 @@ const ShortlistTab = ({
 
     try {
       setSubmittingShortlist(true);
+      const cadetIds = selectedForShortlist.map((cadet) => cadet.id);
+
       await api.post(`/recruitment-drives/${drive.id}/shortlist`, {
-        cadet_ids: selectedForShortlist.map((cadet) => cadet.id),
+        cadet_ids: cadetIds,
       });
       toast.success(`${selectedForShortlist.length} cadet(s) shortlisted`);
+
+      if (canSendShortlistEmail && onSendShortlistEmail) {
+        await onSendShortlistEmail(cadetIds);
+      }
+
       await fetchCadets();
       await onRefresh?.();
     } catch (error) {
@@ -329,32 +344,32 @@ const ShortlistTab = ({
             <>
               <Button
                 onClick={handleShortlist}
-                disabled={submittingShortlist || selectedForShortlist.length === 0}
+                disabled={submittingShortlist || sendingShortlist || selectedForShortlist.length === 0}
                 className="h-11 min-w-[178px] gap-2 whitespace-nowrap bg-purple-600 px-5 text-white hover:bg-purple-700"
               >
-                {submittingShortlist ? (
+                {submittingShortlist || sendingShortlist ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 ) : (
                   <CheckCircle className="h-4 w-4" />
                 )}
-                Shortlist Selected
+                {canSendShortlistEmail ? "Shortlist & Send Email" : "Shortlist Selected"}
               </Button>
 
-              {canSendShortlistEmail ? (
+              {canSendShortlistEmail && shortlistedPendingEmail.length > 0 ? (
                 <Button
                   variant="outline"
                   onClick={handleSendEmail}
                   disabled={
                     sendingShortlist || shortlistedPendingEmail.length === 0
                   }
-                  className="h-11 min-w-[230px] gap-2 whitespace-nowrap border-green-200 px-5 text-green-700 hover:bg-green-50"
+                  className="h-11 min-w-[230px] gap-2 whitespace-nowrap border-amber-200 px-5 text-amber-700 hover:bg-amber-50"
                 >
                   {sendingShortlist ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-700 border-t-transparent" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-amber-700 border-t-transparent" />
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
-                  Send Shortlist Email ({shortlistedPendingEmail.length})
+                  Send Pending Emails ({shortlistedPendingEmail.length})
                 </Button>
               ) : null}
             </>
@@ -370,10 +385,9 @@ const ShortlistTab = ({
           </p>
         ) : (
           <p>
-            <span className="font-semibold">Shortlist Selected</span> locks
-            uploaded cadets as shortlisted. Assessment results remain visible
-            here, and shortlist email sends only to shortlisted cadets still
-            pending email.
+            <span className="font-semibold">Shortlist & Send Email</span> locks
+            uploaded cadets as shortlisted and sends them a notification. Assessment results remain visible
+            here. If any emails fail to send, a retry button will appear.
           </p>
         )}
       </div>
