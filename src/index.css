@@ -58,3 +58,7 @@ input[type='date']::-webkit-calendar-picker-indicator {
   margin: 0;
   cursor: pointer;
 }
+
+select {
+  cursor: pointer;
+}
