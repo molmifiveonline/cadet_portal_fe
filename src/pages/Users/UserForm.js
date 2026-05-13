@@ -21,6 +21,11 @@ import {
 } from '../../lib/utils/validationUtils';
 import { errorTextClass } from '../../lib/utils/formStyles';
 
+const USER_STATUS_OPTIONS = [
+  { value: 'active', label: 'Active', dotClassName: 'bg-green-500' },
+  { value: 'inactive', label: 'Inactive', dotClassName: 'bg-red-500' },
+];
+
 const UserForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -120,6 +125,12 @@ const UserForm = () => {
 
     if (!formData.role) {
       nextErrors.role = 'Role is required';
+    }
+
+    if (
+      !USER_STATUS_OPTIONS.some((option) => option.value === formData.status)
+    ) {
+      nextErrors.status = 'Status is required';
     }
 
     const shouldValidatePassword = !isEdit || formData.password.trim() !== '';
@@ -338,6 +349,41 @@ const UserForm = () => {
               </Select>
               {formErrors.role && (
                 <p className={errorTextClass}>{formErrors.role}</p>
+              )}
+            </div>
+
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Status <span className='text-red-500 ml-1'>*</span>
+              </label>
+              <Select
+                onValueChange={(val) => {
+                  setFormErrors((prev) => ({ ...prev, status: '' }));
+                  setFormData((prev) => ({ ...prev, status: val }));
+                }}
+                value={formData.status}
+              >
+                <SelectTrigger
+                  invalid={!!formErrors.status}
+                  className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
+                >
+                  <SelectValue placeholder='Select status' />
+                </SelectTrigger>
+                <SelectContent>
+                  {USER_STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <div className='flex items-center gap-2'>
+                        <div
+                          className={`w-2 h-2 rounded-full ${option.dotClassName}`}
+                        />
+                        {option.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formErrors.status && (
+                <p className={errorTextClass}>{formErrors.status}</p>
               )}
             </div>
           </div>

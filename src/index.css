@@ -62,3 +62,9 @@ input[type='date']::-webkit-calendar-picker-indicator {
 select {
   cursor: pointer;
 }
+
+/* Full-screen overlays can be rendered inside page wrappers that use Tailwind
+   space-y utilities. Prevent inherited sibling spacing from pushing modals down. */
+[class*='space-y-'] > .fixed.inset-0 {
+  margin-top: 0 !important;
+}

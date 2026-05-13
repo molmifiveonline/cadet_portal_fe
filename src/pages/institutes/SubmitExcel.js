@@ -57,10 +57,13 @@ const SubmitExcel = ({
   const [selectedInstitute, setSelectedInstitute] = useState(driveContext?.instituteId || '');
   const [selectedBatchYear, setSelectedBatchYear] = useState(driveContext?.batchYear || '');
   const [selectedCourseType, setSelectedCourseType] = useState(driveContext?.courseType || '');
+  const [drivesList, setDrivesList] = useState([]);
+  const [selectedDriveId, setSelectedDriveId] = useState(driveContext?.driveId || '');
+  const [loadingDrives, setLoadingDrives] = useState(false);
 
   const isAdmin = user?.role === 'SuperAdmin';
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + 1 - i);
+  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear + 1 - i);
 
   React.useEffect(() => {
     if (isAdmin) {
@@ -75,6 +78,33 @@ const SubmitExcel = ({
       fetchInstitutes();
     }
   }, [isAdmin]);
+
+  React.useEffect(() => {
+    if (isAdmin) {
+      const fetchDrives = async () => {
+        setLoadingDrives(true);
+        try {
+          const params = new URLSearchParams({
+            limit: 1000,
+            institute_id: selectedInstitute === ' ' ? '' : selectedInstitute,
+            year: selectedBatchYear === ' ' ? '' : selectedBatchYear,
+            course_type: (selectedCourseType && selectedCourseType !== 'all' && selectedCourseType !== ' ') ? selectedCourseType : '',
+          });
+          const response = await api.get(`/recruitment-drives?${params.toString()}`);
+          const drives = response.data.data || [];
+          setDrivesList(drives);
+          if (selectedDriveId && !drives.find(d => d.id === selectedDriveId)) {
+            setSelectedDriveId('');
+          }
+        } catch (error) {
+          console.error('Error fetching drives:', error);
+        } finally {
+          setLoadingDrives(false);
+        }
+      };
+      fetchDrives();
+    }
+  }, [isAdmin, selectedInstitute, selectedBatchYear, selectedCourseType]);
 
   const handleFileChange = (e) => {
     if (disabled) {
@@ -240,16 +270,8 @@ const SubmitExcel = ({
       toast.error('Please fix file errors before submitting');
       return;
     }
-    if (isAdmin && !selectedInstitute) {
-      toast.error('Please select an Institute');
-      return;
-    }
-    if (isAdmin && !selectedBatchYear) {
-      toast.error('Please select a Batch Year');
-      return;
-    }
-    if (isAdmin && !selectedCourseType) {
-      toast.error('Please select a Course Type');
+    if (isAdmin && !selectedDriveId) {
+      toast.error('Please select a Recruitment Drive');
       return;
     }
     setShowConfirm(true);
@@ -269,15 +291,18 @@ const SubmitExcel = ({
       const formData = new FormData();
 
       if (driveContext) {
+        formData.append('drive_id', driveContext.driveId);
         formData.append('batch_year', driveContext.batchYear);
         formData.append('course_type', driveContext.courseType);
         if (isAdmin) {
           formData.append('instituteId', driveContext.instituteId);
         }
       } else if (isAdmin) {
-        formData.append('instituteId', selectedInstitute);
-        formData.append('batch_year', selectedBatchYear);
-        formData.append('course_type', selectedCourseType);
+        const drive = drivesList.find((d) => d.id === selectedDriveId);
+        formData.append('drive_id', selectedDriveId);
+        formData.append('instituteId', drive?.institute_id || selectedInstitute);
+        formData.append('batch_year', drive?.year || selectedBatchYear);
+        formData.append('course_type', drive?.course_type || selectedCourseType);
       }
 
       formData.append('file', file);
@@ -403,63 +428,96 @@ const SubmitExcel = ({
         <div className='p-6 border-b border-gray-100 bg-slate-50'>
           <form onSubmit={startSubmit}>
             {isAdmin && (
-              <div className='flex flex-col md:flex-row gap-4 mb-6'>
-                <div className='flex-1 space-y-2'>
-                  <label className='text-sm font-medium leading-none'>
-                    Select Institute <span className='text-red-500'>*</span>
-                  </label>
-                  <Select
-                    value={selectedInstitute}
-                    onValueChange={setSelectedInstitute}
-                  >
-                    <SelectTrigger className='bg-white'>
-                      <SelectValue placeholder='Choose an institute' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {institutes.map((inst) => (
-                        <SelectItem key={inst.id} value={inst.id.toString()}>
-                          {inst.institute_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className='space-y-6 mb-6'>
+                <div className='flex flex-col md:flex-row gap-4'>
+                  <div className='flex-1 space-y-2'>
+                    <label className='text-sm font-medium leading-none'>
+                      Select Institute
+                    </label>
+                    <Select
+                      value={selectedInstitute}
+                      onValueChange={setSelectedInstitute}
+                    >
+                      <SelectTrigger className='bg-white'>
+                        <SelectValue placeholder='All Institutes' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value=' '>All Institutes</SelectItem>
+                        {institutes.map((inst) => (
+                          <SelectItem key={inst.id} value={inst.id.toString()}>
+                            {inst.institute_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className='flex-1 space-y-2'>
+                    <label className='text-sm font-medium leading-none'>
+                      Batch Year
+                    </label>
+                    <Select
+                      value={selectedBatchYear}
+                      onValueChange={setSelectedBatchYear}
+                    >
+                      <SelectTrigger className='bg-white'>
+                        <SelectValue placeholder='All Years' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value=' '>All Years</SelectItem>
+                        {yearOptions.map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className='flex-1 space-y-2'>
+                    <label className='text-sm font-medium leading-none'>
+                      Course Type
+                    </label>
+                    <Select
+                      value={selectedCourseType}
+                      onValueChange={setSelectedCourseType}
+                    >
+                      <SelectTrigger className='bg-white'>
+                        <SelectValue placeholder='All Courses' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value=' '>All Courses</SelectItem>
+                        <SelectItem value='Deck'>Deck</SelectItem>
+                        <SelectItem value='Engine'>Engine</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className='flex-1 space-y-2'>
+                <div className='space-y-2'>
                   <label className='text-sm font-medium leading-none'>
-                    Batch Year <span className='text-red-500'>*</span>
+                    Recruitment Drive <span className='text-red-500'>*</span>
                   </label>
                   <Select
-                    value={selectedBatchYear}
-                    onValueChange={setSelectedBatchYear}
+                    value={selectedDriveId}
+                    onValueChange={setSelectedDriveId}
+                    disabled={loadingDrives}
                   >
                     <SelectTrigger className='bg-white'>
-                      <SelectValue placeholder='Select year' />
+                      <SelectValue 
+                        placeholder={loadingDrives ? 'Loading drives...' : 'Choose a recruitment drive'} 
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      {yearOptions.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className='flex-1 space-y-2'>
-                  <label className='text-sm font-medium leading-none'>
-                    Course Type <span className='text-red-500'>*</span>
-                  </label>
-                  <Select
-                    value={selectedCourseType}
-                    onValueChange={setSelectedCourseType}
-                  >
-                    <SelectTrigger className='bg-white'>
-                      <SelectValue placeholder='Select course type' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='Deck'>Deck</SelectItem>
-                      <SelectItem value='Engine'>Engine</SelectItem>
+                      {drivesList.length === 0 ? (
+                        <SelectItem value='none' disabled>No drives found matching filters</SelectItem>
+                      ) : (
+                        drivesList.map((drive) => (
+                          <SelectItem key={drive.id} value={drive.id}>
+                            {drive.drive_name} ({drive.institute_name} - {drive.course_type} {drive.year})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
