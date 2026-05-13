@@ -530,6 +530,15 @@ const DocumentsTab = ({ drive }) => {
                       {summary.needsAttentionCount > 0 ? (
                         <span className="text-rose-600">{summary.needsAttentionCount} needs attention</span>
                       ) : null}
+                      <span className="mx-1 text-slate-300">|</span>
+                      {cadet.document_email_date ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
+                          <CheckCircle size={12} />
+                          Email Sent ({formatDateForDisplay(cadet.document_email_date)})
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">Email Pending</span>
+                      )}
                     </div>
                     {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </div>

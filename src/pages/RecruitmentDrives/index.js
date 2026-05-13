@@ -415,6 +415,7 @@ const RecruitmentDrives = () => {
 
                       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                         {/* Circular Progress Ring */}
+                        {user?.role !== "Institute" && (
                         <div className="relative flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center">
                           <svg className="h-full w-full -rotate-90 transform">
                             <circle
@@ -450,6 +451,7 @@ const RecruitmentDrives = () => {
                             {progress}%
                           </span>
                         </div>
+                        )}
 
                         {/* Status badge with dot */}
                         <span
@@ -510,14 +512,16 @@ const RecruitmentDrives = () => {
                       </div>
                     ) : null}
 
-                    {/* ── Meta-data Icons Row ─────────────────────────────────── */}
+                    {/* Institute row */}
+                    <div className="mb-3 flex items-start gap-1.5 text-[11px] sm:text-[12px] text-slate-500">
+                      <Building2 className="mt-0.5 h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
+                      <span className="font-medium leading-relaxed break-words">
+                        {drive.institute_name}
+                      </span>
+                    </div>
+
+                    {/* Meta-data icons row */}
                     <div className="mb-5 flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-2 text-[11px] sm:text-[12px] text-slate-500">
-                      <div className="flex items-center gap-1.5 min-w-0 max-w-[150px] sm:max-w-none">
-                        <Building2 className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate font-medium">
-                          {drive.institute_name}
-                        </span>
-                      </div>
                       <div className="flex items-center gap-1.5">
                         <CourseIcon className="h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
                         <span className="font-medium">{drive.course_type}</span>
@@ -535,6 +539,7 @@ const RecruitmentDrives = () => {
                     </div>
 
                     {/* ── Metric Grid (The "Pucks") ────────────────────────────── */}
+                    {user?.role !== "Institute" && (
                     <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {stages.map((stage) => (
                         <div
@@ -553,6 +558,7 @@ const RecruitmentDrives = () => {
                         </div>
                       ))}
                     </div>
+                    )}
 
                     {/* ── Footer ─────────────────────────────────────────────── */}
                     <div className="flex items-center justify-between border-t border-slate-50 pt-3">

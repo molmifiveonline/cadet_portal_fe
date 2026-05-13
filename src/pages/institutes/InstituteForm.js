@@ -31,6 +31,21 @@ import {
 } from '../../lib/utils/formStyles';
 
 const CONTACT_COUNT = 3;
+const INSTITUTE_TYPE_OPTIONS = [
+  { label: 'Deck', value: 'Deck' },
+  { label: 'Engine', value: 'Engine' },
+  { label: 'Both', value: 'Both' },
+];
+
+const normalizeInstituteType = (value) => {
+  if (!value) return 'none';
+  const normalized = String(value).trim().toLowerCase();
+  const option = INSTITUTE_TYPE_OPTIONS.find(
+    ({ value: optionValue }) => optionValue.toLowerCase() === normalized,
+  );
+
+  return option ? option.value : 'none';
+};
 
 const createEmptyContacts = () =>
   Array.from({ length: CONTACT_COUNT }, (_, index) => ({
@@ -111,10 +126,7 @@ const InstituteForm = () => {
         institute_name: data.institute_name || '',
         location: data.location || '',
         address: data.address || '',
-        institute_type:
-          data.institute_type === null || data.institute_type === ''
-            ? 'none'
-            : data.institute_type,
+        institute_type: normalizeInstituteType(data.institute_type),
         status: data.status
           ? String(data.status).toLowerCase().trim()
           : 'active',
@@ -378,9 +390,11 @@ const InstituteForm = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value='none'>— None —</SelectItem>
-                        <SelectItem value='IMU'>IMU</SelectItem>
-                        <SelectItem value='B.Tech'>B.Tech</SelectItem>
-                        <SelectItem value='Both'>Both</SelectItem>
+                        {INSTITUTE_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   )}

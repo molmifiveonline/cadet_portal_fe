@@ -80,11 +80,11 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
 
   const returnTo = `/drives/${drive.id}?tab=interview`;
 
-  const handleSendInvites = async (entries) => {
+  const handleSendInvites = async (formData, submissions) => {
     try {
       setSendingInvites(true);
       await api.post(`/recruitment-drives/${drive.id}/send-interview-invites`, {
-        cadets: entries,
+        cadets: submissions,
       });
       toast.success("Interview invites sent successfully");
       setIsInviteOpen(false);
@@ -93,8 +93,9 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
       await onRefresh?.();
     } catch (error) {
       console.error("Error sending interview invites:", error);
+      const data = error.response?.data;
       toast.error(
-        error.response?.data?.message || "Failed to send interview invites",
+        data?.error || data?.message || "Failed to send interview invites",
       );
     } finally {
       setSendingInvites(false);
@@ -149,6 +150,27 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
       headerName: "Time",
       width: "100px",
       renderCell: ({ value }) => value || "-",
+    },
+    {
+      field: "interview_email_date",
+      headerName: "Email Sent",
+      width: "110px",
+      renderCell: ({ value }) =>
+        value ? (
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+            Yes
+          </span>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            No
+          </span>
+        ),
+    },
+    {
+      field: "interview_email_date_val",
+      headerName: "Email Date",
+      width: "130px",
+      renderCell: ({ row }) => formatDateForDisplay(row.interview_email_date),
     },
     {
       field: "panel_members",

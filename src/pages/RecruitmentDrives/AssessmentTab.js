@@ -100,9 +100,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
   const handleSendInvites = async (entries) => {
     try {
       setSendingInvites(true);
-      await api.post(`/recruitment-drives/${drive.id}/send-assessment-invites`, {
-        cadets: entries,
-      });
+      await api.post(`/recruitment-drives/${drive.id}/send-assessment-invites`, entries);
       toast.success("Assessment invites sent successfully");
       setIsInviteOpen(false);
       setSelectedCadets([]);
@@ -110,8 +108,9 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
       await onRefresh?.();
     } catch (error) {
       console.error("Error sending assessment invites:", error);
+      const data = error.response?.data;
       toast.error(
-        error.response?.data?.message || "Failed to send assessment invites",
+        data?.error || data?.message || "Failed to send assessment invites",
       );
     } finally {
       setSendingInvites(false);
@@ -150,6 +149,27 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
       headerName: "Time",
       width: "100px",
       renderCell: ({ value }) => value || "-",
+    },
+    {
+      field: "assessment_email_date",
+      headerName: "Email Sent",
+      width: "110px",
+      renderCell: ({ value }) =>
+        value ? (
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+            Yes
+          </span>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            No
+          </span>
+        ),
+    },
+    {
+      field: "assessment_email_date_val",
+      headerName: "Email Date",
+      width: "130px",
+      renderCell: ({ row }) => formatDateForDisplay(row.assessment_email_date),
     },
     { field: "ces_test", headerName: "CES 1", width: "80px" },
     { field: "ces_test_2", headerName: "CES 2", width: "80px" },
@@ -364,10 +384,10 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
               required: true,
             },
             {
-              key: "document_link",
-              label: "Document Upload Link",
-              type: "url",
-              placeholder: "https://...",
+              key: "assessment_document",
+              label: "Upload Document",
+              type: "file",
+              global: true,
             },
             {
               key: "remarks",

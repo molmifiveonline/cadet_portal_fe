@@ -15,6 +15,7 @@ import {
 } from "../../components/ui/select";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import { getShortlistCriteriaStatus } from "../../lib/utils/shortlistCriteria";
+import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 
 const STATUS_OPTIONS = [
   "Uploaded",
@@ -160,6 +161,27 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
       ),
     },
     {
+      field: "last_email_date",
+      headerName: "Email Sent",
+      width: "110px",
+      renderCell: ({ value, row }) =>
+        value ? (
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+            Yes ({row.last_email_type})
+          </span>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            No
+          </span>
+        ),
+    },
+    {
+      field: "last_email_date_val",
+      headerName: "Email Date",
+      width: "130px",
+      renderCell: ({ row }) => formatDateForDisplay(row.last_email_date),
+    },
+    {
       field: "assessment_eligible",
       headerName: "Eligible for Assessment",
       width: "180px",
@@ -208,7 +230,12 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
         </div>
       ),
     },
-  ];
+  ].filter(col => {
+    if (isInstituteUser) {
+      return !["status", "last_email_date", "last_email_date_val", "assessment_eligible"].includes(col.field);
+    }
+    return true;
+  });
 
   const handleStatusChange = (value) => {
     setSelectedStatus(value);
@@ -225,24 +252,28 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
         <div>
           <h2 className="text-xl font-bold text-slate-800">Cadets Uploaded</h2>
           <p className="text-sm text-slate-500">
-            Track CV status, workflow stage, and assessment eligibility for this drive.
+            {isInstituteUser 
+              ? "View and manage the list of cadets uploaded for this drive."
+              : "Track CV status, workflow stage, and assessment eligibility for this drive."}
           </p>
         </div>
 
         <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-          <Select value={selectedStatus} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-full border-slate-200 bg-white sm:w-[220px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              {STATUS_OPTIONS.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {!isInstituteUser && (
+            <Select value={selectedStatus} onValueChange={handleStatusChange}>
+              <SelectTrigger className="w-full border-slate-200 bg-white sm:w-[220px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

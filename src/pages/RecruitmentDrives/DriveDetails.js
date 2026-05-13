@@ -22,9 +22,11 @@ import PageHeader from "../../components/common/PageHeader";
 import PageLoader from "../../components/common/PageLoader";
 import AssessmentTab from "./AssessmentTab";
 import CadetsTab from "./CadetsTab";
-import DocumentsTab from "./DocumentsTab";
-import InterviewTab from "./InterviewTab";
-import MedicalTab from "./MedicalTab";
+// TEMP DEMO: post-assessment stages hidden.
+// TODO: Re-enable after demo.
+// import DocumentsTab from "./DocumentsTab";
+// import InterviewTab from "./InterviewTab";
+// import MedicalTab from "./MedicalTab";
 import SendEmailModal from "../institutes/SendEmailModal";
 import ShortlistTab from "./ShortlistTab";
 import CadetPreviewModal from "../../components/common/CadetPreviewModal";
@@ -236,24 +238,44 @@ const DriveDetails = () => {
         tone: "text-teal-600",
         onClick: () => setActiveTab("assessment"),
       },
+      // TEMP DEMO: post-assessment progress counts hidden.
+      // TODO: Re-enable after demo.
       {
         label: "Interview Selected",
-        value: stats?.interview_selected || 0,
+        // value: stats?.interview_selected || 0,
         tone: "text-emerald-600",
         onClick: () => setActiveTab("interview"),
       },
       {
         label: "Medical",
-        value: stats?.medical_queue_count || 0,
+        // value: stats?.medical_queue_count || 0,
         tone: "text-lime-600",
         onClick: () => setActiveTab("medical"),
       },
       {
         label: "Documents",
-        value: stats?.document_count || 0,
+        // value: stats?.document_count || 0,
         tone: "text-indigo-600",
         onClick: () => setActiveTab("documents"),
       },
+      // Phase 2: re-enable CTV Assigned and Onboarded progress cards.
+      // {
+      //   label: "CTV Assigned",
+      //   value: stats?.ctv_assigned || 0,
+      //   tone: "text-amber-600",
+      //   onClick: () => {
+      //     setActiveTab("cadets");
+      //     setStatusFilter("CTV Assigned");
+      //   },
+      // },
+      // {
+      //   label: "Onboarded",
+      //   value: stats?.onboarded || 0,
+      //   tone: "text-lime-600",
+      //   onClick: () => {
+      //     setActiveTab("cadets");
+      //     setStatusFilter("Onboarded");
+      //   },
       // Phase 2: re-enable CTV Assigned and Onboarded progress cards.
       // {
       //   label: "CTV Assigned",
@@ -288,10 +310,6 @@ const DriveDetails = () => {
           disabledReason: instituteUploadDisabledMessage,
         },
         { id: "cadets", label: "Cadets", icon: Users },
-        { id: "shortlist", label: "Shortlisted", icon: ListChecks },
-        { id: "assessment", label: "Assessment", icon: ListChecks },
-        { id: "interview", label: "Interview", icon: Users },
-        { id: "documents", label: "Documents", icon: FileText },
       ]
     : [
         { id: "info", label: "Drive Info", icon: FileText },
@@ -302,6 +320,7 @@ const DriveDetails = () => {
         { id: "medical", label: "Medical", icon: Stethoscope },
         { id: "documents", label: "Documents", icon: FileText },
       ];
+
 
   if (loading && !drive) {
     return <PageLoader />;
@@ -418,7 +437,7 @@ const DriveDetails = () => {
         </div>
       ) : null}
 
-      {stats ? (
+      {stats && !isInstituteUser ? (
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-800">
             <Rocket className="h-5 w-5 text-blue-600" />
@@ -563,7 +582,8 @@ const DriveDetails = () => {
                 </div>
               ) : null}
 
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {!isInstituteUser && (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Uploaded
@@ -597,6 +617,7 @@ const DriveDetails = () => {
                   </p>
                 </div>
               </div>
+              )}
 
             </div>
           ) : null}
@@ -646,19 +667,21 @@ const DriveDetails = () => {
             />
           ) : null}
 
-          {activeTab === "interview" ? (
+          {/* TEMP DEMO: post-assessment stages hidden.
+              TODO: Re-enable after demo. */}
+          {/* {activeTab === "interview" ? (
             <InterviewTab
               drive={drive}
               onRefresh={fetchDriveData}
               readOnly={isInstituteUser}
             />
-          ) : null}
+          ) : null} */}
 
-          {activeTab === "medical" && !isInstituteUser ? (
+          {/* {activeTab === "medical" && !isInstituteUser ? (
             <MedicalTab drive={drive} onRefresh={fetchDriveData} />
-          ) : null}
+          ) : null} */}
 
-          {activeTab === "documents" ? <DocumentsTab drive={drive} /> : null}
+          {/* {activeTab === "documents" ? <DocumentsTab drive={drive} /> : null} */}
         </div>
       </div>
 
@@ -666,6 +689,7 @@ const DriveDetails = () => {
         isOpen={isEmailModalOpen}
         onClose={() => setIsEmailModalOpen(false)}
         selectedInstitutes={drive?.institute_id ? [drive.institute_id] : []}
+        instituteName={drive?.institute_name}
         defaultBatchYear={drive?.year}
         defaultCourseType={drive?.course_type}
         lockBatchYear

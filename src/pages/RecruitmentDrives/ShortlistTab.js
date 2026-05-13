@@ -8,6 +8,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import { getShortlistCriteriaStatus } from "../../lib/utils/shortlistCriteria";
+import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 
 const formatPercentage = (value) => {
   if (value === null || value === undefined || String(value).trim() === "") {
@@ -237,20 +238,25 @@ const ShortlistTab = ({
     },
     {
       field: "shortlist_email_sent",
-      headerName: "Shortlist Email",
-      width: "130px",
+      headerName: "Email Sent",
+      width: "110px",
       align: "center",
-      renderCell: ({ value }) =>
-        Number(value) ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
-            <CheckCircle size={12} />
-            Sent
+      renderCell: ({ value, row }) =>
+        Number(value) || row.shortlist_email_date ? (
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+            Yes
           </span>
         ) : (
-          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
-            Pending
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            No
           </span>
         ),
+    },
+    {
+      field: "shortlist_email_date_val",
+      headerName: "Email Date",
+      width: "130px",
+      renderCell: ({ row }) => formatDateForDisplay(row.shortlist_email_date),
     },
     {
       field: "institute_detail_filled",
