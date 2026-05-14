@@ -5,6 +5,9 @@ import {
   CheckCircle,
   Loader2,
   AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Filter,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
@@ -60,6 +63,21 @@ const SubmitExcel = ({
   const [drivesList, setDrivesList] = useState([]);
   const [selectedDriveId, setSelectedDriveId] = useState(driveContext?.driveId || '');
   const [loadingDrives, setLoadingDrives] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
+
+  const getFilterSummary = () => {
+    const inst = institutes.find((i) => i.id.toString() === selectedInstitute);
+    const instName = inst ? inst.institute_name : 'All Institutes';
+    const year =
+      selectedBatchYear && selectedBatchYear !== ' '
+        ? selectedBatchYear
+        : 'All Years';
+    const type =
+      selectedCourseType && selectedCourseType !== ' '
+        ? selectedCourseType
+        : 'All Courses';
+    return `${instName} | ${year} | ${type}`;
+  };
 
   const isAdmin = user?.role === 'SuperAdmin';
   const currentYear = new Date().getFullYear();
@@ -429,70 +447,96 @@ const SubmitExcel = ({
           <form onSubmit={startSubmit}>
             {isAdmin && (
               <div className='space-y-6 mb-6'>
-                <div className='flex flex-col md:flex-row gap-4'>
-                  <div className='flex-1 space-y-2'>
-                    <label className='text-sm font-medium leading-none'>
-                      Select Institute
-                    </label>
-                    <Select
-                      value={selectedInstitute}
-                      onValueChange={setSelectedInstitute}
-                    >
-                      <SelectTrigger className='bg-white'>
-                        <SelectValue placeholder='All Institutes' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value=' '>All Institutes</SelectItem>
-                        {institutes.map((inst) => (
-                          <SelectItem key={inst.id} value={inst.id.toString()}>
-                            {inst.institute_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className='flex-1 space-y-2'>
-                    <label className='text-sm font-medium leading-none'>
-                      Batch Year
-                    </label>
-                    <Select
-                      value={selectedBatchYear}
-                      onValueChange={setSelectedBatchYear}
-                    >
-                      <SelectTrigger className='bg-white'>
-                        <SelectValue placeholder='All Years' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value=' '>All Years</SelectItem>
-                        {yearOptions.map((year) => (
-                          <SelectItem key={year} value={year.toString()}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className='flex-1 space-y-2'>
-                    <label className='text-sm font-medium leading-none'>
-                      Course Type
-                    </label>
-                    <Select
-                      value={selectedCourseType}
-                      onValueChange={setSelectedCourseType}
-                    >
-                      <SelectTrigger className='bg-white'>
-                        <SelectValue placeholder='All Courses' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value=' '>All Courses</SelectItem>
-                        <SelectItem value='Deck'>Deck</SelectItem>
-                        <SelectItem value='Engine'>Engine</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className='flex items-center justify-between border-b border-gray-100 pb-3'>
+                  <button
+                    type='button'
+                    onClick={() => setShowFilters(!showFilters)}
+                    className='flex items-center gap-2 text-sm font-semibold text-[#3a5f9e] hover:bg-white px-2 py-1 rounded transition-all'
+                  >
+                    <Filter className='w-4 h-4' />
+                    {showFilters ? 'Hide Filters' : 'Show Filters'}
+                    {showFilters ? (
+                      <ChevronUp className='w-4 h-4' />
+                    ) : (
+                      <ChevronDown className='w-4 h-4' />
+                    )}
+                  </button>
+                  {!showFilters && (
+                    <div className='text-xs font-medium text-slate-500 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm animate-in fade-in zoom-in duration-300'>
+                      <span className='text-slate-400 mr-1'>Active Filters:</span> {getFilterSummary()}
+                    </div>
+                  )}
                 </div>
+
+                {showFilters && (
+                  <div className='flex flex-col md:flex-row gap-4 animate-in fade-in slide-in-from-top-2 duration-300'>
+                    <div className='flex-1 space-y-2'>
+                      <label className='text-sm font-medium leading-none'>
+                        Select Institute
+                      </label>
+                      <Select
+                        value={selectedInstitute}
+                        onValueChange={setSelectedInstitute}
+                      >
+                        <SelectTrigger className='bg-white'>
+                          <SelectValue placeholder='All Institutes' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value=' '>All Institutes</SelectItem>
+                          {institutes.map((inst) => (
+                            <SelectItem
+                              key={inst.id}
+                              value={inst.id.toString()}
+                            >
+                              {inst.institute_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className='flex-1 space-y-2'>
+                      <label className='text-sm font-medium leading-none'>
+                        Batch Year
+                      </label>
+                      <Select
+                        value={selectedBatchYear}
+                        onValueChange={setSelectedBatchYear}
+                      >
+                        <SelectTrigger className='bg-white'>
+                          <SelectValue placeholder='All Years' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value=' '>All Years</SelectItem>
+                          {yearOptions.map((year) => (
+                            <SelectItem key={year} value={year.toString()}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className='flex-1 space-y-2'>
+                      <label className='text-sm font-medium leading-none'>
+                        Course Type
+                      </label>
+                      <Select
+                        value={selectedCourseType}
+                        onValueChange={setSelectedCourseType}
+                      >
+                        <SelectTrigger className='bg-white'>
+                          <SelectValue placeholder='All Courses' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value=' '>All Courses</SelectItem>
+                          <SelectItem value='Deck'>Deck</SelectItem>
+                          <SelectItem value='Engine'>Engine</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
 
                 <div className='space-y-2'>
                   <label className='text-sm font-medium leading-none'>
@@ -504,17 +548,24 @@ const SubmitExcel = ({
                     disabled={loadingDrives}
                   >
                     <SelectTrigger className='bg-white'>
-                      <SelectValue 
-                        placeholder={loadingDrives ? 'Loading drives...' : 'Choose a recruitment drive'} 
+                      <SelectValue
+                        placeholder={
+                          loadingDrives
+                            ? 'Loading drives...'
+                            : 'Choose a recruitment drive'
+                        }
                       />
                     </SelectTrigger>
                     <SelectContent>
                       {drivesList.length === 0 ? (
-                        <SelectItem value='none' disabled>No drives found matching filters</SelectItem>
+                        <SelectItem value='none' disabled>
+                          No drives found matching filters
+                        </SelectItem>
                       ) : (
                         drivesList.map((drive) => (
                           <SelectItem key={drive.id} value={drive.id}>
-                            {drive.drive_name} ({drive.institute_name} - {drive.course_type} {drive.year})
+                            {drive.drive_name} ({drive.institute_name} -{' '}
+                            {drive.course_type} {drive.year})
                           </SelectItem>
                         ))
                       )}
