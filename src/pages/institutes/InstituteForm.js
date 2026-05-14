@@ -31,6 +31,7 @@ import {
 } from '../../lib/utils/formStyles';
 
 const CONTACT_COUNT = 3;
+const INSTITUTE_TYPE_NONE = 'none';
 const INSTITUTE_TYPE_OPTIONS = [
   { label: 'Deck', value: 'Deck' },
   { label: 'Engine', value: 'Engine' },
@@ -38,13 +39,13 @@ const INSTITUTE_TYPE_OPTIONS = [
 ];
 
 const normalizeInstituteType = (value) => {
-  if (!value) return 'none';
+  if (!value) return INSTITUTE_TYPE_NONE;
   const normalized = String(value).trim().toLowerCase();
   const option = INSTITUTE_TYPE_OPTIONS.find(
     ({ value: optionValue }) => optionValue.toLowerCase() === normalized,
   );
 
-  return option ? option.value : 'none';
+  return option ? option.value : INSTITUTE_TYPE_NONE;
 };
 
 const createEmptyContacts = () =>
@@ -98,7 +99,7 @@ const InstituteForm = () => {
       institute_name: '',
       location: '',
       address: '',
-      institute_type: 'none',
+      institute_type: INSTITUTE_TYPE_NONE,
       status: 'active',
       contact_emails: createEmptyContacts(),
     },
@@ -164,7 +165,7 @@ const InstituteForm = () => {
         institute_name: '',
         location: '',
         address: '',
-        institute_type: '',
+        institute_type: INSTITUTE_TYPE_NONE,
         status: 'active',
         contact_emails: createEmptyContacts(),
       });
@@ -181,6 +182,8 @@ const InstituteForm = () => {
 
     const payload = {
       ...data,
+      institute_type:
+        data.institute_type === INSTITUTE_TYPE_NONE ? '' : data.institute_type,
       contact_emails: contactEmails,
     };
 
@@ -377,19 +380,18 @@ const InstituteForm = () => {
                 <Controller
                   name='institute_type'
                   control={control}
-                  defaultValue=''
+                  defaultValue={INSTITUTE_TYPE_NONE}
                   render={({ field }) => (
                     <Select
-                      value={field.value || ''}
-                      onValueChange={(val) =>
-                        field.onChange(val === 'none' ? '' : val)
-                      }
+                      key={`institute-type-${field.value || INSTITUTE_TYPE_NONE}`}
+                      value={field.value || INSTITUTE_TYPE_NONE}
+                      onValueChange={field.onChange}
                     >
                       <SelectTrigger className='w-full rounded-xl border border-gray-300 bg-gray-50/50 h-[42px]'>
                         <SelectValue placeholder='Select type...' />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value='none'>— None —</SelectItem>
+                        <SelectItem value={INSTITUTE_TYPE_NONE}>None</SelectItem>
                         {INSTITUTE_TYPE_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}

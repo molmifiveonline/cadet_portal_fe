@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import React, { useEffect, useRef, useState } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { Loader2, ArrowLeft, Save, Rocket } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../lib/utils/apiConfig";
@@ -21,7 +21,9 @@ const DriveForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [institutesLoading, setInstitutesLoading] = useState(false);
   const [institutes, setInstitutes] = useState([]);
+  const previousCourseTypeRef = useRef("");
   const isEdit = !!id;
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 6 }, (_, index) =>
@@ -33,6 +35,7 @@ const DriveForm = () => {
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     defaultValues: {
@@ -45,21 +48,60 @@ const DriveForm = () => {
       status: "Draft",
     },
   });
+  const selectedCourseType = useWatch({ control, name: "course_type" });
 
-  // Fetch institutes for dropdown
+  // Fetch institutes for dropdown based on course type
   useEffect(() => {
+    const courseType = selectedCourseType || "";
+
+    if (!courseType) {
+      setInstitutes([]);
+      setInstitutesLoading(false);
+      if (previousCourseTypeRef.current) {
+        setValue("institute_id", "");
+      }
+      previousCourseTypeRef.current = courseType;
+      return;
+    }
+
+    if (
+      previousCourseTypeRef.current &&
+      previousCourseTypeRef.current !== courseType
+    ) {
+      setValue("institute_id", "");
+    }
+    previousCourseTypeRef.current = courseType;
+
+    let isActive = true;
+
     const fetchInstitutes = async () => {
       try {
-        const response = await api.get("/institutes?limit=1000");
-        setInstitutes(response.data.data);
+        setInstitutesLoading(true);
+        const response = await api.get("/institutes", {
+          params: { limit: 1000, course_type: courseType },
+        });
+        if (isActive) {
+          setInstitutes(response.data.data || []);
+        }
       } catch (error) {
         console.error("Error fetching institutes:", error);
         toast.error("Failed to fetch institutes");
+        if (isActive) {
+          setInstitutes([]);
+        }
+      } finally {
+        if (isActive) {
+          setInstitutesLoading(false);
+        }
       }
     };
 
     fetchInstitutes();
-  }, []);
+
+    return () => {
+      isActive = false;
+    };
+  }, [selectedCourseType, setValue]);
 
   // Fetch drive data if editing
   useEffect(() => {
@@ -179,39 +221,6 @@ const DriveForm = () => {
               )}
             </div>
 
-            {/* Institute */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Institute <span className="text-red-500">*</span>
-              </label>
-              <Controller
-                name="institute_id"
-                control={control}
-                rules={{ required: "Institute is required" }}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger
-                      invalid={!!errors.institute_id}
-                    >
-                      <SelectValue placeholder="Select institute" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {institutes.map((institute) => (
-                        <SelectItem key={institute.id} value={institute.id}>
-                          {institute.institute_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.institute_id && (
-                <p className={errorTextClass}>
-                  {errors.institute_id.message}
-                </p>
-              )}
-            </div>
-
             {/* Course Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -238,6 +247,57 @@ const DriveForm = () => {
               {errors.course_type && (
                 <p className={errorTextClass}>
                   {errors.course_type.message}
+                </p>
+              )}
+            </div>
+
+            {/* Institute */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Institute <span className="text-red-500">*</span>
+              </label>
+              <Controller
+                name="institute_id"
+                control={control}
+                rules={{ required: "Institute is required" }}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={!selectedCourseType || institutesLoading}
+                  >
+                    <SelectTrigger
+                      invalid={!!errors.institute_id}
+                    >
+                      <SelectValue
+                        placeholder={
+                          !selectedCourseType
+                            ? "Select course type first"
+                            : institutesLoading
+                              ? "Loading institutes..."
+                              : "Select institute"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {institutes.length > 0 ? (
+                        institutes.map((institute) => (
+                          <SelectItem key={institute.id} value={institute.id}>
+                            {institute.institute_name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1.5 text-sm text-gray-500">
+                          No institutes found
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.institute_id && (
+                <p className={errorTextClass}>
+                  {errors.institute_id.message}
                 </p>
               )}
             </div>
