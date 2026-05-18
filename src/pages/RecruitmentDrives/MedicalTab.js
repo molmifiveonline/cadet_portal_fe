@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Edit,
@@ -18,6 +19,7 @@ import StageInviteModal from "./StageInviteModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 
 const MedicalTab = ({ drive, onRefresh }) => {
+  const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
   const [medicalCenters, setMedicalCenters] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -237,7 +239,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => (window.location.href = `/cadets/medical/${row.id}`)}
+            onClick={() => navigate(`/cadets/medical/${row.id}`)}
             className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             title={row.medical_result_id ? "Edit medical result" : "Start medical result"}
           >

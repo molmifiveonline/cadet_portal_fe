@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   CheckCircle,
@@ -16,6 +17,7 @@ import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import StageInviteModal from "./StageInviteModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 const hasAssessmentValue = (value) => {
   if (value === null || value === undefined) return false;
@@ -43,9 +45,12 @@ const isAssessmentLocked = (cadet = {}) =>
   isAssessmentCompletedStatus(cadet);
 
 const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
+  const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
+  const [totalCadets, setTotalCadets] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [selectedCadets, setSelectedCadets] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -55,17 +60,23 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
   const fetchCadets = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get(
-        `/recruitment-drives/${drive.id}/cadets?queue=assessment`,
-      );
+      const response = await api.get(`/recruitment-drives/${drive.id}/cadets`, {
+        params: {
+          queue: "assessment",
+          page: currentPage,
+          limit: perPage,
+          search: debouncedSearchTerm || undefined,
+        },
+      });
       setCadets(response.data?.data || []);
+      setTotalCadets(response.data?.total || 0);
     } catch (error) {
       console.error("Error fetching assessment queue:", error);
       toast.error("Failed to load assessment cadets");
     } finally {
       setLoading(false);
     }
-  }, [drive.id]);
+  }, [currentPage, debouncedSearchTerm, drive.id, perPage]);
 
   useEffect(() => {
     fetchCadets();
@@ -73,24 +84,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, perPage]);
-
-  const filteredCadets = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-    return cadets.filter((cadet) => {
-      if (!normalizedSearch) return true;
-
-      return (
-        cadet.name_as_in_indos_cert?.toLowerCase().includes(normalizedSearch) ||
-        cadet.cadet_unique_id?.toLowerCase().includes(normalizedSearch)
-      );
-    });
-  }, [cadets, searchTerm]);
-
-  const paginatedCadets = useMemo(() => {
-    const start = (currentPage - 1) * perPage;
-    return filteredCadets.slice(start, start + perPage);
-  }, [filteredCadets, currentPage, perPage]);
+  }, [debouncedSearchTerm, perPage]);
 
   const selectedRows = useMemo(
     () => cadets.filter((cadet) => selectedCadets.includes(cadet.id)),
@@ -263,7 +257,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
               variant="ghost"
               size="sm"
               disabled={disableStartAssessment}
-              onClick={() => (window.location.href = `/cadets/assess/${row.id}`)}
+              onClick={() => navigate(`/cadets/assess/${row.id}`)}
               className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
               title={
                 !Number(row.institute_detail_filled || 0)
@@ -335,7 +329,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
       <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
         <ReusableDataTable
           columns={columns}
-          rows={paginatedCadets}
+          rows={cadets}
           loading={loading}
           checkboxSelection={!readOnly}
           isRowSelectable={!readOnly ? (row) => !isAssessmentLocked(row) && Number(row.institute_detail_filled || 0) : undefined}
@@ -349,8 +343,8 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
           pagination={{
             current_page: currentPage,
             per_page: perPage,
-            total: filteredCadets.length,
-            last_page: Math.max(1, Math.ceil(filteredCadets.length / perPage)),
+            total: totalCadets,
+            last_page: Math.max(1, Math.ceil(totalCadets / perPage)),
           }}
           handlePageChange={setCurrentPage}
           handlePerPageChange={(limit) => {

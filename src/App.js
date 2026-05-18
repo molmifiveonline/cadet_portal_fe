@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,45 +8,46 @@ import {
 import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import { PermissionProvider } from './context/PermissionContext';
-import Login from './pages/auth/Login';
-import InstituteLogin from './pages/auth/InstituteLogin';
-import Dashboard from './pages/Dashboard';
-import CadetManagement from './pages/CadetManagement';
-import CadetDetails from './pages/CadetManagement/CadetDetails';
-import CadetPendingDetails from './pages/CadetManagement/CadetPendingDetails';
-import AddCadetForm from './pages/CadetManagement/AddCadetForm';
-import ShortlistedCadetsView from './pages/CadetManagement/ShortlistedCadetsView';
 import MainLayout from './components/layout/MainLayout';
-import ResetPassword from './pages/auth/ResetPassword';
-import ActivityLogs from './pages/ActivityLogs/ActivityLogs';
-import UserManagement from './pages/Users';
-import UserForm from './pages/Users/UserForm';
-import InstitutesManagement from 'pages/institutes';
-import InstituteForm from 'pages/institutes/InstituteForm';
-import SubmitExcel from 'pages/institutes/SubmitExcel';
-import InstituteShortlistedCadets from 'pages/institutes/InstituteShortlistedCadets';
-import InstituteSubmissions from 'pages/institutes/InstituteSubmissions';
-import RolePermissions from './pages/RolePermissions';
-import VesselList from './pages/vessels';
-import VesselForm from './pages/vessels/VesselForm';
-import MedicalCenterList from './pages/medical-centers';
-import MedicalCenterForm from './pages/medical-centers/MedicalCenterForm';
-import AssessmentForm from './pages/Assessments/AssessmentForm';
-import AssessmentManagement from './pages/Assessments';
-import InterviewForm from './pages/Assessments/InterviewForm';
-import MedicalResultForm from './pages/Assessments/MedicalResultForm';
-import InterviewManagement from './pages/Assessments/InterviewManagement';
-import MedicalManagement from './pages/Assessments/MedicalManagement';
-import RecruitmentDrives from './pages/RecruitmentDrives';
-import DriveForm from './pages/RecruitmentDrives/DriveForm';
-import DriveDetails from './pages/RecruitmentDrives/DriveDetails';
-import NotificationHistory from './pages/Notifications/NotificationHistory';
-
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
 import { PublicRoute } from './components/common/PublicRoute';
 import HomeRedirect from './components/common/HomeRedirect';
+import PageLoader from './components/common/PageLoader';
 import { getLoginRedirectPath } from './lib/utils/routeUtils';
+
+const Login = lazy(() => import('./pages/auth/Login'));
+const InstituteLogin = lazy(() => import('./pages/auth/InstituteLogin'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const CadetManagement = lazy(() => import('./pages/CadetManagement'));
+const CadetDetails = lazy(() => import('./pages/CadetManagement/CadetDetails'));
+const CadetPendingDetails = lazy(() => import('./pages/CadetManagement/CadetPendingDetails'));
+const AddCadetForm = lazy(() => import('./pages/CadetManagement/AddCadetForm'));
+const ShortlistedCadetsView = lazy(() => import('./pages/CadetManagement/ShortlistedCadetsView'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
+const ActivityLogs = lazy(() => import('./pages/ActivityLogs/ActivityLogs'));
+const UserManagement = lazy(() => import('./pages/Users'));
+const UserForm = lazy(() => import('./pages/Users/UserForm'));
+const InstitutesManagement = lazy(() => import('pages/institutes'));
+const InstituteForm = lazy(() => import('pages/institutes/InstituteForm'));
+const SubmitExcel = lazy(() => import('pages/institutes/SubmitExcel'));
+const InstituteShortlistedCadets = lazy(() => import('pages/institutes/InstituteShortlistedCadets'));
+const InstituteSubmissions = lazy(() => import('pages/institutes/InstituteSubmissions'));
+const RolePermissions = lazy(() => import('./pages/RolePermissions'));
+const VesselList = lazy(() => import('./pages/vessels'));
+const VesselForm = lazy(() => import('./pages/vessels/VesselForm'));
+const MedicalCenterList = lazy(() => import('./pages/medical-centers'));
+const MedicalCenterForm = lazy(() => import('./pages/medical-centers/MedicalCenterForm'));
+const AssessmentForm = lazy(() => import('./pages/Assessments/AssessmentForm'));
+const AssessmentManagement = lazy(() => import('./pages/Assessments'));
+const InterviewForm = lazy(() => import('./pages/Assessments/InterviewForm'));
+const MedicalResultForm = lazy(() => import('./pages/Assessments/MedicalResultForm'));
+const InterviewManagement = lazy(() => import('./pages/Assessments/InterviewManagement'));
+const MedicalManagement = lazy(() => import('./pages/Assessments/MedicalManagement'));
+const RecruitmentDrives = lazy(() => import('./pages/RecruitmentDrives'));
+const DriveForm = lazy(() => import('./pages/RecruitmentDrives/DriveForm'));
+const DriveDetails = lazy(() => import('./pages/RecruitmentDrives/DriveDetails'));
+const NotificationHistory = lazy(() => import('./pages/Notifications/NotificationHistory'));
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
       <PermissionProvider>
         <Router>
           <Toaster position='top-center' richColors expand={false} />
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path='/reset-password' element={<ResetPassword />} />
             {/* Public Routes */}
@@ -531,6 +533,7 @@ function App() {
               element={<Navigate to={getLoginRedirectPath(window.location.pathname)} replace />}
             />
           </Routes>
+          </Suspense>
         </Router>
       </PermissionProvider>
     </AuthProvider>

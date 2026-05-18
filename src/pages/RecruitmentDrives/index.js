@@ -27,6 +27,7 @@ import DeleteConfirmationModal from "../../components/common/DeleteConfirmationM
 import PageHeader from "../../components/common/PageHeader";
 import PageLoader from "../../components/common/PageLoader";
 import Permission from "../../components/common/Permission";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -172,6 +173,7 @@ const RecruitmentDrives = () => {
   const [loading, setLoading] = useState(true);
   const [institutes, setInstitutes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 10,
@@ -193,7 +195,7 @@ const RecruitmentDrives = () => {
     async (
       page = pagination.current_page,
       limit = pagination.per_page,
-      search = searchTerm,
+      search = debouncedSearchTerm,
       filterStatus = filters.status,
       filterCourseType = filters.course_type,
       filterInstituteId = filters.institute_id,
@@ -235,12 +237,15 @@ const RecruitmentDrives = () => {
       filters.status,
       pagination.current_page,
       pagination.per_page,
-      searchTerm,
+      debouncedSearchTerm,
     ],
   );
 
   useEffect(() => {
-    fetchDrives();
+    fetchDrives(1, pagination.per_page, debouncedSearchTerm);
+  }, [debouncedSearchTerm, filters.course_type, filters.institute_id, filters.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     if (user?.role !== "Institute") {
       (async () => {
         try {
@@ -251,25 +256,16 @@ const RecruitmentDrives = () => {
         }
       })();
     }
-  }, [fetchDrives, user]);
+  }, [user]);
 
   const handleSearch = (event) => {
     const value = event.target.value;
     setSearchTerm(value);
-    fetchDrives(1, pagination.per_page, value);
   };
 
   const handleFilterChange = (filterType, value) => {
     const nextFilters = { ...filters, [filterType]: value };
     setFilters(nextFilters);
-    fetchDrives(
-      1,
-      pagination.per_page,
-      searchTerm,
-      nextFilters.status,
-      nextFilters.course_type,
-      nextFilters.institute_id,
-    );
   };
 
   const handleConfirmDelete = async () => {
@@ -286,7 +282,7 @@ const RecruitmentDrives = () => {
       fetchDrives(
         targetPage,
         pagination.per_page,
-        searchTerm,
+        debouncedSearchTerm,
         filters.status,
         filters.course_type,
         filters.institute_id,
@@ -618,7 +614,7 @@ const RecruitmentDrives = () => {
                     fetchDrives(
                       pagination.current_page - 1,
                       pagination.per_page,
-                      searchTerm,
+                      debouncedSearchTerm,
                       filters.status,
                       filters.course_type,
                       filters.institute_id,
@@ -638,7 +634,7 @@ const RecruitmentDrives = () => {
                     fetchDrives(
                       pagination.current_page + 1,
                       pagination.per_page,
-                      searchTerm,
+                      debouncedSearchTerm,
                       filters.status,
                       filters.course_type,
                       filters.institute_id,
