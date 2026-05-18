@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Edit, Eye, Search } from "lucide-react";
 import PageLoader from "../../components/common/PageLoader";
@@ -16,6 +17,7 @@ import {
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import { getShortlistCriteriaStatus } from "../../lib/utils/shortlistCriteria";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 const STATUS_OPTIONS = [
   "Uploaded",
@@ -52,9 +54,12 @@ const formatPercentage = (value) => {
 
 const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
+  const [totalCadets, setTotalCadets] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -62,15 +67,24 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
   const fetchCadets = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/recruitment-drives/${drive.id}/cadets?queue=all`);
+      const response = await api.get(`/recruitment-drives/${drive.id}/cadets`, {
+        params: {
+          queue: "all",
+          page: currentPage,
+          limit: perPage,
+          search: debouncedSearchTerm || undefined,
+          status: selectedStatus !== "all" ? selectedStatus : undefined,
+        },
+      });
       setCadets(response.data?.data || []);
+      setTotalCadets(response.data?.total || 0);
     } catch (error) {
       console.error("Error fetching drive cadets:", error);
       toast.error("Failed to load cadets");
     } finally {
       setLoading(false);
     }
-  }, [drive.id]);
+  }, [currentPage, debouncedSearchTerm, drive.id, perPage, selectedStatus]);
 
   useEffect(() => {
     fetchCadets();
@@ -82,37 +96,17 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedStatus, perPage]);
+  }, [debouncedSearchTerm, selectedStatus, perPage]);
 
-  const filteredCadets = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-
-    const filtered = cadets.filter((cadet) => {
-      const matchesStatus =
-        selectedStatus === "all" || cadet.status === selectedStatus;
-
-      const matchesSearch =
-        !normalizedSearch ||
-        cadet.name_as_in_indos_cert?.toLowerCase().includes(normalizedSearch) ||
-        cadet.cadet_unique_id?.toLowerCase().includes(normalizedSearch) ||
-        cadet.email_id?.toLowerCase().includes(normalizedSearch);
-
-      return matchesStatus && matchesSearch;
-    });
-
+  const sortedCadets = useMemo(() => {
     const statusOrder = { passed: 1, missing_twelfth: 2, failed: 3 };
 
-    return filtered.sort((a, b) => {
+    return [...cadets].sort((a, b) => {
       const statusA = getShortlistCriteriaStatus(a).type;
       const statusB = getShortlistCriteriaStatus(b).type;
       return (statusOrder[statusA] || 4) - (statusOrder[statusB] || 4);
     });
-  }, [cadets, searchTerm, selectedStatus]);
-
-  const paginatedCadets = useMemo(() => {
-    const start = (currentPage - 1) * perPage;
-    return filteredCadets.slice(start, start + perPage);
-  }, [filteredCadets, currentPage, perPage]);
+  }, [cadets]);
 
   const isInstituteUser = user?.role === "Institute";
 
@@ -210,7 +204,7 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => (window.location.href = `/cadets/view/${row.id}`)}
+            onClick={() => navigate(`/cadets/view/${row.id}`)}
             className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             title="View details"
           >
@@ -220,7 +214,7 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => (window.location.href = `/cadets/view/${row.id}`)}
+              onClick={() => navigate(`/cadets/view/${row.id}`)}
               className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
               title="Edit cadet"
             >
@@ -290,7 +284,7 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
       <div className="overflow-hidden bg-white shadow-sm">
         <ReusableDataTable
           columns={columns}
-          rows={paginatedCadets}
+          rows={sortedCadets}
           loading={loading}
           emptyMessage={
             searchTerm
@@ -300,8 +294,8 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
           pagination={{
             current_page: currentPage,
             per_page: perPage,
-            total: filteredCadets.length,
-            last_page: Math.max(1, Math.ceil(filteredCadets.length / perPage)),
+            total: totalCadets,
+            last_page: Math.max(1, Math.ceil(totalCadets / perPage)),
           }}
           handlePageChange={setCurrentPage}
           handlePerPageChange={(limit) => {

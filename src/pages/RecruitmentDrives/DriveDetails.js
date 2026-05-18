@@ -25,7 +25,7 @@ import CadetsTab from "./CadetsTab";
 // TEMP DEMO: post-assessment stages hidden.
 // TODO: Re-enable after demo.
 // import DocumentsTab from "./DocumentsTab";
-// import InterviewTab from "./InterviewTab";
+import InterviewTab from "./InterviewTab";
 // import MedicalTab from "./MedicalTab";
 import SendEmailModal from "../institutes/SendEmailModal";
 import ShortlistTab from "./ShortlistTab";
@@ -87,13 +87,11 @@ const DriveDetails = () => {
   const fetchDriveData = useCallback(async () => {
     try {
       setLoading(true);
-      const [driveResponse, statsResponse] = await Promise.all([
-        api.get(`/recruitment-drives/${id}`),
-        api.get(`/recruitment-drives/${id}/stats`),
-      ]);
+      const driveResponse = await api.get(`/recruitment-drives/${id}`);
+      const driveData = driveResponse.data.data;
 
-      setDrive(driveResponse.data.data);
-      setStats(statsResponse.data.data);
+      setDrive(driveData);
+      setStats(driveData);
     } catch (error) {
       console.error("Error fetching drive data:", error);
       toast.error("Failed to fetch recruitment drive details");
@@ -242,7 +240,7 @@ const DriveDetails = () => {
       // TODO: Re-enable after demo.
       {
         label: "Interview Selected",
-        // value: stats?.interview_selected || 0,
+        value: stats?.interview_selected || 0,
         tone: "text-emerald-600",
         onClick: () => setActiveTab("interview"),
       },
@@ -669,13 +667,13 @@ const DriveDetails = () => {
 
           {/* TEMP DEMO: post-assessment stages hidden.
               TODO: Re-enable after demo. */}
-          {/* {activeTab === "interview" ? (
+          {activeTab === "interview" ? (
             <InterviewTab
               drive={drive}
               onRefresh={fetchDriveData}
               readOnly={isInstituteUser}
             />
-          ) : null} */}
+          ) : null}
 
           {/* {activeTab === "medical" && !isInstituteUser ? (
             <MedicalTab drive={drive} onRefresh={fetchDriveData} />

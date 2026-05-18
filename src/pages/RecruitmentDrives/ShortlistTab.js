@@ -9,6 +9,7 @@ import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import { getShortlistCriteriaStatus } from "../../lib/utils/shortlistCriteria";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 const formatPercentage = (value) => {
   if (value === null || value === undefined || String(value).trim() === "") {
@@ -30,8 +31,10 @@ const ShortlistTab = ({
 }) => {
   const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
+  const [totalCadets, setTotalCadets] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [selectedCadets, setSelectedCadets] = useState([]);
   const [submittingShortlist, setSubmittingShortlist] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,19 +43,17 @@ const ShortlistTab = ({
   const fetchCadets = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get(
-        `/recruitment-drives/${drive.id}/cadets?queue=all`,
-      );
-      const driveCadets = (response.data?.data || []).filter(
-        (cadet) =>
-          isInstituteUser
-            ? cadet.workflow_phase !== "uploaded"
-            : ["uploaded", "shortlisted"].includes(cadet.workflow_phase) ||
-              ["pass", "fail"].includes(
-                String(cadet.assessment_status || "").toLowerCase(),
-              ),
-      );
-      setCadets(driveCadets);
+      const response = await api.get(`/recruitment-drives/${drive.id}/cadets`, {
+        params: {
+          queue: "shortlist",
+          page: currentPage,
+          limit: perPage,
+          search: debouncedSearchTerm || undefined,
+          excludeUploaded: isInstituteUser ? "true" : undefined,
+        },
+      });
+      setCadets(response.data?.data || []);
+      setTotalCadets(response.data?.total || 0);
       setSelectedCadets([]);
     } catch (error) {
       console.error("Error fetching shortlist cadets:", error);
@@ -60,7 +61,7 @@ const ShortlistTab = ({
     } finally {
       setLoading(false);
     }
-  }, [drive.id]);
+  }, [currentPage, debouncedSearchTerm, drive.id, isInstituteUser, perPage]);
 
   useEffect(() => {
     fetchCadets();
@@ -68,33 +69,17 @@ const ShortlistTab = ({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, perPage]);
+  }, [debouncedSearchTerm, perPage]);
 
-  const filteredCadets = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-    const filtered = cadets.filter((cadet) => {
-      if (!normalizedSearch) return true;
-
-      return (
-        cadet.name_as_in_indos_cert?.toLowerCase().includes(normalizedSearch) ||
-        cadet.cadet_unique_id?.toLowerCase().includes(normalizedSearch) ||
-        cadet.email_id?.toLowerCase().includes(normalizedSearch)
-      );
-    });
-
+  const sortedCadets = useMemo(() => {
     const statusOrder = { passed: 1, missing_twelfth: 2, failed: 3 };
 
-    return filtered.sort((a, b) => {
+    return [...cadets].sort((a, b) => {
       const statusA = getShortlistCriteriaStatus(a).type;
       const statusB = getShortlistCriteriaStatus(b).type;
       return (statusOrder[statusA] || 4) - (statusOrder[statusB] || 4);
     });
-  }, [cadets, searchTerm]);
-
-  const paginatedCadets = useMemo(() => {
-    const start = (currentPage - 1) * perPage;
-    return filteredCadets.slice(start, start + perPage);
-  }, [filteredCadets, currentPage, perPage]);
+  }, [cadets]);
 
   const selectedRows = useMemo(
     () => cadets.filter((cadet) => selectedCadets.includes(cadet.id)),
@@ -401,7 +386,7 @@ const ShortlistTab = ({
       <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
         <ReusableDataTable
           columns={columns}
-          rows={paginatedCadets}
+          rows={sortedCadets}
           loading={loading}
           checkboxSelection={!isInstituteUser}
           rowSelectionModel={selectedCadets}
@@ -415,8 +400,8 @@ const ShortlistTab = ({
           pagination={{
             current_page: currentPage,
             per_page: perPage,
-            total: filteredCadets.length,
-            last_page: Math.max(1, Math.ceil(filteredCadets.length / perPage)),
+            total: totalCadets,
+            last_page: Math.max(1, Math.ceil(totalCadets / perPage)),
           }}
           handlePageChange={setCurrentPage}
           handlePerPageChange={(limit) => {
