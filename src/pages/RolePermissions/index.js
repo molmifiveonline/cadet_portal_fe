@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, AlertCircle, Loader2, Key } from 'lucide-react';
+import { Shield, AlertCircle, Key } from 'lucide-react';
 import RoleSelector from './RoleSelector';
 import PermissionMatrix from './PermissionMatrix';
 import { toast } from 'sonner';
@@ -8,6 +8,8 @@ import RoleModal from './RoleModal';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import Permission from 'components/common/Permission';
 import PageHeader from '../../components/common/PageHeader';
+import { useAuth } from '../../context/AuthContext';
+import { usePermissionContext } from '../../context/PermissionContext';
 
 const RolePermissions = () => {
   const [roles, setRoles] = useState([]);
@@ -19,6 +21,8 @@ const RolePermissions = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [deletingRole, setDeletingRole] = useState(null);
+  const { user } = useAuth();
+  const { refreshPermissions } = usePermissionContext();
 
   /* Fetch all roles on component mount */
   useEffect(() => {
@@ -130,6 +134,9 @@ const RolePermissions = () => {
       const data = response.data;
 
       if (data.success) {
+        if (selectedRole.name === user?.role) {
+          await refreshPermissions();
+        }
         toast.success('All permissions saved successfully!');
       }
     } catch (err) {

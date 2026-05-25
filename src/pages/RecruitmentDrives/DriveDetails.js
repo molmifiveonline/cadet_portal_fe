@@ -24,9 +24,9 @@ import AssessmentTab from "./AssessmentTab";
 import CadetsTab from "./CadetsTab";
 // TEMP DEMO: post-assessment stages hidden.
 // TODO: Re-enable after demo.
-// import DocumentsTab from "./DocumentsTab";
+import DocumentsTab from "./DocumentsTab";
 import InterviewTab from "./InterviewTab";
-// import MedicalTab from "./MedicalTab";
+import MedicalTab from "./MedicalTab";
 import SendEmailModal from "../institutes/SendEmailModal";
 import ShortlistTab from "./ShortlistTab";
 import CadetPreviewModal from "../../components/common/CadetPreviewModal";
@@ -246,13 +246,13 @@ const DriveDetails = () => {
       },
       {
         label: "Medical",
-        // value: stats?.medical_queue_count || 0,
+        value: stats?.medical_queue_count || 0,
         tone: "text-lime-600",
         onClick: () => setActiveTab("medical"),
       },
       {
         label: "Documents",
-        // value: stats?.document_count || 0,
+        value: stats?.document_count || 0,
         tone: "text-indigo-600",
         onClick: () => setActiveTab("documents"),
       },
@@ -675,11 +675,11 @@ const DriveDetails = () => {
             />
           ) : null}
 
-          {/* {activeTab === "medical" && !isInstituteUser ? (
+          {activeTab === "medical" && !isInstituteUser ? (
             <MedicalTab drive={drive} onRefresh={fetchDriveData} />
-          ) : null} */}
+          ) : null}
 
-          {/* {activeTab === "documents" ? <DocumentsTab drive={drive} /> : null} */}
+          {activeTab === "documents" ? <DocumentsTab drive={drive} /> : null}
         </div>
       </div>
 
