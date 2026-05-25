@@ -511,7 +511,7 @@ const Dashboard = () => {
       <div className="mt-8" />
 
       {/* ── Onboarding Pending List ──────────────────────────────────── */}
-      <Section
+      {/* <Section
         title="Onboarding Pending"
         icon={UserCheck}
         iconBg="bg-teal-50/80 text-teal-600"
@@ -573,7 +573,7 @@ const Dashboard = () => {
             </table>
           </div>
         )}
-      </Section>
+      </Section> */}
 
       <div className="mt-8" />
 

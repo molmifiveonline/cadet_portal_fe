@@ -21,6 +21,7 @@ const PermissionMatrix = ({
       screening: 'Screening',
       tests: 'Tests & Interviews',
       medical: 'Medical & Documents',
+      'medical-centers': 'Medical Centers',
       'activity-logs': 'Activity Logs',
       'role-permissions': 'Role Permissions',
       assessments: 'Assessments',

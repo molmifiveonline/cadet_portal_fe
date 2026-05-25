@@ -64,7 +64,7 @@ export const MenuItems = [
     title: "Medical Center",
     icon: FileBadge,
     url: "/medical-centers",
-    module: "medical",
+    module: "medical-centers",
     action: "view",
     allowedRoles: ["SuperAdmin", "Institute"],
   },
