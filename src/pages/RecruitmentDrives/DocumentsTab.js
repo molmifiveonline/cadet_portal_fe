@@ -546,6 +546,7 @@ const DocumentsTab = ({ drive }) => {
 
                 {isExpanded ? (
                   <div className="border-t border-slate-200 bg-slate-50/60 p-4">
+                    {/* Documents are managed via OneDrive only - portal upload disabled
                     {uploadingFor !== cadet.cadet_id ? (
                       canUpload ? (
                       <Button
@@ -629,6 +630,7 @@ const DocumentsTab = ({ drive }) => {
                         </div>
                       </div>
                     )}
+                    */}
 
                     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                       <ReusableDataTable
