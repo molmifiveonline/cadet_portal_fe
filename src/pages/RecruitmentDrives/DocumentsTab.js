@@ -25,19 +25,19 @@ import DeleteConfirmationModal from "../../components/common/DeleteConfirmationM
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 import DocumentRequestModal from "./DocumentRequestModal";
 
-const DOCUMENT_TYPES = [
-  "CV",
-  "Passport",
-  "Medical Certificate",
-  "Bank Details",
-  "Academic Marksheet",
-  "Aadhaar Card",
-  "PAN Card",
-  "INDOS Certificate",
-  "CDC (Continuous Discharge Certificate)",
-  "Agreement / Contract",
-  "Other",
-];
+// const DOCUMENT_TYPES = [
+//   "CV",
+//   "Passport",
+//   "Medical Certificate",
+//   "Bank Details",
+//   "Academic Marksheet",
+//   "Aadhaar Card",
+//   "PAN Card",
+//   "INDOS Certificate",
+//   "CDC (Continuous Discharge Certificate)",
+//   "Agreement / Contract",
+//   "Other",
+// ];
 
 const STATUS_BADGES = {
   accepted: {
@@ -546,6 +546,7 @@ const DocumentsTab = ({ drive }) => {
 
                 {isExpanded ? (
                   <div className="border-t border-slate-200 bg-slate-50/60 p-4">
+                    {/* Documents are managed via OneDrive only - portal upload disabled
                     {uploadingFor !== cadet.cadet_id ? (
                       canUpload ? (
                       <Button
@@ -629,6 +630,7 @@ const DocumentsTab = ({ drive }) => {
                         </div>
                       </div>
                     )}
+                    */}
 
                     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                       <ReusableDataTable
