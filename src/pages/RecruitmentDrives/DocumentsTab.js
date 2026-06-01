@@ -25,19 +25,19 @@ import DeleteConfirmationModal from "../../components/common/DeleteConfirmationM
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 import DocumentRequestModal from "./DocumentRequestModal";
 
-const DOCUMENT_TYPES = [
-  "CV",
-  "Passport",
-  "Medical Certificate",
-  "Bank Details",
-  "Academic Marksheet",
-  "Aadhaar Card",
-  "PAN Card",
-  "INDOS Certificate",
-  "CDC (Continuous Discharge Certificate)",
-  "Agreement / Contract",
-  "Other",
-];
+// const DOCUMENT_TYPES = [
+//   "CV",
+//   "Passport",
+//   "Medical Certificate",
+//   "Bank Details",
+//   "Academic Marksheet",
+//   "Aadhaar Card",
+//   "PAN Card",
+//   "INDOS Certificate",
+//   "CDC (Continuous Discharge Certificate)",
+//   "Agreement / Contract",
+//   "Other",
+// ];
 
 const STATUS_BADGES = {
   accepted: {

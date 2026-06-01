@@ -63,7 +63,7 @@ const SubmitExcel = ({
   const [drivesList, setDrivesList] = useState([]);
   const [selectedDriveId, setSelectedDriveId] = useState(driveContext?.driveId || '');
   const [loadingDrives, setLoadingDrives] = useState(false);
-  const [showFilters, setShowFilters] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
 
   const getFilterSummary = () => {
     const inst = institutes.find((i) => i.id.toString() === selectedInstitute);

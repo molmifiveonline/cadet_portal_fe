@@ -88,6 +88,13 @@ const MedicalTab = ({ drive, onRefresh }) => {
     [cadets, selectedCadets],
   );
 
+  const passedSelectedCadets = useMemo(
+    () => selectedRows.filter((cadet) => cadet.medical_final_decision?.toLowerCase() === "pass"),
+    [selectedRows]
+  );
+
+  const hasSelection = passedSelectedCadets.length > 0;
+
   const handleSendInvites = async (formData, submissions) => {
     try {
       setSendingInvites(true);
@@ -301,10 +308,15 @@ const MedicalTab = ({ drive, onRefresh }) => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-opacity ${!hasSelection ? 'opacity-60' : ''}`}>
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
           Post-Medical Actions
         </h3>
+        {!hasSelection && (
+          <p className="mt-1 text-xs text-amber-600">
+            Select one or more candidates who have passed medical (Decision: pass) from the table below to enable these actions.
+          </p>
+        )}
         <div className="mt-4 space-y-4">
           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6'>
             <div className="space-y-2">
@@ -313,6 +325,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
               </label>
               <Input
                 value={bulkFields.academicFormLink}
+                disabled={!hasSelection}
                 onChange={(event) =>
                   setBulkFields((prev) => ({
                     ...prev,
@@ -329,6 +342,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
               </label>
               <Input
                 value={bulkFields.documentLink}
+                disabled={!hasSelection}
                 onChange={(event) =>
                   setBulkFields((prev) => ({
                     ...prev,
@@ -344,6 +358,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
             <label className="text-sm font-medium text-slate-700">Remarks (Included in Emails)</label>
             <Input
               value={bulkFields.remarks}
+              disabled={!hasSelection}
               onChange={(event) =>
                 setBulkFields((prev) => ({ ...prev, remarks: event.target.value }))
               }
@@ -358,11 +373,12 @@ const MedicalTab = ({ drive, onRefresh }) => {
                   await api.post("/medical-results/bulk/confirm", {
                     drive_id: drive.id,
                     remarks: bulkFields.remarks,
+                    cadet_ids: passedSelectedCadets.map((c) => c.id),
                   });
                   toast.success("Selected-candidate confirmation sent to institute");
                 })
               }
-              disabled={actionLoading.confirm}
+              disabled={actionLoading.confirm || !hasSelection}
               className="gap-2 bg-green-600 text-white hover:bg-green-700 shadow-sm"
             >
               {actionLoading.confirm ? (
@@ -381,11 +397,12 @@ const MedicalTab = ({ drive, onRefresh }) => {
                     drive_id: drive.id,
                     remarks: bulkFields.remarks,
                     form_link: bulkFields.academicFormLink,
+                    cadet_ids: passedSelectedCadets.map((c) => c.id),
                   });
                   toast.success("Pending academic data request sent");
                 })
               }
-              disabled={actionLoading.academic}
+              disabled={actionLoading.academic || !hasSelection}
               className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
             >
               {actionLoading.academic ? (
@@ -404,11 +421,12 @@ const MedicalTab = ({ drive, onRefresh }) => {
                     drive_id: drive.id,
                     remarks: bulkFields.remarks,
                     document_link: bulkFields.documentLink,
+                    cadet_ids: passedSelectedCadets.map((c) => c.id),
                   });
                   toast.success("Candidate document request sent");
                 })
               }
-              disabled={actionLoading.documents}
+              disabled={actionLoading.documents || !hasSelection}
               className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
             >
               {actionLoading.documents ? (
