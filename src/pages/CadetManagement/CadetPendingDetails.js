@@ -18,6 +18,7 @@ import { formatDateForInput } from '../../lib/utils/dateUtils';
 import CadetFormFields from '../../components/cadet/CadetFormFields';
 import { useAuth } from '../../context/AuthContext';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
+import { sanitizePhoneValue } from '../../lib/utils/validationUtils';
 
 const CadetPendingDetails = () => {
   const { id } = useParams();
@@ -91,6 +92,9 @@ const CadetPendingDetails = () => {
     try {
       let payload = { ...data };
       delete payload.declaration_accepted;
+      if (payload.contact_number !== undefined) {
+        payload.contact_number = sanitizePhoneValue(payload.contact_number);
+      }
 
       let headers = {};
 

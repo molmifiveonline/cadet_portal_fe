@@ -19,6 +19,7 @@ import {
   Upload,
   UserCheck,
   Users,
+  X,
 } from "lucide-react";
 import api from "../../lib/utils/apiConfig";
 import { useAuth } from "../../context/AuthContext";
@@ -268,6 +269,20 @@ const RecruitmentDrives = () => {
     setFilters(nextFilters);
   };
 
+  const hasActiveFilters =
+    searchTerm !== "" ||
+    filters.course_type !== "all" ||
+    (filters.institute_id !== "" && user?.role !== "Institute");
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setFilters({
+      status: "all",
+      course_type: "all",
+      institute_id: "",
+    });
+  };
+
   const handleConfirmDelete = async () => {
     try {
       await api.delete(`/recruitment-drives/${deleteModal.driveId}`);
@@ -323,7 +338,7 @@ const RecruitmentDrives = () => {
             className="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
-          <select
+          {/* <select
             value={filters.status}
             onChange={(event) =>
               handleFilterChange("status", event.target.value)
@@ -341,7 +356,7 @@ const RecruitmentDrives = () => {
             <option value="Medical Completed">Medical Completed</option>
             <option value="Closed">Closed</option>
             <option value="Cancelled">Cancelled</option>
-          </select>
+          </select> */}
 
           <select
             value={filters.course_type}
@@ -371,6 +386,19 @@ const RecruitmentDrives = () => {
               ))}
             </select>
           ) : null}
+
+          {hasActiveFilters && (
+            <div className="flex items-center justify-center">
+              <Button
+                variant="ghost"
+                onClick={handleClearFilters}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 gap-2 h-10 w-full md:w-auto"
+              >
+                <X className="h-4 w-4" />
+                Clear Filters
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 

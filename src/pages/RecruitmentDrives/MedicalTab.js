@@ -9,6 +9,8 @@ import {
   Search,
   Send,
   Users,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import PageLoader from "../../components/common/PageLoader";
 import api from "../../lib/utils/apiConfig";
@@ -18,6 +20,80 @@ import ReusableDataTable from "../../components/common/ReusableDataTable";
 import StageInviteModal from "./StageInviteModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 
+const getWorkflowStatusConfig = (cadet) => {
+  if (cadet.workflow_phase === "selected") {
+    return {
+      label: "Moved to Documents",
+      className: "bg-indigo-100 text-indigo-800 border border-indigo-200",
+    };
+  }
+  if (Number(cadet.institute_detail_filled || 0) === 1) {
+    return {
+      label: "Academic Data Collected",
+      className: "bg-blue-100 text-blue-800 border border-blue-200",
+    };
+  }
+  if (cadet.workflow_result === "confirmed") {
+    return {
+      label: "Confirmed",
+      className: "bg-emerald-100 text-emerald-800 border border-emerald-200",
+    };
+  }
+  if (cadet.workflow_result === "medical_passed") {
+    return {
+      label: "Medical Passed",
+      className: "bg-green-100 text-green-800 border border-green-200",
+    };
+  }
+  if (cadet.workflow_result === "invited") {
+    return {
+      label: "Medical Invited",
+      className: "bg-sky-100 text-sky-800 border border-sky-200",
+    };
+  }
+  if (cadet.workflow_result === "failed" || cadet.rejection_stage === "medical") {
+    return {
+      label: "Failed",
+      className: "bg-red-100 text-red-800 border border-red-200",
+    };
+  }
+  return {
+    label: "Pending",
+    className: "bg-slate-100 text-slate-800 border border-slate-200",
+  };
+};
+
+const GROUP_CONFIGS = {
+  confirmed: {
+    label: "Confirmed Candidates",
+    bgColor: "bg-emerald-50",
+    borderColor: "border-emerald-200",
+    textColor: "text-emerald-800",
+    badgeColor: "bg-emerald-100 text-emerald-700",
+  },
+  collected_academic: {
+    label: "Collected Academic Data",
+    bgColor: "bg-amber-50",
+    borderColor: "border-amber-200",
+    textColor: "text-amber-800",
+    badgeColor: "bg-amber-100 text-amber-700",
+  },
+  moved_to_document: {
+    label: "Moved to Document Process",
+    bgColor: "bg-purple-50",
+    borderColor: "border-purple-200",
+    textColor: "text-purple-800",
+    badgeColor: "bg-purple-100 text-purple-700",
+  },
+  pending_other: {
+    label: "Pending / Other",
+    bgColor: "bg-slate-50",
+    borderColor: "border-slate-200",
+    textColor: "text-slate-800",
+    badgeColor: "bg-slate-100 text-slate-700",
+  },
+};
+
 const MedicalTab = ({ drive, onRefresh }) => {
   const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
@@ -25,19 +101,41 @@ const MedicalTab = ({ drive, onRefresh }) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCadets, setSelectedCadets] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  // Independent pagination states per group
+  const [currentPages, setCurrentPages] = useState({
+    confirmed: 1,
+    collected_academic: 1,
+    moved_to_document: 1,
+    pending_other: 1,
+  });
+  const [perPages, setPerPages] = useState({
+    confirmed: 10,
+    collected_academic: 10,
+    moved_to_document: 10,
+    pending_other: 10,
+  });
+
+  // Collapsible state per group
+  const [expandedGroups, setExpandedGroups] = useState({
+    confirmed: true,
+    collected_academic: true,
+    moved_to_document: true,
+    pending_other: true,
+  });
+
+  const toggleGroup = (key) => {
+    setExpandedGroups((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [sendingInvites, setSendingInvites] = useState(false);
   const [actionLoading, setActionLoading] = useState({
     confirm: false,
     academic: false,
     documents: false,
-  });
-  const [bulkFields, setBulkFields] = useState({
-    remarks: "",
-    academicFormLink: "",
-    documentLink: "",
   });
 
   const fetchData = useCallback(async () => {
@@ -62,9 +160,15 @@ const MedicalTab = ({ drive, onRefresh }) => {
     fetchData();
   }, [fetchData]);
 
+  // Reset page numbers on search
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, perPage]);
+    setCurrentPages({
+      confirmed: 1,
+      collected_academic: 1,
+      moved_to_document: 1,
+      pending_other: 1,
+    });
+  }, [searchTerm]);
 
   const filteredCadets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -78,22 +182,50 @@ const MedicalTab = ({ drive, onRefresh }) => {
     });
   }, [cadets, searchTerm]);
 
-  const paginatedCadets = useMemo(() => {
-    const start = (currentPage - 1) * perPage;
-    return filteredCadets.slice(start, start + perPage);
-  }, [filteredCadets, currentPage, perPage]);
+  const groupedCadets = useMemo(() => {
+    const groups = {
+      confirmed: [],
+      collected_academic: [],
+      moved_to_document: [],
+      pending_other: [],
+    };
+
+    filteredCadets.forEach((cadet) => {
+      if (cadet.workflow_phase === "selected") {
+        groups.moved_to_document.push(cadet);
+      } else if (Number(cadet.institute_detail_filled || 0) === 1) {
+        groups.collected_academic.push(cadet);
+      } else if (cadet.workflow_result === "confirmed") {
+        groups.confirmed.push(cadet);
+      } else {
+        groups.pending_other.push(cadet);
+      }
+    });
+
+    return groups;
+  }, [filteredCadets]);
+
+  const getPaginatedGroup = useCallback((key) => {
+    const list = groupedCadets[key] || [];
+    const page = currentPages[key] || 1;
+    const limit = perPages[key] || 10;
+    const start = (page - 1) * limit;
+    return list.slice(start, start + limit);
+  }, [groupedCadets, currentPages, perPages]);
 
   const selectedRows = useMemo(
     () => cadets.filter((cadet) => selectedCadets.includes(cadet.id)),
     [cadets, selectedCadets],
   );
 
-  const passedSelectedCadets = useMemo(
-    () => selectedRows.filter((cadet) => cadet.medical_final_decision?.toLowerCase() === "pass"),
+  const allSelectedAreConfirmed = useMemo(
+    () => selectedRows.length > 0 && selectedRows.every(
+      (cadet) => ["confirmed", "medical_passed"].includes(cadet.workflow_result)
+    ),
     [selectedRows]
   );
 
-  const hasSelection = passedSelectedCadets.length > 0;
+  const hasSelection = selectedRows.length > 0;
 
   const handleSendInvites = async (formData, submissions) => {
     try {
@@ -165,6 +297,19 @@ const MedicalTab = ({ drive, onRefresh }) => {
           {row.name_as_in_indos_cert}
         </span>
       ),
+    },
+    {
+      field: "workflow_status",
+      headerName: "Status",
+      width: "180px",
+      renderCell: ({ row }) => {
+        const statusConfig = getWorkflowStatusConfig(row);
+        return (
+          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusConfig.className}`}>
+            {statusConfig.label}
+          </span>
+        );
+      },
     },
     {
       field: "medical_date",
@@ -255,9 +400,9 @@ const MedicalTab = ({ drive, onRefresh }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => window.open(`/cadets/medical/${row.id}`, "_blank")}
+            onClick={() => window.open(`/cadets/view/${row.id}`, "_blank")}
             className="h-8 w-8 p-0 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-            title="View medical result"
+            title="View cadet profile"
           >
             <Eye size={16} />
           </Button>
@@ -299,7 +444,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
           <Button
             variant="outline"
             onClick={() => setIsInviteOpen(true)}
-            disabled={selectedRows.length === 0}
+            disabled={!allSelectedAreConfirmed}
             className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
           >
             <Send className="h-4 w-4" />
@@ -312,68 +457,23 @@ const MedicalTab = ({ drive, onRefresh }) => {
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
           Post-Medical Actions
         </h3>
-        {!hasSelection && (
+        {!hasSelection ? (
           <p className="mt-1 text-xs text-amber-600">
-            Select one or more candidates who have passed medical (Decision: pass) from the table below to enable these actions.
+            Select one or more candidates from the table below to enable these actions.
           </p>
-        )}
+        ) : !allSelectedAreConfirmed ? (
+          <p className="mt-1 text-xs text-amber-600">
+            Confirm candidates first to enable medical invite, academic data collection, and document collection.
+          </p>
+        ) : null}
         <div className="mt-4 space-y-4">
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6'>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                Pending Academic Data Link
-              </label>
-              <Input
-                value={bulkFields.academicFormLink}
-                disabled={!hasSelection}
-                onChange={(event) =>
-                  setBulkFields((prev) => ({
-                    ...prev,
-                    academicFormLink: event.target.value,
-                  }))
-                }
-                placeholder="https://..."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                Candidate Document Link (OneDrive)
-              </label>
-              <Input
-                value={bulkFields.documentLink}
-                disabled={!hasSelection}
-                onChange={(event) =>
-                  setBulkFields((prev) => ({
-                    ...prev,
-                    documentLink: event.target.value,
-                  }))
-                }
-                placeholder="https://..."
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Remarks (Included in Emails)</label>
-            <Input
-              value={bulkFields.remarks}
-              disabled={!hasSelection}
-              onChange={(event) =>
-                setBulkFields((prev) => ({ ...prev, remarks: event.target.value }))
-              }
-              placeholder="Enter remarks to be sent to the institute..."
-            />
-          </div>
-
           <div className="flex flex-wrap gap-3 pt-2">
             <Button
               onClick={() =>
                 runBulkAction("confirm", async () => {
                   await api.post("/medical-results/bulk/confirm", {
                     drive_id: drive.id,
-                    remarks: bulkFields.remarks,
-                    cadet_ids: passedSelectedCadets.map((c) => c.id),
+                    cadet_ids: selectedRows.map((c) => c.id),
                   });
                   toast.success("Selected-candidate confirmation sent to institute");
                 })
@@ -395,14 +495,12 @@ const MedicalTab = ({ drive, onRefresh }) => {
                 runBulkAction("academic", async () => {
                   await api.post("/medical-results/bulk/collect-academic", {
                     drive_id: drive.id,
-                    remarks: bulkFields.remarks,
-                    form_link: bulkFields.academicFormLink,
-                    cadet_ids: passedSelectedCadets.map((c) => c.id),
+                    cadet_ids: selectedRows.map((c) => c.id),
                   });
                   toast.success("Pending academic data request sent");
                 })
               }
-              disabled={actionLoading.academic || !hasSelection}
+              disabled={actionLoading.academic || !allSelectedAreConfirmed}
               className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
             >
               {actionLoading.academic ? (
@@ -419,14 +517,12 @@ const MedicalTab = ({ drive, onRefresh }) => {
                 runBulkAction("documents", async () => {
                   await api.post("/medical-results/bulk/collect-documents", {
                     drive_id: drive.id,
-                    remarks: bulkFields.remarks,
-                    document_link: bulkFields.documentLink,
-                    cadet_ids: passedSelectedCadets.map((c) => c.id),
+                    cadet_ids: selectedRows.map((c) => c.id),
                   });
                   toast.success("Candidate document request sent");
                 })
               }
-              disabled={actionLoading.documents || !hasSelection}
+              disabled={actionLoading.documents || !allSelectedAreConfirmed}
               className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
             >
               {actionLoading.documents ? (
@@ -434,38 +530,82 @@ const MedicalTab = ({ drive, onRefresh }) => {
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              Collect Documents
+              Move document process
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-white shadow-sm">
-        <ReusableDataTable
-          columns={columns}
-          rows={paginatedCadets}
-          loading={loading}
-          checkboxSelection
-          rowSelectionModel={selectedCadets}
-          onRowSelectionModelChange={setSelectedCadets}
-          emptyMessage={
-            searchTerm
-              ? `No cadets found matching "${searchTerm}"`
-              : "No cadets are waiting for medical"
-          }
-          pagination={{
-            current_page: currentPage,
-            per_page: perPage,
-            total: filteredCadets.length,
-            last_page: Math.max(1, Math.ceil(filteredCadets.length / perPage)),
-          }}
-          handlePageChange={setCurrentPage}
-          handlePerPageChange={(limit) => {
-            setPerPage(limit);
-            setCurrentPage(1);
-          }}
-          pageSize={perPage}
-        />
+      <div className="space-y-4">
+        {Object.entries(GROUP_CONFIGS).map(([key, config]) => {
+          const list = groupedCadets[key] || [];
+          const paginatedList = getPaginatedGroup(key);
+          const isExpanded = expandedGroups[key];
+
+          return (
+            <div
+              key={key}
+              className={`rounded-xl border ${config.borderColor} overflow-hidden bg-white shadow-sm`}
+            >
+              <button
+                type="button"
+                onClick={() => toggleGroup(key)}
+                className={`flex w-full items-center justify-between p-4 transition-colors ${config.bgColor} border-b ${config.borderColor}`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`text-base font-semibold ${config.textColor}`}>
+                    {config.label}
+                  </span>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${config.badgeColor}`}
+                  >
+                    {list.length}
+                  </span>
+                </div>
+                {isExpanded ? (
+                  <ChevronUp className={`h-5 w-5 ${config.textColor}`} />
+                ) : (
+                  <ChevronDown className={`h-5 w-5 ${config.textColor}`} />
+                )}
+              </button>
+
+              {isExpanded && (
+                <div className="overflow-hidden">
+                  <ReusableDataTable
+                    columns={columns}
+                    rows={paginatedList}
+                    loading={loading}
+                    checkboxSelection
+                    rowSelectionModel={selectedCadets}
+                    onRowSelectionModelChange={setSelectedCadets}
+                    emptyMessage={
+                      searchTerm
+                        ? `No cadets found in this group matching "${searchTerm}"`
+                        : `No cadets in ${config.label.toLowerCase()}`
+                    }
+                    pagination={{
+                      current_page: currentPages[key] || 1,
+                      per_page: perPages[key] || 10,
+                      total: list.length,
+                      last_page: Math.max(
+                        1,
+                        Math.ceil(list.length / (perPages[key] || 10))
+                      ),
+                    }}
+                    handlePageChange={(page) => {
+                      setCurrentPages((prev) => ({ ...prev, [key]: page }));
+                    }}
+                    handlePerPageChange={(limit) => {
+                      setPerPages((prev) => ({ ...prev, [key]: limit }));
+                      setCurrentPages((prev) => ({ ...prev, [key]: 1 }));
+                    }}
+                    pageSize={perPages[key] || 10}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <StageInviteModal

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Loader2, X, Link as LinkIcon, AlertCircle } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { DOCUMENT_TYPES } from "../../lib/constant";
 
 const DocumentRequestModal = ({
   isOpen,
@@ -12,11 +13,17 @@ const DocumentRequestModal = ({
 }) => {
   // Each entry: { cadet_id, onedrive_link }
   const [cadetLinks, setCadetLinks] = useState({});
+  const [cadetRemarks, setCadetRemarks] = useState({});
+  const [documentName, setDocumentName] = useState("");
+  const [documentType, setDocumentType] = useState("CV");
   const [remarks, setRemarks] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       setCadetLinks({});
+      setCadetRemarks({});
+      setDocumentName("");
+      setDocumentType("CV");
       setRemarks("");
     }
   }, [isOpen]);
@@ -25,6 +32,10 @@ const DocumentRequestModal = ({
 
   const updateLink = (cadetId, link) => {
     setCadetLinks((prev) => ({ ...prev, [cadetId]: link }));
+  };
+
+  const updateRemark = (cadetId, remark) => {
+    setCadetRemarks((prev) => ({ ...prev, [cadetId]: remark }));
   };
 
   const filledCadets = Object.entries(cadetLinks).filter(
@@ -38,11 +49,14 @@ const DocumentRequestModal = ({
     const cadetLinksPayload = filledCadets.map(([cadetId, link]) => ({
       cadet_id: cadetId,
       onedrive_link: link.trim(),
+      remark: (cadetRemarks[cadetId] || "").trim(),
     }));
 
     await onSubmit({
       cadet_links: cadetLinksPayload,
-      remarks,
+      remarks: remarks.trim(),
+      document_name: documentName.trim() || undefined,
+      document_type: documentType,
     });
   };
 
@@ -85,10 +99,41 @@ const DocumentRequestModal = ({
               </div>
             </div>
 
+            {/* Document Details */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Document Name <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  placeholder="E.g., Passport Copy, INDOS Certificate..."
+                  value={documentName}
+                  onChange={(e) => setDocumentName(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Document Type
+                </label>
+                <select
+                  value={documentType}
+                  onChange={(e) => setDocumentType(e.target.value)}
+                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  {DOCUMENT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* Remarks */}
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
-                Instructions / Remarks (Optional)
+                Instructions / Remarks (Optional - applied as default if no cadet remark is set)
               </label>
               <textarea
                 rows={2}
@@ -107,7 +152,7 @@ const DocumentRequestModal = ({
                 </label>
               </div>
 
-              <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="max-h-72 space-y-3 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
                 {cadets.length === 0 ? (
                   <p className="p-4 text-center text-sm text-slate-500">
                     No cadets available in this drive.
@@ -116,25 +161,36 @@ const DocumentRequestModal = ({
                   cadets.map((cadet) => (
                     <div
                       key={cadet.cadet_id}
-                      className="flex flex-col gap-2 rounded-lg bg-white p-3 shadow-sm sm:flex-row sm:items-center"
+                      className="flex flex-col gap-3 rounded-lg border border-slate-100 bg-white p-3.5 shadow-sm"
                     >
-                      <div className="flex flex-shrink-0 items-center gap-2 sm:w-52">
-                        <span className="rounded bg-slate-100 px-2 py-1 text-center text-xs font-bold uppercase text-slate-600">
+                      <div className="flex items-center gap-2">
+                        <span className="rounded bg-indigo-50 border border-indigo-100 px-2 py-0.5 text-xs font-bold uppercase text-indigo-700">
                           {cadet.cadet_unique_id}
                         </span>
                         <span className="truncate text-sm font-medium text-slate-900">
                           {cadet.name_as_in_indos_cert}
                         </span>
                       </div>
-                      <div className="relative flex-1">
-                        <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <Input
-                          type="url"
-                          placeholder="https://molmi-my.sharepoint.com/..."
-                          value={cadetLinks[cadet.cadet_id] || ""}
-                          onChange={(e) => updateLink(cadet.cadet_id, e.target.value)}
-                          className="pl-10"
-                        />
+                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                        <div className="relative">
+                          <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <Input
+                            type="url"
+                            placeholder="OneDrive Folder URL..."
+                            value={cadetLinks[cadet.cadet_id] || ""}
+                            onChange={(e) => updateLink(cadet.cadet_id, e.target.value)}
+                            className="pl-9 h-9 text-xs"
+                          />
+                        </div>
+                        <div>
+                          <Input
+                            type="text"
+                            placeholder="Remark for this cadet (optional)..."
+                            value={cadetRemarks[cadet.cadet_id] || ""}
+                            onChange={(e) => updateRemark(cadet.cadet_id, e.target.value)}
+                            className="h-9 text-xs"
+                          />
+                        </div>
                       </div>
                     </div>
                   ))

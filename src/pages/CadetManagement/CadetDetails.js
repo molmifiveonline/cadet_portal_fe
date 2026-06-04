@@ -129,10 +129,6 @@ const CadetDetails = () => {
   }, [id, navigate, reset, returnPath, returnStatePayload, defaultBackPath]);
 
   const onSubmit = async (data) => {
-    if (isInstituteUser) {
-      toast.error('Institute users can view cadet details only');
-      return;
-    }
 
     try {
       let payload = { ...data };
@@ -278,15 +274,17 @@ const CadetDetails = () => {
                 Save Changes
               </Button>
             </>
-          ) : !isInstituteUser ? (
-            <Button
-              type='button'
-              onClick={() => setIsEditing(true)}
-              className='gap-2 bg-white text-indigo-600 border border-indigo-100 hover:bg-indigo-50 px-6 rounded-xl shadow-sm font-semibold transition-all'
-            >
-              <FileText size={16} /> Edit Profile
-            </Button>
-          ) : null}
+          ) : (
+            !isInstituteUser && (
+              <Button
+                type='button'
+                onClick={() => setIsEditing(true)}
+                className='gap-2 bg-white text-indigo-600 border border-indigo-100 hover:bg-indigo-50 px-6 rounded-xl shadow-sm font-semibold transition-all'
+              >
+                <FileText size={16} /> Edit Profile
+              </Button>
+            )
+          )}
         </div>
       </PageHeader>
 
