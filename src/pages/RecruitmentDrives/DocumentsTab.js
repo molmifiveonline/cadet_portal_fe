@@ -4,7 +4,6 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  Clock,
   Download,
   Eye,
   ExternalLink,
@@ -24,43 +23,7 @@ import ReusableDataTable from "../../components/common/ReusableDataTable";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 import DocumentRequestModal from "./DocumentRequestModal";
-
-// const DOCUMENT_TYPES = [
-//   "CV",
-//   "Passport",
-//   "Medical Certificate",
-//   "Bank Details",
-//   "Academic Marksheet",
-//   "Aadhaar Card",
-//   "PAN Card",
-//   "INDOS Certificate",
-//   "CDC (Continuous Discharge Certificate)",
-//   "Agreement / Contract",
-//   "Other",
-// ];
-
-const STATUS_BADGES = {
-  accepted: {
-    className: "bg-green-100 text-green-800",
-    icon: CheckCircle,
-    label: "Accepted",
-  },
-  rejected: {
-    className: "bg-red-100 text-red-800",
-    icon: XCircle,
-    label: "Rejected",
-  },
-  reupload_requested: {
-    className: "bg-amber-100 text-amber-800",
-    icon: RotateCcw,
-    label: "Re-upload",
-  },
-  pending: {
-    className: "bg-slate-100 text-slate-700",
-    icon: Clock,
-    label: "Pending",
-  },
-};
+import { STATUS_BADGES } from "../../lib/constant";
 
 const getStatusBadge = (status = "pending") => {
   const badge = STATUS_BADGES[status] || STATUS_BADGES.pending;
