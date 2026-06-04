@@ -308,6 +308,7 @@ const DriveDetails = () => {
           disabledReason: instituteUploadDisabledMessage,
         },
         { id: "cadets", label: "Cadets", icon: Users },
+        { id: "shortlist", label: "Shortlisted Cadets", icon: ListChecks },
       ]
     : [
         { id: "info", label: "Drive Info", icon: FileText },

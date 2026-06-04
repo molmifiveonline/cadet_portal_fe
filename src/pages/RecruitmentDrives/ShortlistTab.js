@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle, Eye, Search, Send, Edit } from "lucide-react";
+import { CheckCircle, Eye, Search, Send, Edit, X } from "lucide-react";
 import PageLoader from "../../components/common/PageLoader";
 import { useNavigate } from "react-router-dom";
 import api from "../../lib/utils/apiConfig";
@@ -37,6 +37,7 @@ const ShortlistTab = ({
   const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [selectedCadets, setSelectedCadets] = useState([]);
   const [submittingShortlist, setSubmittingShortlist] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
@@ -101,12 +102,16 @@ const ShortlistTab = ({
     [cadets],
   );
 
-  const handleShortlist = async () => {
+  const handleShortlist = () => {
     if (!selectedForShortlist.length) {
       toast.error("Select at least one uploaded cadet to shortlist");
       return;
     }
+    setShowConfirmModal(true);
+  };
 
+  const executeShortlist = async () => {
+    setShowConfirmModal(false);
     try {
       setSubmittingShortlist(true);
       const cadetIds = selectedForShortlist.map((cadet) => cadet.id);
@@ -412,6 +417,63 @@ const ShortlistTab = ({
           pageSize={perPage}
         />
       </div>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <h3 className="text-lg font-bold text-slate-900">
+                {canSendShortlistEmail ? "Confirm Shortlist & Email" : "Confirm Shortlist"}
+              </h3>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {canSendShortlistEmail
+                  ? "This will shortlist the selected cadets and send an email to the institute. The email will also request the institute to update any pending details for these cadets."
+                  : "This will shortlist the selected cadets."}
+              </p>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Selected Cadets ({selectedForShortlist.length})
+                </label>
+                <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg p-3 bg-slate-50 space-y-2">
+                  {selectedForShortlist.map((cadet) => (
+                    <div key={cadet.id} className="flex justify-between items-center bg-white p-2.5 rounded border border-slate-100 shadow-sm text-sm">
+                      <span className="font-semibold text-slate-800">{cadet.name_as_in_indos_cert}</span>
+                      <span className="text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded font-bold uppercase">
+                        {cadet.cadet_unique_id || "-"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={executeShortlist}
+                className="bg-purple-600 text-white hover:bg-purple-700"
+              >
+                {canSendShortlistEmail ? "Confirm & Send" : "Confirm Shortlist"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
