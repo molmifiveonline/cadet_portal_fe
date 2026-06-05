@@ -210,13 +210,22 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
           >
             <Eye size={16} />
           </Button>
-          {!isInstituteUser ? (
+          {(!isInstituteUser || row.can_edit_pending_details) ? (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`/cadets/view/${row.id}`)}
+              onClick={() => {
+                if (isInstituteUser) {
+                  navigate(`/cadets/fill-details/${row.id}`, {
+                    state: { returnPath: `/drives/${drive.id}`, returnState: { activeTab: "cadets" } },
+                  });
+                  return;
+                }
+
+                navigate(`/cadets/view/${row.id}`);
+              }}
               className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
-              title="Edit cadet"
+              title={isInstituteUser ? "Edit pending details" : "Edit cadet"}
             >
               <Edit size={16} />
             </Button>

@@ -111,9 +111,9 @@ const DriveDetails = () => {
       new URLSearchParams(location.search).get("tab");
 
     if (requestedTab) {
-      setActiveTab(requestedTab);
+      setActiveTab(isInstituteUser && requestedTab === "shortlist" ? "cadets" : requestedTab);
     }
-  }, [location.search, location.state]);
+  }, [isInstituteUser, location.search, location.state]);
 
   const handlePreviewSubmit = async () => {
     try {
@@ -308,7 +308,6 @@ const DriveDetails = () => {
           disabledReason: instituteUploadDisabledMessage,
         },
         { id: "cadets", label: "Cadets", icon: Users },
-        { id: "shortlist", label: "Shortlisted Cadets", icon: ListChecks },
       ]
     : [
         { id: "info", label: "Drive Info", icon: FileText },
@@ -456,6 +455,16 @@ const DriveDetails = () => {
                 <div className="mt-1 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-500">
                   {card.label}
                 </div>
+                {card.label === "Total Uploaded" && (
+                  <div className="mt-2 flex gap-1.5 text-[10px] font-semibold">
+                    <span className="rounded bg-sky-50 px-1.5 py-0.5 text-sky-700">
+                      M: {stats?.male_count || 0}
+                    </span>
+                    <span className="rounded bg-pink-50 px-1.5 py-0.5 text-pink-700">
+                      F: {stats?.female_count || 0}
+                    </span>
+                  </div>
+                )}
               </button>
             ))}
           </div>

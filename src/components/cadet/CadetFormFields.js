@@ -98,7 +98,18 @@ const CadetFormFields = ({
                 getPhoneValidationMessage(value, 'Phone') || true
               }
             />
-            <DetailItem label='Gender' value={cadet.gender} name='gender' icon={User} />
+            <DetailItem
+              label='Gender'
+              value={cadet.gender}
+              name='gender'
+              type='select'
+              options={[
+                { label: 'Male', value: 'Male' },
+                { label: 'Female', value: 'Female' },
+              ]}
+              required
+              icon={User}
+            />
             <DetailItem label='Date of Birth' value={formatDateForDisplay(cadet.date_of_birth)} name='date_of_birth' type='date' icon={Calendar} />
             <DetailItem label='Place of Birth' value={cadet.place_of_birth} name='place_of_birth' icon={MapPin} />
             <DetailItem label='Hometown' value={cadet.home_town_or_nearby_airport} name='home_town_or_nearby_airport' icon={MapPin} />

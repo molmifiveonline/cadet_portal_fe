@@ -444,7 +444,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
           <Button
             variant="outline"
             onClick={() => setIsInviteOpen(true)}
-            disabled={!allSelectedAreConfirmed}
+            disabled={!hasSelection}
             className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
           >
             <Send className="h-4 w-4" />
@@ -463,7 +463,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
           </p>
         ) : !allSelectedAreConfirmed ? (
           <p className="mt-1 text-xs text-amber-600">
-            Confirm candidates first to enable medical invite, academic data collection, and document collection.
+            Confirm candidates first to enable academic data collection, and document collection.
           </p>
         ) : null}
         <div className="mt-4 space-y-4">

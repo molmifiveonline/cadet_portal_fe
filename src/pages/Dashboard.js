@@ -192,7 +192,7 @@ const Dashboard = () => {
   return (
     <>
       {/* ── Stats Cards ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-8">
         <StatsCard
           title="Total Institutes"
           value={(stats?.totalInstitutes ?? 0).toLocaleString()}
@@ -206,19 +206,24 @@ const Dashboard = () => {
           gradient="from-blue-500 to-indigo-600"
         />
         <StatsCard
+          title="Male Candidates"
+          value={(stats?.maleCount ?? 0).toLocaleString()}
+          icon={Users}
+          gradient="from-sky-500 to-blue-600"
+        />
+        <StatsCard
+          title="Female Candidates"
+          value={(stats?.femaleCount ?? 0).toLocaleString()}
+          icon={Users}
+          gradient="from-pink-500 to-rose-600"
+        />
+        <StatsCard
           title="Pending Documents"
           value={(stats?.pendingDocuments?.length ?? 0).toLocaleString()}
           icon={FileText}
           gradient="from-amber-500 to-orange-600"
           subtitle="Awaiting review"
         />
-        {/* <StatsCard
-          title="CTV Ready"
-          value={(stats?.ctvReadyCandidates?.length ?? 0).toLocaleString()}
-          icon={Ship}
-          gradient="from-emerald-500 to-teal-600"
-          subtitle="Ready for CTV"
-        /> */}
       </div>
 
       {/* ── Stage-wise Candidate Pipeline ───────────────────────────── */}

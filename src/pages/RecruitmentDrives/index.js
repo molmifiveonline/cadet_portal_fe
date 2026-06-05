@@ -579,6 +579,16 @@ const RecruitmentDrives = () => {
                           <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
                             {stage.label}
                           </span>
+                          {stage.label === "Uploaded" && (
+                            <div className="mt-1 flex gap-1 text-[8px] font-bold">
+                              <span className="rounded bg-sky-50 px-1 text-sky-700">
+                                M: {drive.male_count || 0}
+                              </span>
+                              <span className="rounded bg-pink-50 px-1 text-pink-700">
+                                F: {drive.female_count || 0}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
