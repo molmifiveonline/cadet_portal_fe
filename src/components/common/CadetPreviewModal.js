@@ -44,34 +44,120 @@ const CadetPreviewModal = ({ isOpen, onClose, cadets, onConfirm, loading }) => {
               <p className="text-slate-500 font-medium">No valid cadet data found in the submission.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Full Name</TableHead>
-                  <TableHead>Email Address</TableHead>
-                  <TableHead>Mobile Number</TableHead>
-                  <TableHead>Gender</TableHead>
-                  <TableHead>Indos Number</TableHead>
-                  <TableHead>DOB</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {cadets.map((cadet, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-semibold text-slate-800">
-                      {cadet.name_as_in_indos_cert || 'N/A'}
-                    </TableCell>
-                    <TableCell className="text-slate-600">{cadet.email_id || 'N/A'}</TableCell>
-                    <TableCell className="text-slate-600 font-mono text-xs">{cadet.mobile_number || 'N/A'}</TableCell>
-                    <TableCell className="text-slate-600">{cadet.gender || 'N/A'}</TableCell>
-                    <TableCell className="text-blue-600 font-bold text-xs">{cadet.indos_number || 'N/A'}</TableCell>
-                    <TableCell className="text-slate-500 text-xs">
-                      {cadet.dob ? formatDateForDisplay(cadet.dob) : 'N/A'}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table className="min-w-max">
+                <TableHeader>
+                  <TableRow className="bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="font-bold text-slate-700">Full Name</TableHead>
+                    <TableHead className="font-bold text-slate-700">Email Address</TableHead>
+                    <TableHead className="font-bold text-slate-700">Contact Number</TableHead>
+                    <TableHead className="font-bold text-slate-700">Gender</TableHead>
+                    <TableHead className="font-bold text-slate-700">DOB</TableHead>
+                    <TableHead className="font-bold text-slate-700">Roll No</TableHead>
+                    <TableHead className="font-bold text-slate-700">Course</TableHead>
+                    <TableHead className="font-bold text-slate-700">Home Town / Airport</TableHead>
+                    <TableHead className="font-bold text-slate-700">Passing Out Year</TableHead>
+                    <TableHead className="font-bold text-slate-700">Age When Passing Out</TableHead>
+                    <TableHead className="font-bold text-slate-700">Batch Rank</TableHead>
+                    <TableHead className="font-bold text-slate-700">No. of Arrears</TableHead>
+                    
+                    {/* 10th Std */}
+                    <TableHead className="font-bold text-slate-700">10th Board</TableHead>
+                    <TableHead className="font-bold text-slate-700">10th Pass Year</TableHead>
+                    <TableHead className="font-bold text-slate-700">10th Avg %</TableHead>
+                    <TableHead className="font-bold text-slate-700">10th Maths</TableHead>
+                    <TableHead className="font-bold text-slate-700">10th Science</TableHead>
+                    <TableHead className="font-bold text-slate-700">10th English</TableHead>
+                    
+                    {/* 12th Std */}
+                    <TableHead className="font-bold text-slate-700">12th Board</TableHead>
+                    <TableHead className="font-bold text-slate-700">12th Pass Year</TableHead>
+                    <TableHead className="font-bold text-slate-700">12th PCM Avg %</TableHead>
+                    <TableHead className="font-bold text-slate-700">12th English</TableHead>
+                    <TableHead className="font-bold text-slate-700">12th Physics</TableHead>
+                    <TableHead className="font-bold text-slate-700">12th Chemistry</TableHead>
+                    <TableHead className="font-bold text-slate-700">12th Maths</TableHead>
+                    
+                    {/* IMU */}
+                    <TableHead className="font-bold text-slate-700">IMU Rank</TableHead>
+                    <TableHead className="font-bold text-slate-700">IMU Sem Avg %</TableHead>
+                    <TableHead className="font-bold text-slate-700">IMU Sem 1 %</TableHead>
+                    <TableHead className="font-bold text-slate-700">IMU Sem 2 %</TableHead>
+                    <TableHead className="font-bold text-slate-700">IMU Sem 3 %</TableHead>
+                    <TableHead className="font-bold text-slate-700">IMU Sem 4 %</TableHead>
+                    <TableHead className="font-bold text-slate-700">IMU Sem 5 %</TableHead>
+                    <TableHead className="font-bold text-slate-700">IMU Sem 6 %</TableHead>
+                    <TableHead className="font-bold text-slate-700">IMU Sem 7 %</TableHead>
+                    <TableHead className="font-bold text-slate-700">IMU Sem 8 %</TableHead>
+                    
+                    {/* Physical / Other */}
+                    <TableHead className="font-bold text-slate-700">Weight (kg)</TableHead>
+                    <TableHead className="font-bold text-slate-700">Height (cm)</TableHead>
+                    <TableHead className="font-bold text-slate-700">BMI</TableHead>
+                    <TableHead className="font-bold text-slate-700">Achievements</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {cadets.map((cadet, i) => (
+                    <TableRow key={i} className="hover:bg-slate-50/50">
+                      <TableCell className="font-semibold text-slate-800 whitespace-nowrap">
+                        {cadet.name_as_in_indos_cert || 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-slate-600">{cadet.email_id || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600 font-mono text-xs">{cadet.contact_number || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600 capitalize">{cadet.gender || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-500 text-xs">
+                        {cadet.date_of_birth ? formatDateForDisplay(cadet.date_of_birth) : 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-slate-600 font-mono text-xs">{cadet.roll_no || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.course || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.home_town_or_nearby_airport || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.passing_out_date || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.age_when_passing_out || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.batch_rank_out_of_72_cadets || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.no_of_arrears !== undefined && cadet.no_of_arrears !== null ? cadet.no_of_arrears : 'N/A'}</TableCell>
+                      
+                      {/* 10th Std */}
+                      <TableCell className="text-slate-600">{cadet.tenth_std_board || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.tenth_std_pass_out_year || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.tenth_avg_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.tenth_std_maths || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.tenth_std_science || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.tenth_std_english || 'N/A'}</TableCell>
+                      
+                      {/* 12th Std */}
+                      <TableCell className="text-slate-600">{cadet.twelfth_std_board || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.twelfth_std_pass_out_year || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600 font-semibold text-slate-700">{cadet.twelfth_pcm_avg_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.twelfth_std_english || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.twelfth_std_physics || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.twelfth_std_chemistry || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.twelfth_std_maths || 'N/A'}</TableCell>
+                      
+                      {/* IMU */}
+                      <TableCell className="text-slate-600">{cadet.imu_rank || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600 font-semibold text-slate-700">{cadet.imu_avg_all_semester_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.imu_sem_1_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.imu_sem_2_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.imu_sem_3_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.imu_sem_4_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.imu_sem_5_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.imu_sem_6_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.imu_sem_7_percentage || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.imu_sem_8_percentage || 'N/A'}</TableCell>
+                      
+                      {/* Physical / Other */}
+                      <TableCell className="text-slate-600">{cadet.weight_in_kgs || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.height_in_cms || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600">{cadet.bmi || 'N/A'}</TableCell>
+                      <TableCell className="text-slate-600 max-w-[200px] truncate" title={cadet.any_extra_curricular_achievement}>
+                        {cadet.any_extra_curricular_achievement || 'N/A'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
 

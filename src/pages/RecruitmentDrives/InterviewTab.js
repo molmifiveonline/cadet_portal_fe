@@ -21,6 +21,8 @@ const DECISION_COLORS = {
   selected: "bg-green-100 text-green-700",
   rejected: "bg-red-100 text-red-700",
   waitlisted: "bg-amber-100 text-amber-700",
+  pass: "bg-green-100 text-green-700",
+  fail: "bg-red-100 text-red-700",
 };
 
 const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
@@ -213,9 +215,10 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
       width: "120px",
       renderCell: ({ value }) => {
         if (!value) return "-";
-        const tone = DECISION_COLORS[value] || "bg-slate-100 text-slate-700";
+        const normalized = value.toLowerCase();
+        const tone = DECISION_COLORS[normalized] || "bg-slate-100 text-slate-700";
         return (
-          <span className={`rounded-full px-2 py-1 text-xs font-semibold ${tone}`}>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
             {value}
           </span>
         );

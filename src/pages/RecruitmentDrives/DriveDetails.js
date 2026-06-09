@@ -590,43 +590,6 @@ const DriveDetails = () => {
                 </div>
               ) : null}
 
-              {!isInstituteUser && (
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Cadets
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {stats?.total_uploaded || 0}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Assessment Passed
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {stats?.assessment_passed || 0}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Interview Selected
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {stats?.interview_selected || 0}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Rejected
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {stats?.rejected_count || 0}
-                  </p>
-                </div>
-              </div>
-              )}
-
             </div>
           ) : null}
 

@@ -202,6 +202,12 @@ const AssessmentForm = () => {
   };
 
   const downloadEssay = () => {
+    if (essayFile) {
+      const fileURL = URL.createObjectURL(essayFile);
+      window.open(fileURL, '_blank');
+      return;
+    }
+
     const userStr = localStorage.getItem('user');
     let token = '';
     try {

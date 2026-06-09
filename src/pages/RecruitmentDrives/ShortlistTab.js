@@ -284,7 +284,7 @@ const ShortlistTab = ({
           >
             <Eye size={16} />
           </Button>
-          {isInstituteUser && (
+          {isInstituteUser && row.can_edit_pending_details && (
             <Button
               variant="ghost"
               size="sm"

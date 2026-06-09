@@ -92,6 +92,80 @@ const getCourseCfg = (t) =>
     icon: GraduationCap,
   };
 
+const ProgressCircle = ({ progress }) => {
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+
+  useEffect(() => {
+    let animationFrameId;
+    const duration = 1000; // 1 second
+    const startProgress = 0;
+    const endProgress = progress;
+    const startTime = performance.now();
+
+    const animate = (currentTime) => {
+      const elapsedTime = currentTime - startTime;
+      const progressFraction = Math.min(elapsedTime / duration, 1);
+
+      // Use easeOutQuad for a smoother deceleration at the end
+      const easeOutQuad = (t) => t * (2 - t);
+      const easedFraction = easeOutQuad(progressFraction);
+
+      const currentProgress = Math.round(
+        startProgress + easedFraction * (endProgress - startProgress)
+      );
+
+      setAnimatedProgress(currentProgress);
+
+      if (progressFraction < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [progress]);
+
+  return (
+    <div className="relative flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center">
+      <svg className="h-full w-full -rotate-90 transform">
+        <circle
+          cx="50%"
+          cy="50%"
+          r="40%"
+          stroke="currentColor"
+          strokeWidth="3"
+          fill="transparent"
+          className="text-slate-100"
+        />
+        <circle
+          cx="50%"
+          cy="50%"
+          r="40%"
+          stroke="currentColor"
+          strokeWidth="3"
+          fill="transparent"
+          strokeDasharray="100 100"
+          strokeDashoffset={100 - animatedProgress}
+          strokeLinecap="round"
+          className={`transition-none ${progress >= 80
+              ? "text-emerald-500"
+              : progress >= 50
+                ? "text-amber-500"
+                : "text-blue-500"
+            }`}
+          pathLength="100"
+        />
+      </svg>
+      <span className="absolute text-[9px] sm:text-[11px] font-black text-slate-800">
+        {animatedProgress}%
+      </span>
+    </div>
+  );
+};
+
 // ─── Pipeline stages config ──────────────────────────────────────────────────
 const getPipelineStages = (drive) => [
   {
@@ -411,7 +485,7 @@ const RecruitmentDrives = () => {
               <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-600" />
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {drives.map((drive) => {
               const progress = calculateProgress(drive);
@@ -440,41 +514,7 @@ const RecruitmentDrives = () => {
                       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                         {/* Circular Progress Ring */}
                         {user?.role !== "Institute" && (
-                        <div className="relative flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center">
-                          <svg className="h-full w-full -rotate-90 transform">
-                            <circle
-                              cx="50%"
-                              cy="50%"
-                              r="40%"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              fill="transparent"
-                              className="text-slate-100"
-                            />
-                            <circle
-                              cx="50%"
-                              cy="50%"
-                              r="40%"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              fill="transparent"
-                              strokeDasharray="100 100"
-                              strokeDashoffset={100 - progress}
-                              strokeLinecap="round"
-                              className={`transition-all duration-1000 ease-out ${
-                                progress >= 80
-                                  ? "text-emerald-500"
-                                  : progress >= 50
-                                    ? "text-amber-500"
-                                    : "text-blue-500"
-                              }`}
-                              pathLength="100"
-                            />
-                          </svg>
-                          <span className="absolute text-[9px] sm:text-[11px] font-black text-slate-800">
-                            {progress}%
-                          </span>
-                        </div>
+                          <ProgressCircle progress={progress} />
                         )}
 
                         {/* Status badge with dot */}
@@ -564,34 +604,34 @@ const RecruitmentDrives = () => {
 
                     {/* ── Metric Grid (The "Pucks") ────────────────────────────── */}
                     {user?.role !== "Institute" && (
-                    <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {stages.map((stage) => (
-                        <div
-                          key={stage.label}
-                          className={`flex flex-col items-center rounded-xl border border-slate-100 ${stage.bg} py-2.5 transition-all hover:border-slate-200 hover:shadow-sm`}
-                        >
-                          <stage.icon
-                            className={`mb-1 h-3.5 w-3.5 ${stage.color} opacity-80`}
-                          />
-                          <span className={`text-sm font-black ${stage.color}`}>
-                            {stage.value}
-                          </span>
-                          <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
-                            {stage.label}
-                          </span>
-                          {stage.label === "Cadets" && (
-                            <div className="mt-1 flex gap-1 text-[8px] font-bold">
-                              <span className="rounded bg-sky-50 px-1 text-sky-700">
-                                M: {drive.male_count || 0}
-                              </span>
-                              <span className="rounded bg-pink-50 px-1 text-pink-700">
-                                F: {drive.female_count || 0}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                      <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {stages.map((stage) => (
+                          <div
+                            key={stage.label}
+                            className={`flex flex-col items-center rounded-xl border border-slate-100 ${stage.bg} py-2.5 transition-all hover:border-slate-200 hover:shadow-sm`}
+                          >
+                            <stage.icon
+                              className={`mb-1 h-3.5 w-3.5 ${stage.color} opacity-80`}
+                            />
+                            <span className={`text-sm font-black ${stage.color}`}>
+                              {stage.value}
+                            </span>
+                            <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
+                              {stage.label}
+                            </span>
+                            {stage.label === "Cadets" && (
+                              <div className="mt-1 flex gap-1 text-[8px] font-bold">
+                                <span className="rounded bg-sky-50 px-1 text-sky-700">
+                                  M: {drive.male_count || 0}
+                                </span>
+                                <span className="rounded bg-pink-50 px-1 text-pink-700">
+                                  F: {drive.female_count || 0}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     )}
 
                     {/* ── Footer ─────────────────────────────────────────────── */}

@@ -260,7 +260,7 @@ const InstituteShortlistedCadets = () => {
       headerClassName: 'bg-white',
       renderCell: ({ row }) => {
         const canUpload =
-          Number(row.shortlist_email_sent || 0) === 1 &&
+          row.can_edit_pending_details &&
           Number(row.institute_detail_filled || 0) !== 1;
         const isUploading = uploadingCadetId === row.id;
 
@@ -278,21 +278,23 @@ const InstituteShortlistedCadets = () => {
                 <Upload size={16} />
               </Button>
             )}
-            <Button
-              variant='ghost'
-              size='icon'
-              className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-              onClick={() =>
-                navigate(`/cadets/fill-details/${row.id}`, {
-                  state: {
-                    returnPath: '/institute/shortlisted-cadets',
-                  },
-                })
-              }
-              title='Edit Cadet'
-            >
-              <Edit size={16} />
-            </Button>
+            {row.can_edit_pending_details && (
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                onClick={() =>
+                  navigate(`/cadets/fill-details/${row.id}`, {
+                    state: {
+                      returnPath: '/institute/shortlisted-cadets',
+                    },
+                  })
+                }
+                title='Edit Cadet'
+              >
+                <Edit size={16} />
+              </Button>
+            )}
           </div>
         );
       },

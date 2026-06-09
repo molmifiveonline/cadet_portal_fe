@@ -94,7 +94,11 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
   const handleSendInvites = async (entries) => {
     try {
       setSendingInvites(true);
-      await api.post(`/recruitment-drives/${drive.id}/send-assessment-invites`, entries);
+      await api.post(`/recruitment-drives/${drive.id}/send-assessment-invites`, entries, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       toast.success("Assessment invites sent successfully");
       setIsInviteOpen(false);
       setSelectedCadets([]);
