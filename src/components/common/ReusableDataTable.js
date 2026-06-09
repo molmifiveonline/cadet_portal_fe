@@ -116,6 +116,7 @@ export default function ReusableDataTable({
   resetSortTrigger,
   handleSortChange,
   sortConfig,
+  hidePagination = false,
 }) {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
@@ -375,7 +376,7 @@ export default function ReusableDataTable({
       </div>
 
       {/* Pagination */}
-      {rows.length > 0 && (
+      {rows.length > 0 && !hidePagination && (
         <div className='flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 pb-5 p-2'>
           <div className='flex flex-col sm:flex-row items-center gap-2 sm:gap-4 w-full sm:w-auto'>
             <div className='flex items-center gap-1.5'>

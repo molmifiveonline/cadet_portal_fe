@@ -261,7 +261,6 @@ const ShortlistTab = ({
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-amber-700 border-t-transparent" />
             Pending
           </span>
         ),

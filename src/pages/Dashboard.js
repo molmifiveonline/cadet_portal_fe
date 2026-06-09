@@ -82,7 +82,7 @@ const StatsCard = ({ title, value, icon: Icon, gradient, subtitle }) => (
       <div className="min-w-0">
         <p className="text-[11px] sm:text-sm font-semibold text-slate-500 truncate">{title}</p>
         {subtitle && (
-          <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>
+          <div className="text-[10px] sm:text-xs text-slate-400 mt-1">{subtitle}</div>
         )}
       </div>
       <h3 className="text-2xl sm:text-4xl font-bold text-slate-800 tracking-tight text-right leading-none">
@@ -192,7 +192,7 @@ const Dashboard = () => {
   return (
     <>
       {/* ── Stats Cards ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
         <StatsCard
           title="Total Institutes"
           value={(stats?.totalInstitutes ?? 0).toLocaleString()}
@@ -204,18 +204,12 @@ const Dashboard = () => {
           value={(stats?.totalCandidates ?? 0).toLocaleString()}
           icon={Users}
           gradient="from-blue-500 to-indigo-600"
-        />
-        <StatsCard
-          title="Male Candidates"
-          value={(stats?.maleCount ?? 0).toLocaleString()}
-          icon={Users}
-          gradient="from-sky-500 to-blue-600"
-        />
-        <StatsCard
-          title="Female Candidates"
-          value={(stats?.femaleCount ?? 0).toLocaleString()}
-          icon={Users}
-          gradient="from-pink-500 to-rose-600"
+          subtitle={
+            <div className="flex items-center gap-2 mt-1">
+              <span className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md font-semibold">Male: {(stats?.maleCount ?? 0).toLocaleString()}</span>
+              <span className="bg-pink-100 text-pink-700 px-2 py-0.5 rounded-md font-semibold">Female: {(stats?.femaleCount ?? 0).toLocaleString()}</span>
+            </div>
+          }
         />
         <StatsCard
           title="Pending Documents"

@@ -165,10 +165,34 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
       renderCell: ({ row }) => formatDateForDisplay(row.interview_email_date),
     },
     {
-      field: "panel_members",
-      headerName: "Panel",
-      width: "180px",
-      renderCell: ({ value }) => value || "-",
+      field: "interviewers",
+      headerName: "Panel / Interviewers",
+      width: "220px",
+      renderCell: ({ row }) => {
+        const interviewers = row.interviewers;
+        if (interviewers) {
+          try {
+            const list = typeof interviewers === 'string' ? JSON.parse(interviewers) : interviewers;
+            if (Array.isArray(list) && list.length > 0) {
+              const formattedTitle = list.map((i) => `${i.name}${i.designation ? ` (${i.designation})` : ''}`).join(', ');
+              return (
+                <div className="flex flex-col gap-0.5 max-w-[200px] overflow-hidden py-1" title={formattedTitle}>
+                  {list.map((interviewer, idx) => (
+                    <span key={idx} className="truncate text-xs text-slate-700 block">
+                      {interviewer.name} {interviewer.designation && (
+                        <span className="text-[10px] text-slate-400 font-medium">({interviewer.designation})</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              );
+            }
+          } catch (e) {
+            console.error('Error parsing interviewers row:', e);
+          }
+        }
+        return <span className="block truncate text-slate-700">{row.panel_members || "-"}</span>;
+      },
     },
     {
       field: "evaluation_score",
@@ -245,7 +269,7 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
             size="sm"
             onClick={() =>
               window.open(
-                `/cadets/interview/${row.id}?returnTo=${encodeURIComponent(returnTo)}`,
+                `/cadets/interview/${row.id}?returnTo=${encodeURIComponent(returnTo)}&view=true`,
                 "_blank",
               )
             }

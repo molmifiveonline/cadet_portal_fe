@@ -9,6 +9,8 @@ import {
   UserCog,
   Shield,
   FileText,
+  Briefcase,
+  FileSpreadsheet,
 } from "lucide-react";
 
 export const MenuItems = [
@@ -100,7 +102,7 @@ export const MenuItems = [
   // },
   {
     title: "Recruitment Drives",
-    icon: FileText,
+    icon: Briefcase,
     url: "/drives",
     module: "recruitment_drives",
     action: "view",
@@ -108,7 +110,7 @@ export const MenuItems = [
   },
   {
     title: "Submit Excel",
-    icon: FileText,
+    icon: FileSpreadsheet,
     url: "/institute/submit-excel",
     module: "submit-excel",
     action: "view",

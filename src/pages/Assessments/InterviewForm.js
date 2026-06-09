@@ -13,6 +13,8 @@ import {
   Loader2,
   FileText,
   Eye,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import PageHeader from '../../components/common/PageHeader';
@@ -43,17 +45,60 @@ const InterviewForm = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const isViewMode = new URLSearchParams(location.search).get('view') === 'true';
 
   const [formData, setFormData] = useState({
     interview_date: new Date().toISOString().split('T')[0],
     interview_time: '',
+    interviewers: [{ name: '', designation: '' }],
     panel_members: '',
+    evaluation_parameters: {
+      appearance: '',
+      communication: '',
+      conduct_manners: '',
+      general_questions: '',
+    },
     evaluation_score: '',
     total_score: '',
     remarks: '',
     comments: '',
     final_decision: 'selected',
   });
+
+  const handleParamChange = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      evaluation_parameters: {
+        ...prev.evaluation_parameters,
+        [field]: value,
+      },
+    }));
+    if (errors[`param_${field}`]) {
+      setErrors((prev) => ({ ...prev, [`param_${field}`]: '' }));
+    }
+  };
+
+  const handleInterviewerChange = (index, field, value) => {
+    setFormData((prev) => {
+      const updated = [...prev.interviewers];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, interviewers: updated };
+    });
+  };
+
+  const addInterviewer = () => {
+    setFormData((prev) => ({
+      ...prev,
+      interviewers: [...prev.interviewers, { name: '', designation: '' }],
+    }));
+  };
+
+  const removeInterviewer = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      interviewers: prev.interviewers.filter((_, idx) => idx !== index),
+    }));
+  };
 
   const returnPath = location.state?.returnPath || null;
   const returnStatePayload = location.state?.returnState || null;
@@ -92,12 +137,52 @@ const InterviewForm = () => {
         const interviewRes = await api.get(`/interviews/${cadet_id}`);
         if (interviewRes.data.success && interviewRes.data.data) {
           const data = interviewRes.data.data;
+
+          let interviewersList = [{ name: '', designation: '' }];
+          if (data.interviewers) {
+            try {
+              interviewersList = typeof data.interviewers === 'string'
+                ? JSON.parse(data.interviewers)
+                : data.interviewers;
+            } catch (e) {
+              console.error('Error parsing interviewers:', e);
+            }
+          } else if (data.panel_members) {
+            interviewersList = data.panel_members.split(',').map((name) => ({
+              name: name.trim(),
+              designation: '',
+            }));
+          }
+
+          let evalParams = {
+            appearance: '',
+            communication: '',
+            conduct_manners: '',
+            general_questions: '',
+          };
+          if (data.evaluation_parameters) {
+            try {
+              evalParams = typeof data.evaluation_parameters === 'string'
+                ? JSON.parse(data.evaluation_parameters)
+                : data.evaluation_parameters;
+            } catch (e) {
+              console.error('Error parsing evaluation_parameters:', e);
+            }
+          }
+
           setFormData({
             interview_date: data.interview_date
               ? data.interview_date.split('T')[0]
               : new Date().toISOString().split('T')[0],
             interview_time: data.interview_time || '',
+            interviewers: interviewersList,
             panel_members: data.panel_members || '',
+            evaluation_parameters: {
+              appearance: evalParams.appearance ?? '',
+              communication: evalParams.communication ?? '',
+              conduct_manners: evalParams.conduct_manners ?? '',
+              general_questions: evalParams.general_questions ?? '',
+            },
             evaluation_score: data.evaluation_score || '',
             total_score: data.total_score || '',
             remarks: data.remarks || '',
@@ -175,7 +260,6 @@ const InterviewForm = () => {
     // Validation
     const requiredFields = [
       { key: 'interview_date', name: 'Interview Date' },
-      { key: 'panel_members', name: 'Interviewer Name / Panel' },
       { key: 'interview_time', name: 'Interview Time' },
       { key: 'evaluation_score', name: 'Interview Score (%)' },
       { key: 'total_score', name: 'Total Score' },
@@ -197,18 +281,49 @@ const InterviewForm = () => {
       }
     }
 
+    const paramFields = [
+      { key: 'appearance', name: 'Appearance' },
+      { key: 'communication', name: 'Communication' },
+      { key: 'conduct_manners', name: 'Conduct / Manners' },
+      { key: 'general_questions', name: 'General Questions' },
+    ];
+    for (const param of paramFields) {
+      const val = formData.evaluation_parameters[param.key];
+      if (val === '' || val === null || val === undefined) {
+        newErrors[`param_${param.key}`] = `${param.name} score is required`;
+        hasError = true;
+      } else {
+        const num = Number(val);
+        if (isNaN(num) || num < 0 || num > 100) {
+          newErrors[`param_${param.key}`] = `${param.name} score must be between 0 and 100`;
+          hasError = true;
+        }
+      }
+    }
+
+    // Check if at least one interviewer has a name
+    const validInterviewers = formData.interviewers.filter((i) => i.name.trim() !== '');
+    if (validInterviewers.length === 0) {
+      newErrors.interviewers = 'At least one interviewer name is required';
+      hasError = true;
+    }
+
     if (hasError) {
       setErrors(newErrors);
-      toast.error('Please fill in all mandatory fields');
+      toast.error(newErrors.interviewers || 'Please fill in all mandatory fields');
       return;
     }
 
     setSaving(true);
     try {
+      const panelNames = validInterviewers.map((i) => i.name.trim()).join(', ');
+
       const data = new FormData();
       data.append('interview_date', formData.interview_date);
       data.append('interview_time', formData.interview_time);
-      data.append('panel_members', formData.panel_members);
+      data.append('panel_members', panelNames);
+      data.append('interviewers', JSON.stringify(formData.interviewers));
+      data.append('evaluation_parameters', JSON.stringify(formData.evaluation_parameters));
       data.append('evaluation_score', formData.evaluation_score);
       data.append('total_score', formData.total_score);
       data.append('remarks', formData.remarks);
@@ -290,27 +405,10 @@ const InterviewForm = () => {
                   invalid={!!errors.interview_date}
                   className='pl-10'
                   required
+                  disabled={isViewMode}
                 />
               </div>
               {errors.interview_date && <p className={errorTextClass}>{errors.interview_date}</p>}
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Interviewer Name / Panel <span className="text-red-500">*</span>
-              </label>
-              <div className='relative'>
-                <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
-                <Input
-                  name='panel_members'
-                  value={formData.panel_members}
-                  onChange={handleInputChange}
-                  placeholder='Enter names'
-                  invalid={!!errors.panel_members}
-                  className='pl-10'
-                />
-              </div>
-              {errors.panel_members && <p className={errorTextClass}>{errors.panel_members}</p>}
             </div>
 
             <div className='space-y-2'>
@@ -326,10 +424,148 @@ const InterviewForm = () => {
                   onChange={handleInputChange}
                   invalid={!!errors.interview_time}
                   className='pl-10'
+                  disabled={isViewMode}
                 />
               </div>
               {errors.interview_time && <p className={errorTextClass}>{errors.interview_time}</p>}
             </div>
+
+            <div className='md:col-span-2 space-y-4 border-b pb-6 mb-2'>
+              <div className='flex items-center justify-between'>
+                <h3 className='text-sm font-semibold text-gray-900'>Interview Panel <span className="text-red-500">*</span></h3>
+                {!isViewMode && (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    onClick={addInterviewer}
+                    className='h-8 text-xs font-semibold gap-1 border-blue-200 text-blue-700 hover:bg-blue-50'
+                  >
+                    <Plus size={14} /> Add Interviewer
+                  </Button>
+                )}
+              </div>
+
+              <div className='space-y-3'>
+                {formData.interviewers.map((interviewer, index) => (
+                  <div key={index} className='flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 relative'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 flex-1'>
+                      <div className='space-y-1.5'>
+                        <label className='text-xs font-semibold text-gray-500'>Interviewer Name</label>
+                        <div className='relative'>
+                          <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                          <Input
+                            value={interviewer.name}
+                            onChange={(e) => handleInterviewerChange(index, 'name', e.target.value)}
+                            placeholder='Enter name'
+                            className='pl-10 bg-white'
+                            disabled={isViewMode}
+                          />
+                        </div>
+                      </div>
+
+                      <div className='space-y-1.5'>
+                        <label className='text-xs font-semibold text-gray-500'>Designation</label>
+                        <Input
+                          value={interviewer.designation}
+                          onChange={(e) => handleInterviewerChange(index, 'designation', e.target.value)}
+                          placeholder='e.g. Captain, Chief Engineer'
+                          className='bg-white'
+                          disabled={isViewMode}
+                        />
+                      </div>
+                    </div>
+
+                    {!isViewMode && formData.interviewers.length > 1 && (
+                      <button
+                        type='button'
+                        onClick={() => removeInterviewer(index)}
+                        className='p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-6 self-start'
+                        title='Remove interviewer'
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {errors.interviewers && <p className={errorTextClass}>{errors.interviewers}</p>}
+            </div>
+
+            <div className='md:col-span-2 space-y-4 border-b pb-6 mb-2'>
+              <h3 className='text-sm font-semibold text-gray-900'>Evaluation Parameters (Score out of 100)</h3>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium text-gray-700'>
+                    Appearance <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type='number'
+                    min='0'
+                    max='100'
+                    value={formData.evaluation_parameters.appearance}
+                    onChange={(e) => handleParamChange('appearance', e.target.value)}
+                    placeholder='0-100'
+                    invalid={!!errors.param_appearance}
+                    disabled={isViewMode}
+                  />
+                  {errors.param_appearance && <p className={errorTextClass}>{errors.param_appearance}</p>}
+                </div>
+
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium text-gray-700'>
+                    Communication <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type='number'
+                    min='0'
+                    max='100'
+                    value={formData.evaluation_parameters.communication}
+                    onChange={(e) => handleParamChange('communication', e.target.value)}
+                    placeholder='0-100'
+                    invalid={!!errors.param_communication}
+                    disabled={isViewMode}
+                  />
+                  {errors.param_communication && <p className={errorTextClass}>{errors.param_communication}</p>}
+                </div>
+
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium text-gray-700'>
+                    Conduct / Manners <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type='number'
+                    min='0'
+                    max='100'
+                    value={formData.evaluation_parameters.conduct_manners}
+                    onChange={(e) => handleParamChange('conduct_manners', e.target.value)}
+                    placeholder='0-100'
+                    invalid={!!errors.param_conduct_manners}
+                    disabled={isViewMode}
+                  />
+                  {errors.param_conduct_manners && <p className={errorTextClass}>{errors.param_conduct_manners}</p>}
+                </div>
+
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium text-gray-700'>
+                    General Questions <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type='number'
+                    min='0'
+                    max='100'
+                    value={formData.evaluation_parameters.general_questions}
+                    onChange={(e) => handleParamChange('general_questions', e.target.value)}
+                    placeholder='0-100'
+                    invalid={!!errors.param_general_questions}
+                    disabled={isViewMode}
+                  />
+                  {errors.param_general_questions && <p className={errorTextClass}>{errors.param_general_questions}</p>}
+                </div>
+              </div>
+            </div>
+
+
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
@@ -345,6 +581,7 @@ const InterviewForm = () => {
                   placeholder='0-100'
                   invalid={!!errors.evaluation_score}
                   className='pl-10'
+                  disabled={isViewMode}
                 />
               </div>
               {errors.evaluation_score && <p className={errorTextClass}>{errors.evaluation_score}</p>}
@@ -365,6 +602,7 @@ const InterviewForm = () => {
                   placeholder='Total score'
                   invalid={!!errors.total_score}
                   className='pl-10'
+                  disabled={isViewMode}
                 />
               </div>
               {errors.total_score && <p className={errorTextClass}>{errors.total_score}</p>}
@@ -384,6 +622,7 @@ const InterviewForm = () => {
                 onValueChange={(val) =>
                   setFormData((p) => ({ ...p, final_decision: val }))
                 }
+                disabled={isViewMode}
               >
                 <SelectTrigger>
                   <SelectValue placeholder='Select result' />
@@ -414,20 +653,22 @@ const InterviewForm = () => {
           </div>
 
           <div className='space-y-4'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                {existingSheetName ? 'Upload New Interview Sheet' : 'Upload Interview Sheet'}
-              </label>
-              <Input
-                type='file'
-                onChange={handleFileChange}
-                className='cursor-pointer rounded-xl bg-gray-50'
-                accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
-              />
-              <p className='text-xs text-gray-400 mt-1'>
-                Supported: PDF, Word, Images (Up to 10MB)
-              </p>
-            </div>
+            {!isViewMode && (
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  {existingSheetName ? 'Upload New Interview Sheet' : 'Upload Interview Sheet'}
+                </label>
+                <Input
+                  type='file'
+                  onChange={handleFileChange}
+                  className='cursor-pointer rounded-xl bg-gray-50'
+                  accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
+                />
+                <p className='text-xs text-gray-400 mt-1'>
+                  Supported: PDF, Word, Images (Up to 10MB)
+                </p>
+              </div>
+            )}
 
             {existingSheetName && (
               <div className='group relative p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-300'>
@@ -500,6 +741,7 @@ const InterviewForm = () => {
               aria-invalid={errors.comments ? true : undefined}
               className={`w-full rounded-xl border border-gray-300 p-4 text-sm outline-none resize-none focus:ring-4 focus:ring-blue-100 ${getInvalidFieldClass(errors.comments)}`}
               placeholder='Panel comments and observations...'
+              disabled={isViewMode}
             />
             {errors.comments && <p className={errorTextClass}>{errors.comments}</p>}
           </div>
@@ -517,27 +759,30 @@ const InterviewForm = () => {
               aria-invalid={errors.remarks ? true : undefined}
               className={`w-full rounded-xl border border-gray-300 p-4 text-sm outline-none resize-none focus:ring-4 focus:ring-blue-100 ${getInvalidFieldClass(errors.remarks)}`}
               placeholder='Detailed feedback...'
+              disabled={isViewMode}
             />
             {errors.remarks && <p className={errorTextClass}>{errors.remarks}</p>}
           </div>
 
-          <div className='pt-6 flex justify-end gap-3 border-t border-gray-200'>
-            <Button type='button' variant='ghost' onClick={handleBack}>
-              Cancel
-            </Button>
-            <Button
-              type='submit'
-              className='bg-blue-600 hover:bg-blue-700 text-white'
-              disabled={saving}
-            >
-              {saving ? (
-                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-              ) : (
-                <Save className='w-4 h-4 mr-2' />
-              )}
-              Save Interview Result
-            </Button>
-          </div>
+          {!isViewMode && (
+            <div className='pt-6 flex justify-end gap-3 border-t border-gray-200'>
+              <Button type='button' variant='ghost' onClick={handleBack}>
+                Cancel
+              </Button>
+              <Button
+                type='submit'
+                className='bg-blue-600 hover:bg-blue-700 text-white'
+                disabled={saving}
+              >
+                {saving ? (
+                  <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                ) : (
+                  <Save className='w-4 h-4 mr-2' />
+                )}
+                Save Interview Result
+              </Button>
+            </div>
+          )}
         </form>
       </div>
     </div>

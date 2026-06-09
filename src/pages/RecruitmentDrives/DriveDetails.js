@@ -213,7 +213,7 @@ const DriveDetails = () => {
   const progressCards = useMemo(
     () => [
       {
-        label: "Total Uploaded",
+        label: "Total Cadets",
         value: stats?.total_uploaded || 0,
         tone: "text-blue-600",
         onClick: () => {
@@ -455,7 +455,7 @@ const DriveDetails = () => {
                 <div className="mt-1 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-500">
                   {card.label}
                 </div>
-                {card.label === "Total Uploaded" && (
+                {card.label === "Total Cadets" && (
                   <div className="mt-2 flex gap-1.5 text-[10px] font-semibold">
                     <span className="rounded bg-sky-50 px-1.5 py-0.5 text-sky-700">
                       M: {stats?.male_count || 0}
@@ -594,7 +594,7 @@ const DriveDetails = () => {
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Uploaded
+                    Cadets
                   </p>
                   <p className="mt-2 text-2xl font-bold text-slate-900">
                     {stats?.total_uploaded || 0}

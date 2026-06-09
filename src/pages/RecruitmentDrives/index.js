@@ -95,7 +95,7 @@ const getCourseCfg = (t) =>
 // ─── Pipeline stages config ──────────────────────────────────────────────────
 const getPipelineStages = (drive) => [
   {
-    label: "Uploaded",
+    label: "Cadets",
     value: drive.total_uploaded || 0,
     icon: Upload,
     color: "text-indigo-600",
@@ -579,7 +579,7 @@ const RecruitmentDrives = () => {
                           <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
                             {stage.label}
                           </span>
-                          {stage.label === "Uploaded" && (
+                          {stage.label === "Cadets" && (
                             <div className="mt-1 flex gap-1 text-[8px] font-bold">
                               <span className="rounded bg-sky-50 px-1 text-sky-700">
                                 M: {drive.male_count || 0}

@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Edit, Eye, Search } from "lucide-react";
+import { Edit, Eye, Search, Upload } from "lucide-react";
 import PageLoader from "../../components/common/PageLoader";
 import api from "../../lib/utils/apiConfig";
 import { useAuth } from "../../context/AuthContext";
@@ -61,8 +61,11 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
+  const [selectedUploadCadet, setSelectedUploadCadet] = useState(null);
+  const [uploadingCadetId, setUploadingCadetId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+  const fileInputRef = useRef(null);
 
   const fetchCadets = useCallback(async () => {
     try {
@@ -109,6 +112,58 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
   }, [cadets]);
 
   const isInstituteUser = user?.role === "Institute";
+
+  const handleUploadClick = (cadet) => {
+    setSelectedUploadCadet(cadet);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleCvTemplateUpload = async (event) => {
+    const file = event.target.files?.[0];
+    const cadet = selectedUploadCadet;
+
+    if (!file || !cadet) return;
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      toast.error("Please upload the completed .xlsx CV template.");
+      event.target.value = "";
+      return;
+    }
+
+    try {
+      setUploadingCadetId(cadet.id);
+      const formData = new FormData();
+      formData.append("file", file);
+      if (drive?.id) {
+        formData.append("drive_id", drive.id);
+      }
+
+      const response = await api.post(
+        `/cadets/${cadet.id}/cv-template-upload`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
+
+      toast.success(response.data?.message || "Cadet CV details updated successfully");
+      fetchCadets();
+    } catch (error) {
+      const errors = error.response?.data?.errors;
+      const message =
+        Array.isArray(errors) && errors.length > 0
+          ? errors.join("\n")
+          : error.response?.data?.message || "Failed to upload CV template";
+      toast.error(message);
+    } finally {
+      setUploadingCadetId(null);
+      setSelectedUploadCadet(null);
+      event.target.value = "";
+    }
+  };
 
   const columns = [
     {
@@ -194,44 +249,63 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
     {
       field: "actions",
       headerName: "View Details",
-      width: "120px",
+      width: "150px",
       sortable: false,
       sticky: "right",
       cellClassName: "bg-white",
       align: "right",
-      renderCell: ({ row }) => (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/cadets/view/${row.id}`)}
-            className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-            title="View details"
-          >
-            <Eye size={16} />
-          </Button>
-          {(!isInstituteUser || row.can_edit_pending_details) ? (
+      renderCell: ({ row }) => {
+        const canUpdatePendingDetails =
+          !isInstituteUser || row.can_edit_pending_details;
+        const canUploadExcel = isInstituteUser && row.can_edit_pending_details;
+        const isUploading = uploadingCadetId === row.id;
+
+        return (
+          <div className="flex items-center justify-end gap-2">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                if (isInstituteUser) {
-                  navigate(`/cadets/fill-details/${row.id}`, {
-                    state: { returnPath: `/drives/${drive.id}`, returnState: { activeTab: "cadets" } },
-                  });
-                  return;
-                }
-
-                navigate(`/cadets/view/${row.id}`);
-              }}
-              className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
-              title={isInstituteUser ? "Edit pending details" : "Edit cadet"}
+              onClick={() => navigate(`/cadets/view/${row.id}`)}
+              className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+              title="View details"
             >
-              <Edit size={16} />
+              <Eye size={16} />
             </Button>
-          ) : null}
-        </div>
-      ),
+            {canUploadExcel ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleUploadClick(row)}
+                disabled={isUploading}
+                className="h-8 w-8 p-0 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                title={isUploading ? "Uploading Excel..." : "Upload completed Excel"}
+              >
+                <Upload size={16} />
+              </Button>
+            ) : null}
+            {canUpdatePendingDetails ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (isInstituteUser) {
+                    navigate(`/cadets/fill-details/${row.id}`, {
+                      state: { returnPath: `/drives/${drive.id}`, returnState: { activeTab: "cadets" } },
+                    });
+                    return;
+                  }
+
+                  navigate(`/cadets/view/${row.id}`);
+                }}
+                className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
+                title={isInstituteUser ? "Edit pending details" : "Edit cadet"}
+              >
+                <Edit size={16} />
+              </Button>
+            ) : null}
+          </div>
+        );
+      },
     },
   ].filter(col => {
     if (isInstituteUser) {
@@ -251,6 +325,14 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
 
   return (
     <div className="space-y-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        className="hidden"
+        onChange={handleCvTemplateUpload}
+      />
+
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h2 className="text-xl font-bold text-slate-800">Cadets Uploaded</h2>

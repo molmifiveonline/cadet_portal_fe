@@ -27,7 +27,7 @@ const getWorkflowStatusConfig = (cadet) => {
       className: "bg-indigo-100 text-indigo-800 border border-indigo-200",
     };
   }
-  if (Number(cadet.institute_detail_filled || 0) === 1) {
+  if (cadet.workflow_result === "academic_data_collected") {
     return {
       label: "Academic Data Collected",
       className: "bg-blue-100 text-blue-800 border border-blue-200",
@@ -51,7 +51,10 @@ const getWorkflowStatusConfig = (cadet) => {
       className: "bg-sky-100 text-sky-800 border border-sky-200",
     };
   }
-  if (cadet.workflow_result === "failed" || cadet.rejection_stage === "medical") {
+  if (
+    cadet.workflow_result === "failed" ||
+    cadet.rejection_stage === "medical"
+  ) {
     return {
       label: "Failed",
       className: "bg-red-100 text-red-800 border border-red-200",
@@ -64,6 +67,13 @@ const getWorkflowStatusConfig = (cadet) => {
 };
 
 const GROUP_CONFIGS = {
+  pending_other: {
+    label: "Pending / Other",
+    bgColor: "bg-slate-50",
+    borderColor: "border-slate-200",
+    textColor: "text-slate-800",
+    badgeColor: "bg-slate-100 text-slate-700",
+  },
   confirmed: {
     label: "Confirmed Candidates",
     bgColor: "bg-emerald-50",
@@ -84,13 +94,6 @@ const GROUP_CONFIGS = {
     borderColor: "border-purple-200",
     textColor: "text-purple-800",
     badgeColor: "bg-purple-100 text-purple-700",
-  },
-  pending_other: {
-    label: "Pending / Other",
-    bgColor: "bg-slate-50",
-    borderColor: "border-slate-200",
-    textColor: "text-slate-800",
-    badgeColor: "bg-slate-100 text-slate-700",
   },
 };
 
@@ -193,7 +196,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
     filteredCadets.forEach((cadet) => {
       if (cadet.workflow_phase === "selected") {
         groups.moved_to_document.push(cadet);
-      } else if (Number(cadet.institute_detail_filled || 0) === 1) {
+      } else if (cadet.workflow_result === "academic_data_collected") {
         groups.collected_academic.push(cadet);
       } else if (cadet.workflow_result === "confirmed") {
         groups.confirmed.push(cadet);
@@ -205,13 +208,13 @@ const MedicalTab = ({ drive, onRefresh }) => {
     return groups;
   }, [filteredCadets]);
 
-  const getPaginatedGroup = useCallback((key) => {
-    const list = groupedCadets[key] || [];
-    const page = currentPages[key] || 1;
-    const limit = perPages[key] || 10;
-    const start = (page - 1) * limit;
-    return list.slice(start, start + limit);
-  }, [groupedCadets, currentPages, perPages]);
+  // const getPaginatedGroup = useCallback((key) => {
+  //   const list = groupedCadets[key] || [];
+  //   const page = currentPages[key] || 1;
+  //   const limit = perPages[key] || 10;
+  //   const start = (page - 1) * limit;
+  //   return list.slice(start, start + limit);
+  // }, [groupedCadets, currentPages, perPages]);
 
   const selectedRows = useMemo(
     () => cadets.filter((cadet) => selectedCadets.includes(cadet.id)),
@@ -219,10 +222,14 @@ const MedicalTab = ({ drive, onRefresh }) => {
   );
 
   const allSelectedAreConfirmed = useMemo(
-    () => selectedRows.length > 0 && selectedRows.every(
-      (cadet) => ["confirmed", "medical_passed"].includes(cadet.workflow_result)
-    ),
-    [selectedRows]
+    () =>
+      selectedRows.length > 0 &&
+      selectedRows.every((cadet) =>
+        ["confirmed", "medical_passed", "academic_data_collected"].includes(
+          cadet.workflow_result,
+        ),
+      ),
+    [selectedRows],
   );
 
   const hasSelection = selectedRows.length > 0;
@@ -293,7 +300,10 @@ const MedicalTab = ({ drive, onRefresh }) => {
       headerName: "Name",
       width: "200px",
       renderCell: ({ row }) => (
-        <span className="block truncate font-medium text-slate-900" title={row.name_as_in_indos_cert}>
+        <span
+          className="block truncate font-medium text-slate-900"
+          title={row.name_as_in_indos_cert}
+        >
           {row.name_as_in_indos_cert}
         </span>
       ),
@@ -305,7 +315,9 @@ const MedicalTab = ({ drive, onRefresh }) => {
       renderCell: ({ row }) => {
         const statusConfig = getWorkflowStatusConfig(row);
         return (
-          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusConfig.className}`}>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusConfig.className}`}
+          >
             {statusConfig.label}
           </span>
         );
@@ -393,7 +405,11 @@ const MedicalTab = ({ drive, onRefresh }) => {
             size="sm"
             onClick={() => navigate(`/cadets/medical/${row.id}`)}
             className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-            title={row.medical_result_id ? "Edit medical result" : "Start medical result"}
+            title={
+              row.medical_result_id
+                ? "Edit medical result"
+                : "Start medical result"
+            }
           >
             {row.medical_result_id ? <Edit size={16} /> : <Plus size={16} />}
           </Button>
@@ -424,9 +440,12 @@ const MedicalTab = ({ drive, onRefresh }) => {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Medical Queue</h2>
+          <h2 className="text-xl font-semibold text-slate-900">
+            Medical Queue
+          </h2>
           <p className="text-sm text-slate-500">
-            Interview-selected cadets move here for medical, psychometric, and profiling updates.
+            Interview-selected cadets move here for medical, psychometric, and
+            profiling updates.
           </p>
         </div>
 
@@ -453,17 +472,21 @@ const MedicalTab = ({ drive, onRefresh }) => {
         </div>
       </div>
 
-      <div className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-opacity ${!hasSelection ? 'opacity-60' : ''}`}>
+      <div
+        className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-opacity ${!hasSelection ? "opacity-60" : ""}`}
+      >
         <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
           Post-Medical Actions
         </h3>
         {!hasSelection ? (
           <p className="mt-1 text-xs text-amber-600">
-            Select one or more candidates from the table below to enable these actions.
+            Select one or more candidates from the table below to enable these
+            actions.
           </p>
         ) : !allSelectedAreConfirmed ? (
           <p className="mt-1 text-xs text-amber-600">
-            Confirm candidates first to enable academic data collection, and document collection.
+            Confirm candidates first to enable academic data collection, and
+            document collection.
           </p>
         ) : null}
         <div className="mt-4 space-y-4">
@@ -475,7 +498,9 @@ const MedicalTab = ({ drive, onRefresh }) => {
                     drive_id: drive.id,
                     cadet_ids: selectedRows.map((c) => c.id),
                   });
-                  toast.success("Selected-candidate confirmation sent to institute");
+                  toast.success(
+                    "Selected-candidate confirmation sent to institute",
+                  );
                 })
               }
               disabled={actionLoading.confirm || !hasSelection}
@@ -539,7 +564,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
       <div className="space-y-4">
         {Object.entries(GROUP_CONFIGS).map(([key, config]) => {
           const list = groupedCadets[key] || [];
-          const paginatedList = getPaginatedGroup(key);
+          // const paginatedList = getPaginatedGroup(key);
           const isExpanded = expandedGroups[key];
 
           return (
@@ -553,7 +578,9 @@ const MedicalTab = ({ drive, onRefresh }) => {
                 className={`flex w-full items-center justify-between p-4 transition-colors ${config.bgColor} border-b ${config.borderColor}`}
               >
                 <div className="flex items-center gap-3">
-                  <span className={`text-base font-semibold ${config.textColor}`}>
+                  <span
+                    className={`text-base font-semibold ${config.textColor}`}
+                  >
                     {config.label}
                   </span>
                   <span
@@ -573,7 +600,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
                 <div className="overflow-hidden">
                   <ReusableDataTable
                     columns={columns}
-                    rows={paginatedList}
+                    rows={list}
                     loading={loading}
                     checkboxSelection
                     rowSelectionModel={selectedCadets}
@@ -583,23 +610,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
                         ? `No cadets found in this group matching "${searchTerm}"`
                         : `No cadets in ${config.label.toLowerCase()}`
                     }
-                    pagination={{
-                      current_page: currentPages[key] || 1,
-                      per_page: perPages[key] || 10,
-                      total: list.length,
-                      last_page: Math.max(
-                        1,
-                        Math.ceil(list.length / (perPages[key] || 10))
-                      ),
-                    }}
-                    handlePageChange={(page) => {
-                      setCurrentPages((prev) => ({ ...prev, [key]: page }));
-                    }}
-                    handlePerPageChange={(limit) => {
-                      setPerPages((prev) => ({ ...prev, [key]: limit }));
-                      setCurrentPages((prev) => ({ ...prev, [key]: 1 }));
-                    }}
-                    pageSize={perPages[key] || 10}
+                    hidePagination
                   />
                 </div>
               )}

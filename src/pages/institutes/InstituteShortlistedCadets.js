@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ListChecks, Search, Edit } from 'lucide-react';
+import { ListChecks, Search, Edit, Upload } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import { useAuth } from '../../context/AuthContext';
@@ -13,7 +13,10 @@ const InstituteShortlistedCadets = () => {
   const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingCadetId, setUploadingCadetId] = useState(null);
+  const [selectedUploadCadet, setSelectedUploadCadet] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const fileInputRef = useRef(null);
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 10,
@@ -100,6 +103,65 @@ const InstituteShortlistedCadets = () => {
 
   const handleSearch = (value) => {
     setSearchTerm(value);
+  };
+
+  const handleUploadClick = (cadet) => {
+    setSelectedUploadCadet(cadet);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleCvTemplateUpload = async (event) => {
+    const file = event.target.files?.[0];
+    const cadet = selectedUploadCadet;
+
+    if (!file || !cadet) return;
+
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      toast.error('Please upload the completed .xlsx CV template.');
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      setUploadingCadetId(cadet.id);
+      const formData = new FormData();
+      formData.append('file', file);
+      if (cadet.drive_id) {
+        formData.append('drive_id', cadet.drive_id);
+      }
+
+      const response = await api.post(
+        `/cadets/${cadet.id}/cv-template-upload`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      );
+
+      toast.success(
+        response.data?.message || 'Cadet CV details updated successfully',
+      );
+      fetchShortlistedCadets(
+        pagination.current_page,
+        pagination.per_page,
+        searchTerm,
+        sortConfig,
+      );
+    } catch (error) {
+      const errors = error.response?.data?.errors;
+      const message =
+        Array.isArray(errors) && errors.length > 0
+          ? errors.join('\n')
+          : error.response?.data?.message || 'Failed to upload CV template';
+      toast.error(message);
+    } finally {
+      setUploadingCadetId(null);
+      setSelectedUploadCadet(null);
+      event.target.value = '';
+    }
   };
 
   const columns = [
@@ -196,30 +258,57 @@ const InstituteShortlistedCadets = () => {
       sticky: 'right',
       cellClassName: 'bg-white',
       headerClassName: 'bg-white',
-      renderCell: ({ row }) => (
-        <div className='flex justify-end gap-1'>
-          <Button
-            variant='ghost'
-            size='icon'
-            className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-            onClick={() =>
-              navigate(`/cadets/fill-details/${row.id}`, {
-                state: {
-                  returnPath: '/institute/shortlisted-cadets',
-                },
-              })
-            }
-            title='Edit Cadet'
-          >
-            <Edit size={16} />
-          </Button>
-        </div>
-      ),
+      renderCell: ({ row }) => {
+        const canUpload =
+          Number(row.shortlist_email_sent || 0) === 1 &&
+          Number(row.institute_detail_filled || 0) !== 1;
+        const isUploading = uploadingCadetId === row.id;
+
+        return (
+          <div className='flex justify-end gap-1'>
+            {canUpload && (
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50'
+                onClick={() => handleUploadClick(row)}
+                disabled={isUploading}
+                title={isUploading ? 'Uploading Excel...' : 'Upload completed Excel'}
+              >
+                <Upload size={16} />
+              </Button>
+            )}
+            <Button
+              variant='ghost'
+              size='icon'
+              className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+              onClick={() =>
+                navigate(`/cadets/fill-details/${row.id}`, {
+                  state: {
+                    returnPath: '/institute/shortlisted-cadets',
+                  },
+                })
+              }
+              title='Edit Cadet'
+            >
+              <Edit size={16} />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <div className='py-6 px-4 md:px-8 bg-slate-50 min-h-screen'>
+      <input
+        ref={fileInputRef}
+        type='file'
+        accept='.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        className='hidden'
+        onChange={handleCvTemplateUpload}
+      />
+
       {/* Header */}
       <PageHeader
         title="Shortlisted Cadets"
