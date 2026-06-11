@@ -396,7 +396,6 @@ const InterviewForm = () => {
                 Interview Date <span className="text-red-500">*</span>
               </label>
               <div className='relative'>
-                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                 <Input
                   type='date'
                   name='interview_date'
@@ -407,6 +406,7 @@ const InterviewForm = () => {
                   required
                   disabled={isViewMode}
                 />
+                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
               </div>
               {errors.interview_date && <p className={errorTextClass}>{errors.interview_date}</p>}
             </div>

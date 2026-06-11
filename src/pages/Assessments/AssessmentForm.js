@@ -287,7 +287,6 @@ const AssessmentForm = () => {
                   Assessment Date <span className="text-red-500">*</span>
                 </label>
                 <div className='relative'>
-                  <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                   <Input
                     name='assessment_date'
                     type='date'
@@ -296,6 +295,7 @@ const AssessmentForm = () => {
                     invalid={!!errors.assessment_date}
                     className={inputClass}
                   />
+                  <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
                 </div>
                 {errors.assessment_date && <p className={errorTextClass}>{errors.assessment_date}</p>}
               </div>

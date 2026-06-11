@@ -29,6 +29,22 @@ const InstituteShortlistedCadets = () => {
     direction: 'desc',
   });
 
+  const [pendingSummary, setPendingSummary] = useState([]);
+  const [selectedDriveId, setSelectedDriveId] = useState('all');
+
+  const fetchPendingSummary = async () => {
+    try {
+      const response = await api.get('/cadets/institute-pending-summary');
+      setPendingSummary(response.data?.data || []);
+    } catch (error) {
+      console.error('Error fetching pending request summary:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingSummary();
+  }, []);
+
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchShortlistedCadets(1);
@@ -43,6 +59,7 @@ const InstituteShortlistedCadets = () => {
     limit = pagination.per_page,
     search = searchTerm,
     sort = sortConfig,
+    driveId = selectedDriveId,
   ) => {
     try {
       setLoading(true);
@@ -52,6 +69,7 @@ const InstituteShortlistedCadets = () => {
         search: search || undefined,
         sort_key: sort.key,
         sort_dir: sort.direction,
+        drive_id: driveId !== 'all' ? driveId : undefined,
       };
 
       const response = await api.get('/cadets/institute-shortlisted', {
@@ -105,6 +123,36 @@ const InstituteShortlistedCadets = () => {
     setSearchTerm(value);
   };
 
+  const handleDriveFilterChange = (driveId) => {
+    setSelectedDriveId(driveId);
+    fetchShortlistedCadets(1, pagination.per_page, searchTerm, sortConfig, driveId);
+  };
+
+  const getUniqueDrivesList = () => {
+    const drivesMap = new Map();
+    // Add drives from pending summary
+    pendingSummary.forEach(item => {
+      if (item.drive_id) {
+        drivesMap.set(String(item.drive_id), item.drive_name || `Drive #${item.drive_id}`);
+      } else {
+        drivesMap.set('null', 'Unassigned / General');
+      }
+    });
+    // Add drives from current cadets list
+    cadets.forEach(cadet => {
+      if (cadet.drive_id) {
+        drivesMap.set(String(cadet.drive_id), cadet.drive_name || `Drive #${cadet.drive_id}`);
+      } else {
+        drivesMap.set('null', 'Unassigned / General');
+      }
+    });
+
+    return Array.from(drivesMap.entries()).map(([id, name]) => ({
+      id,
+      name,
+    }));
+  };
+
   const handleUploadClick = (cadet) => {
     setSelectedUploadCadet(cadet);
     if (fileInputRef.current) {
@@ -144,6 +192,7 @@ const InstituteShortlistedCadets = () => {
       toast.success(
         response.data?.message || 'Cadet CV details updated successfully',
       );
+      fetchPendingSummary();
       fetchShortlistedCadets(
         pagination.current_page,
         pagination.per_page,
@@ -181,12 +230,29 @@ const InstituteShortlistedCadets = () => {
       headerName: 'Name',
       width: '200px',
       sortable: true,
+      renderCell: ({ value, row }) => (
+        <div className='flex flex-col gap-1 w-full'>
+          <span
+            className='font-medium text-gray-900 truncate block w-full'
+            title={value}
+          >
+            {value}
+          </span>
+          {row.has_pending_academic_request && (
+            <span className='inline-flex items-center w-max px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200' title={`Data pending for drive ${row.drive_name || 'Unassigned'}`}>
+              📋 Data Pending {row.drive_name ? `— ${row.drive_name}` : ''}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      field: 'drive_name',
+      headerName: 'Drive',
+      width: '150px',
       renderCell: ({ value }) => (
-        <span
-          className='font-medium text-gray-900 truncate block w-full'
-          title={value}
-        >
-          {value}
+        <span className='truncate block w-full text-gray-600 font-medium' title={value || 'Unassigned'}>
+          {value || 'Unassigned'}
         </span>
       ),
     },
@@ -318,6 +384,42 @@ const InstituteShortlistedCadets = () => {
         icon={ListChecks}
       />
 
+      {/* Pending Academic Data Request Banners */}
+      {pendingSummary.map((summary) => {
+        const driveName = summary.drive_name || 'Unassigned / General';
+        const driveId = summary.drive_id !== null ? String(summary.drive_id) : 'null';
+        const count = summary.pending_count;
+
+        if (count === 0) return null;
+
+        return (
+          <div
+            key={driveId}
+            className='mb-6 p-4 bg-amber-50 border border-amber-300 text-amber-800 rounded-xl flex items-center justify-between gap-3 shadow-sm'
+          >
+            <div className='flex items-start gap-3'>
+              <span className='text-lg mt-0.5'>⚠️</span>
+              <div>
+                <h4 className='font-semibold text-sm text-amber-900'>Pending Request</h4>
+                <p className='text-xs text-amber-700 mt-0.5'>
+                  There are <strong>{count}</strong> cadet(s) with pending academic data requests in recruitment drive <strong>{driveName}</strong>. Please update cadet details.
+                </p>
+              </div>
+            </div>
+            {selectedDriveId !== driveId && (
+              <Button
+                variant='outline'
+                size='sm'
+                className='bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-900 text-xs font-semibold'
+                onClick={() => handleDriveFilterChange(driveId)}
+              >
+                Filter to this Drive
+              </Button>
+            )}
+          </div>
+        );
+      })}
+
       {/* Stats Card */}
       <div className='bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center justify-between'>
         <div>
@@ -338,7 +440,7 @@ const InstituteShortlistedCadets = () => {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search & Filter */}
       <div className='bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6'>
         <div className='flex flex-col md:flex-row justify-between items-center gap-4'>
           <div className='flex items-center bg-gray-50 rounded-xl px-3 border border-gray-200 w-full md:w-96 focus-within:ring-2 focus-within:ring-green-100 focus-within:border-green-300 transition-all'>
@@ -350,6 +452,24 @@ const InstituteShortlistedCadets = () => {
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
             />
+          </div>
+          <div className='flex items-center gap-2 w-full md:w-auto'>
+            <label htmlFor="drive-filter" className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Recruitment Drive:
+            </label>
+            <select
+              id="drive-filter"
+              className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-green-100 focus:border-green-300 block p-2.5 transition-all outline-none min-w-[200px]"
+              value={selectedDriveId}
+              onChange={(e) => handleDriveFilterChange(e.target.value)}
+            >
+              <option value="all">All Drives</option>
+              {getUniqueDrivesList().map(drive => (
+                <option key={drive.id} value={drive.id}>
+                  {drive.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

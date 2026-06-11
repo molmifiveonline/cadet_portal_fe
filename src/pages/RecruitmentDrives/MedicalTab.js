@@ -11,6 +11,7 @@ import {
   Users,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from "lucide-react";
 import PageLoader from "../../components/common/PageLoader";
 import api from "../../lib/utils/apiConfig";
@@ -134,6 +135,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
   };
 
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [academicModalData, setAcademicModalData] = useState(null);
   const [sendingInvites, setSendingInvites] = useState(false);
   const [actionLoading, setActionLoading] = useState({
     confirm: false,
@@ -196,7 +198,10 @@ const MedicalTab = ({ drive, onRefresh }) => {
     filteredCadets.forEach((cadet) => {
       if (cadet.workflow_phase === "selected") {
         groups.moved_to_document.push(cadet);
-      } else if (cadet.workflow_result === "academic_data_collected") {
+      } else if (
+        cadet.workflow_result === "academic_data_collected" ||
+        cadet.workflow_result === "medical_passed"
+      ) {
         groups.collected_academic.push(cadet);
       } else if (cadet.workflow_result === "confirmed") {
         groups.confirmed.push(cadet);
@@ -281,6 +286,30 @@ const MedicalTab = ({ drive, onRefresh }) => {
       );
     } finally {
       setActionLoading((prev) => ({ ...prev, [actionKey]: false }));
+    }
+  };
+
+  const handleCollectAcademicData = async () => {
+    try {
+      setActionLoading((prev) => ({ ...prev, academic: true }));
+      
+      const payload = {
+        drive_id: drive.id,
+        cadet_ids: academicModalData.map((c) => c.id),
+      };
+
+      await api.post("/medical-results/bulk/collect-academic", payload);
+      toast.success("Pending academic data request sent");
+      setAcademicModalData(null);
+      await fetchData();
+      await onRefresh?.();
+    } catch (error) {
+      console.error("Error collecting academic data:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to collect academic data",
+      );
+    } finally {
+      setActionLoading((prev) => ({ ...prev, academic: false }));
     }
   };
 
@@ -472,112 +501,113 @@ const MedicalTab = ({ drive, onRefresh }) => {
         </div>
       </div>
 
-      <div
-        className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-opacity ${!hasSelection ? "opacity-60" : ""}`}
-      >
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Post-Medical Actions
-        </h3>
-        {!hasSelection ? (
-          <p className="mt-1 text-xs text-amber-600">
-            Select one or more candidates from the table below to enable these
-            actions.
-          </p>
-        ) : !allSelectedAreConfirmed ? (
-          <p className="mt-1 text-xs text-amber-600">
-            Confirm candidates first to enable academic data collection, and
-            document collection.
-          </p>
-        ) : null}
-        <div className="mt-4 space-y-4">
-          <div className="flex flex-wrap gap-3 pt-2">
-            <Button
-              onClick={() =>
-                runBulkAction("confirm", async () => {
-                  await api.post("/medical-results/bulk/confirm", {
-                    drive_id: drive.id,
-                    cadet_ids: selectedRows.map((c) => c.id),
-                  });
-                  toast.success(
-                    "Selected-candidate confirmation sent to institute",
-                  );
-                })
-              }
-              disabled={actionLoading.confirm || !hasSelection}
-              className="gap-2 bg-green-600 text-white hover:bg-green-700 shadow-sm"
-            >
-              {actionLoading.confirm ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              ) : (
-                <Users className="h-4 w-4" />
-              )}
-              Confirm Candidates
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() =>
-                runBulkAction("academic", async () => {
-                  await api.post("/medical-results/bulk/collect-academic", {
-                    drive_id: drive.id,
-                    cadet_ids: selectedRows.map((c) => c.id),
-                  });
-                  toast.success("Pending academic data request sent");
-                })
-              }
-              disabled={actionLoading.academic || !allSelectedAreConfirmed}
-              className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
-            >
-              {actionLoading.academic ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-              ) : (
-                <FileText className="h-4 w-4" />
-              )}
-              Collect Academic Data
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() =>
-                runBulkAction("documents", async () => {
-                  await api.post("/medical-results/bulk/collect-documents", {
-                    drive_id: drive.id,
-                    cadet_ids: selectedRows.map((c) => c.id),
-                  });
-                  toast.success("Candidate document request sent");
-                })
-              }
-              disabled={actionLoading.documents || !allSelectedAreConfirmed}
-              className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-            >
-              {actionLoading.documents ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              Move document process
-            </Button>
-          </div>
-        </div>
-      </div>
-
       <div className="space-y-4">
         {Object.entries(GROUP_CONFIGS).map(([key, config]) => {
           const list = groupedCadets[key] || [];
           // const paginatedList = getPaginatedGroup(key);
           const isExpanded = expandedGroups[key];
 
+          const groupSelectedRows = selectedRows.filter((cadet) =>
+            list.some((item) => item.id === cadet.id),
+          );
+
+          let actionButton = null;
+          if (key === "pending_other") {
+            actionButton = (
+              <Button
+                size="sm"
+                onClick={() =>
+                  runBulkAction("confirm", async () => {
+                    await api.post("/medical-results/bulk/confirm", {
+                      drive_id: drive.id,
+                      cadet_ids: groupSelectedRows.map((c) => c.id),
+                    });
+                    toast.success(
+                      "Selected-candidate confirmation sent to institute",
+                    );
+                  })
+                }
+                disabled={
+                  actionLoading.confirm || groupSelectedRows.length === 0
+                }
+                className="gap-2 bg-green-600 text-white hover:bg-green-700 shadow-sm"
+              >
+                {actionLoading.confirm ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <Users className="h-4 w-4" />
+                )}
+                Confirm Candidates
+              </Button>
+            );
+          } else if (key === "confirmed") {
+            actionButton = (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setAcademicModalData(groupSelectedRows)}
+                disabled={
+                  actionLoading.academic || groupSelectedRows.length === 0
+                }
+                className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+              >
+                {actionLoading.academic ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                ) : (
+                  <FileText className="h-4 w-4" />
+                )}
+                Collect Academic Data
+              </Button>
+            );
+          } else if (key === "collected_academic") {
+            const hasPendingMedical = groupSelectedRows.some((c) => !c.medical_result_id);
+            actionButton = (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  runBulkAction("documents", async () => {
+                    await api.post("/medical-results/bulk/collect-documents", {
+                      drive_id: drive.id,
+                      cadet_ids: groupSelectedRows.map((c) => c.id),
+                    });
+                    toast.success("Candidate document request sent");
+                  })
+                }
+                disabled={
+                  actionLoading.documents ||
+                  groupSelectedRows.length === 0 ||
+                  hasPendingMedical
+                }
+                title={
+                  hasPendingMedical
+                    ? "Medical Examination must be completed for all selected candidates"
+                    : ""
+                }
+                className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+              >
+                {actionLoading.documents ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+                Move document process
+              </Button>
+            );
+          }
+
           return (
             <div
               key={key}
               className={`rounded-xl border ${config.borderColor} overflow-hidden bg-white shadow-sm`}
             >
-              <button
-                type="button"
-                onClick={() => toggleGroup(key)}
+              <div
                 className={`flex w-full items-center justify-between p-4 transition-colors ${config.bgColor} border-b ${config.borderColor}`}
               >
-                <div className="flex items-center gap-3">
+                <div
+                  onClick={() => toggleGroup(key)}
+                  className="flex items-center gap-3 cursor-pointer select-none"
+                >
                   <span
                     className={`text-base font-semibold ${config.textColor}`}
                   >
@@ -589,12 +619,21 @@ const MedicalTab = ({ drive, onRefresh }) => {
                     {list.length}
                   </span>
                 </div>
-                {isExpanded ? (
-                  <ChevronUp className={`h-5 w-5 ${config.textColor}`} />
-                ) : (
-                  <ChevronDown className={`h-5 w-5 ${config.textColor}`} />
-                )}
-              </button>
+                <div className="flex items-center gap-3">
+                  {actionButton}
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(key)}
+                    className={`p-1 rounded hover:bg-black/5 ${config.textColor}`}
+                  >
+                    {isExpanded ? (
+                      <ChevronUp className="h-5 w-5" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
 
               {isExpanded && (
                 <div className="overflow-hidden">
@@ -611,6 +650,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
                         : `No cadets in ${config.label.toLowerCase()}`
                     }
                     hidePagination
+                    hideSelectedCount
                   />
                 </div>
               )}
@@ -656,6 +696,52 @@ const MedicalTab = ({ drive, onRefresh }) => {
           },
         ]}
       />
+
+      {academicModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-semibold text-slate-900">
+              Collect Academic Data
+            </h2>
+            <p className="mt-2 text-sm text-slate-500">
+              Are you sure you want to request academic data for the following {academicModalData.length} cadet(s)?
+            </p>
+            <div className="mt-4 max-h-40 overflow-y-auto rounded-lg border border-slate-100 bg-slate-50 p-3">
+              <ul className="space-y-1.5 text-sm text-slate-700">
+                {academicModalData.map((cadet) => (
+                  <li key={cadet.id} className="flex justify-between">
+                    <span className="font-medium">{cadet.name_as_in_indos_cert}</span>
+                    <span className="text-xs text-slate-500">{cadet.cadet_unique_id}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setAcademicModalData(null)}
+                disabled={actionLoading.academic}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCollectAcademicData}
+                disabled={actionLoading.academic}
+              >
+                {actionLoading.academic ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Requesting...
+                  </>
+                ) : (
+                  "Confirm"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

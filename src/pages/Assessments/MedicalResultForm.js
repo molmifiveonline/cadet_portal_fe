@@ -170,7 +170,6 @@ const MedicalResultForm = () => {
                 Examination Date
               </label>
               <div className='relative'>
-                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                 <Input
                   type='date'
                   name='medical_date'
@@ -179,6 +178,7 @@ const MedicalResultForm = () => {
                   className='pl-10'
                   required
                 />
+                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
               </div>
             </div>
 

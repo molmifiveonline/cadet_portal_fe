@@ -117,6 +117,7 @@ export default function ReusableDataTable({
   handleSortChange,
   sortConfig,
   hidePagination = false,
+  hideSelectedCount = false,
 }) {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('');
@@ -230,9 +231,9 @@ export default function ReusableDataTable({
   return (
     <div className='w-full p-1.5 sm:p-3'>
       {/* Header Section */}
-      {(title || (checkboxSelection && selected.length > 0)) && (
+      {(title || (checkboxSelection && selected.length > 0 && !hideSelectedCount)) && (
         <div className='flex items-center justify-between'>
-          {checkboxSelection && selected.length > 0 ? (
+          {checkboxSelection && selected.length > 0 && !hideSelectedCount ? (
             <p className='text-sm text-muted-foreground'>
               {selected.length} selected
             </p>
