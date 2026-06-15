@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -20,6 +20,7 @@ import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import StageInviteModal from "./StageInviteModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 const getWorkflowStatusConfig = (cadet) => {
   if (cadet.workflow_phase === "selected") {
@@ -76,7 +77,7 @@ const GROUP_CONFIGS = {
     badgeColor: "bg-slate-100 text-slate-700",
   },
   confirmed: {
-    label: "Confirmed Candidates",
+    label: "Confirmed Cadets",
     bgColor: "bg-emerald-50",
     borderColor: "border-emerald-200",
     textColor: "text-emerald-800",
@@ -98,6 +99,47 @@ const GROUP_CONFIGS = {
   },
 };
 
+const formatPercentage = (value) => {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return "-";
+  }
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? `${numericValue.toFixed(2)}%` : "-";
+};
+
+const INTERVIEW_DECISION_COLORS = {
+  selected: "bg-green-100 text-green-700 border border-green-200",
+  rejected: "bg-red-100 text-red-700 border border-red-200",
+  waitlisted: "bg-amber-100 text-amber-700 border border-amber-200",
+  pass: "bg-green-100 text-green-700 border border-green-200",
+  fail: "bg-red-100 text-red-700 border border-red-200",
+};
+
+const MEDICAL_DECISION_COLORS = {
+  pass: "bg-green-100 text-green-700 border border-green-200",
+  fail: "bg-red-100 text-red-700 border border-red-200",
+};
+
+const FIT_STATUS_LABELS = {
+  fit: "Fit for Sea Service",
+  unfit: "Unfit",
+  fit_with_rest: "Fit with Restrictions",
+  pending: "Pending Investigation",
+};
+
+const FIT_STATUS_COLORS = {
+  fit: "bg-green-100 text-green-700 border border-green-200",
+  unfit: "bg-red-100 text-red-700 border border-red-200",
+  fit_with_rest: "bg-amber-100 text-amber-700 border border-amber-200",
+  pending: "bg-slate-100 text-slate-700 border border-slate-200",
+};
+
+const TEST_STATUS_COLORS = {
+  pass: "bg-green-100 text-green-700 border border-green-200",
+  fail: "bg-red-100 text-red-700 border border-red-200",
+  pending: "bg-slate-100 text-slate-700 border border-slate-200",
+};
+
 const MedicalTab = ({ drive, onRefresh }) => {
   const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
@@ -105,26 +147,13 @@ const MedicalTab = ({ drive, onRefresh }) => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCadets, setSelectedCadets] = useState([]);
-  // Independent pagination states per group
-  const [currentPages, setCurrentPages] = useState({
-    confirmed: 1,
-    collected_academic: 1,
-    moved_to_document: 1,
-    pending_other: 1,
-  });
-  const [perPages, setPerPages] = useState({
-    confirmed: 10,
-    collected_academic: 10,
-    moved_to_document: 10,
-    pending_other: 10,
-  });
 
   // Collapsible state per group
   const [expandedGroups, setExpandedGroups] = useState({
-    confirmed: true,
-    collected_academic: true,
-    moved_to_document: true,
-    pending_other: true,
+    confirmed: false,
+    collected_academic: false,
+    moved_to_document: false,
+    pending_other: false,
   });
 
   const toggleGroup = (key) => {
@@ -142,8 +171,12 @@ const MedicalTab = ({ drive, onRefresh }) => {
     academic: false,
     documents: false,
   });
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isFreshLoad = false) => {
     try {
       setLoading(true);
       const [cadetResponse, centerResponse] = await Promise.all([
@@ -151,8 +184,69 @@ const MedicalTab = ({ drive, onRefresh }) => {
         api.get("/medical-centers"),
       ]);
 
-      setCadets(cadetResponse.data?.data || []);
+      const cadetsList = cadetResponse.data?.data || [];
+      setCadets(cadetsList);
       setMedicalCenters(centerResponse.data?.data || []);
+
+      if (isFreshLoad) {
+        const groups = {
+          confirmed: [],
+          collected_academic: [],
+          moved_to_document: [],
+          pending_other: [],
+        };
+
+        cadetsList.forEach((cadet) => {
+          if (cadet.workflow_phase === "selected") {
+            groups.moved_to_document.push(cadet);
+          } else if (cadet.workflow_result === "academic_data_collected") {
+            groups.collected_academic.push(cadet);
+          } else if (cadet.workflow_result === "confirmed") {
+            groups.confirmed.push(cadet);
+          } else {
+            groups.pending_other.push(cadet);
+          }
+        });
+
+        setExpandedGroups({
+          confirmed: groups.confirmed.length > 0,
+          collected_academic: groups.collected_academic.length > 0,
+          moved_to_document: groups.moved_to_document.length > 0,
+          pending_other: groups.pending_other.length > 0,
+        });
+      } else {
+        // Just auto-collapse any group that became empty
+        const groups = {
+          confirmed: 0,
+          collected_academic: 0,
+          moved_to_document: 0,
+          pending_other: 0,
+        };
+
+        cadetsList.forEach((cadet) => {
+          if (cadet.workflow_phase === "selected") {
+            groups.moved_to_document++;
+          } else if (cadet.workflow_result === "academic_data_collected") {
+            groups.collected_academic++;
+          } else if (cadet.workflow_result === "confirmed") {
+            groups.confirmed++;
+          } else {
+            groups.pending_other++;
+          }
+        });
+
+        setExpandedGroups((prev) => {
+          const nextState = { ...prev };
+          let changed = false;
+          Object.keys(groups).forEach((key) => {
+            if (groups[key] === 0 && prev[key]) {
+              nextState[key] = false;
+              changed = true;
+            }
+          });
+          return changed ? nextState : prev;
+        });
+      }
     } catch (error) {
       console.error("Error fetching medical queue:", error);
       toast.error("Failed to load medical queue");
@@ -162,18 +256,10 @@ const MedicalTab = ({ drive, onRefresh }) => {
   }, [drive.id]);
 
   useEffect(() => {
-    fetchData();
+    fetchData(true);
   }, [fetchData]);
 
-  // Reset page numbers on search
-  useEffect(() => {
-    setCurrentPages({
-      confirmed: 1,
-      collected_academic: 1,
-      moved_to_document: 1,
-      pending_other: 1,
-    });
-  }, [searchTerm]);
+
 
   const filteredCadets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -199,8 +285,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
       if (cadet.workflow_phase === "selected") {
         groups.moved_to_document.push(cadet);
       } else if (
-        cadet.workflow_result === "academic_data_collected" ||
-        cadet.workflow_result === "medical_passed"
+        cadet.workflow_result === "academic_data_collected"
       ) {
         groups.collected_academic.push(cadet);
       } else if (cadet.workflow_result === "confirmed") {
@@ -226,16 +311,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
     [cadets, selectedCadets],
   );
 
-  const allSelectedAreConfirmed = useMemo(
-    () =>
-      selectedRows.length > 0 &&
-      selectedRows.every((cadet) =>
-        ["confirmed", "medical_passed", "academic_data_collected"].includes(
-          cadet.workflow_result,
-        ),
-      ),
-    [selectedRows],
-  );
+
 
   const hasSelection = selectedRows.length > 0;
 
@@ -277,6 +353,19 @@ const MedicalTab = ({ drive, onRefresh }) => {
     try {
       setActionLoading((prev) => ({ ...prev, [actionKey]: true }));
       await request();
+      if (actionKey === "confirm") {
+        setExpandedGroups((prev) => ({
+          ...prev,
+          pending_other: false,
+          confirmed: true,
+        }));
+      } else if (actionKey === "documents") {
+        setExpandedGroups((prev) => ({
+          ...prev,
+          collected_academic: false,
+          moved_to_document: true,
+        }));
+      }
       await fetchData();
       await onRefresh?.();
     } catch (error) {
@@ -286,6 +375,54 @@ const MedicalTab = ({ drive, onRefresh }) => {
       );
     } finally {
       setActionLoading((prev) => ({ ...prev, [actionKey]: false }));
+    }
+  };
+
+  const handleStartMedicalResultClick = useCallback(
+    (row) => {
+      const navigateToForm = () => navigate(`/cadets/medical/${row.id}`);
+      if (!Number(row.institute_detail_filled || 0)) {
+        setConfirmTitle("Pending Institute Details");
+        setConfirmMessage(`Cadet ${row.name_as_in_indos_cert}'s institute details are pending. Do you want to proceed to recording medical results anyway?`);
+        setConfirmAction({ execute: navigateToForm });
+        setShowConfirmModal(true);
+      } else {
+        navigateToForm();
+      }
+    },
+    [navigate]
+  );
+
+  const handleSendMedicalInviteClick = () => {
+    const hasPending = selectedRows.some(row => !Number(row.institute_detail_filled || 0));
+    if (hasPending) {
+      setConfirmTitle("Pending Institute Details");
+      setConfirmMessage("Some of the selected cadets have pending institute details. Do you want to proceed with sending medical invites?");
+      setConfirmAction({ execute: () => setIsInviteOpen(true) });
+      setShowConfirmModal(true);
+    } else {
+      setIsInviteOpen(true);
+    }
+  };
+
+  const handleMoveDocumentsClick = (groupSelectedRows) => {
+    const hasPending = groupSelectedRows.some(row => !Number(row.institute_detail_filled || 0));
+    const runAction = () => {
+      runBulkAction("documents", async () => {
+        await api.post("/medical-results/bulk/collect-documents", {
+          drive_id: drive.id,
+          cadet_ids: groupSelectedRows.map((c) => c.id),
+        });
+        toast.success("Candidate document request sent");
+      });
+    };
+    if (hasPending) {
+      setConfirmTitle("Pending Institute Details");
+      setConfirmMessage("Some of the selected cadets have pending institute details. Do you want to proceed with moving them to the document process?");
+      setConfirmAction({ execute: runAction });
+      setShowConfirmModal(true);
+    } else {
+      runAction();
     }
   };
 
@@ -301,6 +438,11 @@ const MedicalTab = ({ drive, onRefresh }) => {
       await api.post("/medical-results/bulk/collect-academic", payload);
       toast.success("Pending academic data request sent");
       setAcademicModalData(null);
+      setExpandedGroups((prev) => ({
+        ...prev,
+        confirmed: false,
+        collected_academic: true,
+      }));
       await fetchData();
       await onRefresh?.();
     } catch (error) {
@@ -313,113 +455,448 @@ const MedicalTab = ({ drive, onRefresh }) => {
     }
   };
 
-  const columns = [
-    {
-      field: "cadet_unique_id",
-      headerName: "Cadet ID",
-      width: "130px",
-      renderCell: ({ value }) => (
-        <span className="rounded border border-indigo-100 bg-indigo-50 px-2 py-1 text-[10px] font-bold uppercase text-indigo-700">
-          {value || "-"}
-        </span>
-      ),
-    },
-    {
-      field: "name_as_in_indos_cert",
-      headerName: "Name",
-      width: "200px",
-      renderCell: ({ row }) => (
-        <span
-          className="block truncate font-medium text-slate-900"
-          title={row.name_as_in_indos_cert}
-        >
-          {row.name_as_in_indos_cert}
-        </span>
-      ),
-    },
-    {
-      field: "workflow_status",
-      headerName: "Status",
-      width: "180px",
-      renderCell: ({ row }) => {
-        const statusConfig = getWorkflowStatusConfig(row);
-        return (
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusConfig.className}`}
-          >
-            {statusConfig.label}
-          </span>
-        );
-      },
-    },
-    {
-      field: "medical_date",
-      headerName: "Medical Date",
-      width: "130px",
-      renderCell: ({ value }) => formatDateForDisplay(value),
-    },
-    {
-      field: "medical_time",
-      headerName: "Time",
-      width: "100px",
-      renderCell: ({ value }) => value || "-",
-    },
-    {
-      field: "medical_email_date",
-      headerName: "Email Sent",
-      width: "110px",
-      renderCell: ({ value }) =>
-        value ? (
-          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-            Yes
-          </span>
-        ) : (
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
-            No
+  const baseColumns = useMemo(
+    () => [
+      {
+        field: "cadet_unique_id",
+        headerName: "Cadet ID",
+        width: "130px",
+        renderCell: ({ value }) => (
+          <span className="rounded border border-indigo-100 bg-indigo-50 px-2 py-1 text-[10px] font-bold uppercase text-indigo-700">
+            {value || "-"}
           </span>
         ),
-    },
-    {
-      field: "medical_email_date_val",
-      headerName: "Email Date",
-      width: "130px",
-      renderCell: ({ row }) => formatDateForDisplay(row.medical_email_date),
-    },
-    {
-      field: "medical_center_name",
-      headerName: "Medical Center",
-      width: "180px",
-      renderCell: ({ value }) => value || "-",
-    },
-    {
-      field: "medical_final_decision",
-      headerName: "Decision",
-      width: "110px",
-      renderCell: ({ value }) => value || "-",
-    },
-    {
-      field: "psychometric_status",
-      headerName: "Psychometric",
-      width: "120px",
-      renderCell: ({ value }) => value || "-",
-    },
-    {
-      field: "profiling_status",
-      headerName: "Profiling",
-      width: "110px",
-      renderCell: ({ value }) => value || "-",
-    },
-    {
-      field: "medical_remarks",
-      headerName: "Remarks",
-      width: "180px",
-      renderCell: ({ value }) => (
-        <span className="block truncate text-slate-600" title={value}>
-          {value || "-"}
-        </span>
-      ),
-    },
-    {
+      },
+      {
+        field: "name_as_in_indos_cert",
+        headerName: "Name",
+        width: "200px",
+        renderCell: ({ row }) => (
+          <span
+            className="block truncate font-medium text-slate-900"
+            title={row.name_as_in_indos_cert}
+          >
+            {row.name_as_in_indos_cert}
+          </span>
+        ),
+      },
+      {
+        field: "workflow_status",
+        headerName: "Status",
+        width: "180px",
+        renderCell: ({ row }) => {
+          const statusConfig = getWorkflowStatusConfig(row);
+          return (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusConfig.className}`}
+            >
+              {statusConfig.label}
+            </span>
+          );
+        },
+      },
+      {
+        field: "medical_date",
+        headerName: "Medical Date",
+        width: "130px",
+        renderCell: ({ value }) => formatDateForDisplay(value),
+      },
+      {
+        field: "medical_time",
+        headerName: "Time",
+        width: "100px",
+        renderCell: ({ value }) => value || "-",
+      },
+      {
+        field: "medical_email_date",
+        headerName: "Email Sent",
+        width: "110px",
+        renderCell: ({ value }) =>
+          value ? (
+            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+              Yes
+            </span>
+          ) : (
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+              No
+            </span>
+          ),
+      },
+      {
+        field: "medical_email_date_val",
+        headerName: "Email Date",
+        width: "130px",
+        renderCell: ({ row }) => formatDateForDisplay(row.medical_email_date),
+      },
+      {
+        field: "medical_center_name",
+        headerName: "Medical Center",
+        width: "180px",
+        renderCell: ({ value }) => value || "-",
+      },
+    ],
+    []
+  );
+
+  const pendingOtherColumns = useMemo(
+    () => [
+      {
+        field: "assessment_score",
+        headerName: "Assessment Score",
+        width: "140px",
+        renderCell: ({ row, value }) => {
+          const score = value ?? row.calculated_score;
+          return score || score === 0 ? (
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              {Number(score).toFixed(2)}
+            </span>
+          ) : (
+            "-"
+          );
+        },
+      },
+      {
+        field: "evaluation_score",
+        headerName: "Interview Score",
+        width: "130px",
+        renderCell: ({ value }) => value || "-",
+      },
+      {
+        field: "total_score",
+        headerName: "Total Interview Score",
+        width: "160px",
+        renderCell: ({ value }) =>
+          value || value === 0 ? (
+            <span className="font-semibold text-slate-700">{Number(value).toFixed(2)}</span>
+          ) : (
+            "-"
+          ),
+      },
+      {
+        field: "interview_final_decision",
+        headerName: "Interview Decision",
+        width: "155px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = INTERVIEW_DECISION_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const confirmedColumns = useMemo(
+    () => [
+      {
+        field: "medical_final_decision",
+        headerName: "Medical Decision",
+        width: "140px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = MEDICAL_DECISION_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+      {
+        field: "fit_status",
+        headerName: "Fit Status",
+        width: "180px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const label = FIT_STATUS_LABELS[normalized] || value;
+          const tone = FIT_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>
+              {label}
+            </span>
+          );
+        },
+      },
+      {
+        field: "psychometric_status",
+        headerName: "Psychometric",
+        width: "125px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+      {
+        field: "profiling_status",
+        headerName: "Profiling",
+        width: "110px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+      {
+        field: "medical_remarks",
+        headerName: "Remarks",
+        width: "180px",
+        renderCell: ({ value }) => (
+          <span className="block truncate text-slate-600" title={value}>
+            {value || "-"}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  const academicColumns = useMemo(
+    () => [
+      {
+        field: "tenth_avg_percentage",
+        headerName: "10th Avg %",
+        width: "110px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "twelfth_pcm_avg_percentage",
+        headerName: "12th PCM %",
+        width: "120px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "twelfth_std_english",
+        headerName: "12th English",
+        width: "110px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "imu_avg_all_semester_percentage",
+        headerName: "IMU Avg %",
+        width: "110px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "imu_sem_1_percentage",
+        headerName: "Sem 1 %",
+        width: "90px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "imu_sem_2_percentage",
+        headerName: "Sem 2 %",
+        width: "90px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "imu_sem_3_percentage",
+        headerName: "Sem 3 %",
+        width: "90px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "imu_sem_4_percentage",
+        headerName: "Sem 4 %",
+        width: "90px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "imu_sem_5_percentage",
+        headerName: "Sem 5 %",
+        width: "90px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "imu_sem_6_percentage",
+        headerName: "Sem 6 %",
+        width: "90px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "imu_sem_7_percentage",
+        headerName: "Sem 7 %",
+        width: "90px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "imu_sem_8_percentage",
+        headerName: "Sem 8 %",
+        width: "90px",
+        align: "center",
+        renderCell: ({ value }) => formatPercentage(value),
+      },
+      {
+        field: "assessment_score",
+        headerName: "Assessment Score",
+        width: "140px",
+        renderCell: ({ row, value }) => {
+          const score = value ?? row.calculated_score;
+          return score || score === 0 ? (
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              {Number(score).toFixed(2)}
+            </span>
+          ) : (
+            "-"
+          );
+        },
+      },
+      {
+        field: "medical_final_decision",
+        headerName: "Medical Decision",
+        width: "140px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = MEDICAL_DECISION_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+      {
+        field: "psychometric_status",
+        headerName: "Psychometric",
+        width: "125px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+      {
+        field: "profiling_status",
+        headerName: "Profiling",
+        width: "110px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+      {
+        field: "medical_remarks",
+        headerName: "Remarks",
+        width: "180px",
+        renderCell: ({ value }) => (
+          <span className="block truncate text-slate-600" title={value}>
+            {value || "-"}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  const movedToDocumentColumns = useMemo(
+    () => [
+      {
+        field: "medical_final_decision",
+        headerName: "Medical Decision",
+        width: "140px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = MEDICAL_DECISION_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+      {
+        field: "fit_status",
+        headerName: "Fit Status",
+        width: "180px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const label = FIT_STATUS_LABELS[normalized] || value;
+          const tone = FIT_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>
+              {label}
+            </span>
+          );
+        },
+      },
+      {
+        field: "psychometric_status",
+        headerName: "Psychometric",
+        width: "125px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+      {
+        field: "profiling_status",
+        headerName: "Profiling",
+        width: "110px",
+        renderCell: ({ value }) => {
+          if (!value) return "-";
+          const normalized = value.toLowerCase();
+          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          return (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+              {value}
+            </span>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const actionsColumn = useMemo(
+    () => ({
       field: "actions",
       headerName: "Actions",
       width: "120px",
@@ -432,7 +909,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(`/cadets/medical/${row.id}`)}
+            onClick={() => handleStartMedicalResultClick(row)}
             className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             title={
               row.medical_result_id
@@ -453,8 +930,34 @@ const MedicalTab = ({ drive, onRefresh }) => {
           </Button>
         </div>
       ),
+    }),
+    [handleStartMedicalResultClick]
+  );
+
+  const getColumnsForGroup = useCallback(
+    (groupKey) => {
+      switch (groupKey) {
+        case "pending_other":
+          return [...baseColumns, ...pendingOtherColumns, actionsColumn];
+        case "confirmed":
+          return [...baseColumns, ...confirmedColumns, actionsColumn];
+        case "collected_academic":
+          return [...baseColumns, ...academicColumns, actionsColumn];
+        case "moved_to_document":
+          return [...baseColumns, ...movedToDocumentColumns, actionsColumn];
+        default:
+          return [...baseColumns, actionsColumn];
+      }
     },
-  ];
+    [
+      baseColumns,
+      pendingOtherColumns,
+      confirmedColumns,
+      academicColumns,
+      movedToDocumentColumns,
+      actionsColumn,
+    ]
+  );
 
   const medicalCenterOptions = medicalCenters.map((center) => ({
     label: center.center_name,
@@ -491,7 +994,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
 
           <Button
             variant="outline"
-            onClick={() => setIsInviteOpen(true)}
+            onClick={handleSendMedicalInviteClick}
             disabled={!hasSelection}
             className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
           >
@@ -513,6 +1016,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
 
           let actionButton = null;
           if (key === "pending_other") {
+            const hasNonPassed = groupSelectedRows.some((c) => c.workflow_result !== "medical_passed");
             actionButton = (
               <Button
                 size="sm"
@@ -528,7 +1032,12 @@ const MedicalTab = ({ drive, onRefresh }) => {
                   })
                 }
                 disabled={
-                  actionLoading.confirm || groupSelectedRows.length === 0
+                  actionLoading.confirm || groupSelectedRows.length === 0 || hasNonPassed
+                }
+                title={
+                  hasNonPassed
+                    ? "Only cadets who have passed the medical exam can be confirmed"
+                    : ""
                 }
                 className="gap-2 bg-green-600 text-white hover:bg-green-700 shadow-sm"
               >
@@ -537,7 +1046,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
                 ) : (
                   <Users className="h-4 w-4" />
                 )}
-                Confirm Candidates
+                Confirm Cadets
               </Button>
             );
           } else if (key === "confirmed") {
@@ -565,15 +1074,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() =>
-                  runBulkAction("documents", async () => {
-                    await api.post("/medical-results/bulk/collect-documents", {
-                      drive_id: drive.id,
-                      cadet_ids: groupSelectedRows.map((c) => c.id),
-                    });
-                    toast.success("Candidate document request sent");
-                  })
-                }
+                onClick={() => handleMoveDocumentsClick(groupSelectedRows)}
                 disabled={
                   actionLoading.documents ||
                   groupSelectedRows.length === 0 ||
@@ -638,7 +1139,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
               {isExpanded && (
                 <div className="overflow-hidden">
                   <ReusableDataTable
-                    columns={columns}
+                    columns={getColumnsForGroup(key)}
                     rows={list}
                     loading={loading}
                     checkboxSelection
@@ -742,6 +1243,24 @@ const MedicalTab = ({ drive, onRefresh }) => {
           </div>
         </div>
       )}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setConfirmAction(null);
+        }}
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          if (confirmAction?.execute) {
+            confirmAction.execute();
+          }
+          setConfirmAction(null);
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText="Yes"
+        cancelText="No"
+      />
     </div>
   );
 };

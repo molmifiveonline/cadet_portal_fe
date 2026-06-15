@@ -117,7 +117,7 @@ const PipelineProgressBar = ({ count, percentage, info }) => {
       const easedFraction = easeOutQuad(progressFraction);
 
       const currentCount = Math.round(
-        startCount + easedFraction * (endCount - startCount)
+        startCount + easedFraction * (endCount - startCount),
       );
 
       setAnimatedCount(currentCount);
@@ -134,7 +134,8 @@ const PipelineProgressBar = ({ count, percentage, info }) => {
     };
   }, [count]);
 
-  const currentPercentage = count > 0 ? (animatedCount / count) * percentage : 0;
+  const currentPercentage =
+    count > 0 ? (animatedCount / count) * percentage : 0;
 
   return (
     <div className="flex-1 flex items-center gap-3">
@@ -148,12 +149,7 @@ const PipelineProgressBar = ({ count, percentage, info }) => {
         />
       </div>
       <div className="w-12 sm:w-16 text-right">
-        <span
-          className={cn(
-            "text-xs sm:text-sm font-bold",
-            info.text,
-          )}
-        >
+        <span className={cn("text-xs sm:text-sm font-bold", info.text)}>
           {animatedCount}
         </span>
       </div>
@@ -185,7 +181,7 @@ const StatsCard = ({ title, value, icon: Icon, gradient, subtitle }) => {
       const easedFraction = easeOutQuad(progressFraction);
 
       const currentValue = Math.round(
-        startValue + easedFraction * (endValue - startValue)
+        startValue + easedFraction * (endValue - startValue),
       );
 
       setAnimatedValue(currentValue);
@@ -202,7 +198,8 @@ const StatsCard = ({ title, value, icon: Icon, gradient, subtitle }) => {
     };
   }, [value]);
 
-  const displayValue = typeof value === "number" ? animatedValue.toLocaleString() : value;
+  const displayValue =
+    typeof value === "number" ? animatedValue.toLocaleString() : value;
 
   return (
     <div
@@ -226,9 +223,13 @@ const StatsCard = ({ title, value, icon: Icon, gradient, subtitle }) => {
       </div>
       <div className="absolute inset-x-4 sm:inset-x-6 bottom-4 sm:bottom-6 z-10 flex items-end justify-between gap-2 sm:gap-4">
         <div className="min-w-0">
-          <p className="text-[11px] sm:text-sm font-semibold text-slate-500 truncate">{title}</p>
+          <p className="text-[11px] sm:text-sm font-semibold text-slate-500 truncate">
+            {title}
+          </p>
           {subtitle && (
-            <div className="text-[10px] sm:text-xs text-slate-400 mt-1">{subtitle}</div>
+            <div className="text-[10px] sm:text-xs text-slate-400 mt-1">
+              {subtitle}
+            </div>
           )}
         </div>
         <h3 className="text-2xl sm:text-4xl font-bold text-slate-800 tracking-tight text-right leading-none">
@@ -323,17 +324,18 @@ const Dashboard = () => {
         } else {
           setPipelineLoading(true);
         }
-        
-        const url = selectedDriveId && selectedDriveId !== "all" 
-          ? `/dashboard/stats?driveId=${selectedDriveId}`
-          : "/dashboard/stats";
+
+        const url =
+          selectedDriveId && selectedDriveId !== "all"
+            ? `/dashboard/stats?driveId=${selectedDriveId}`
+            : "/dashboard/stats";
         const response = await api.get(url);
-        
+
         if (stats) {
           // If we already have stats, only update the stageWiseCounts to prevent re-rendering other components
-          setStats(prev => ({
+          setStats((prev) => ({
             ...prev,
-            stageWiseCounts: response.data.data.stageWiseCounts
+            stageWiseCounts: response.data.data.stageWiseCounts,
           }));
         } else {
           setStats(response.data.data);
@@ -381,14 +383,18 @@ const Dashboard = () => {
           gradient="from-violet-500 to-purple-600"
         />
         <StatsCard
-          title="Total Candidates"
+          title="Total Cadets"
           value={stats?.totalCandidates ?? 0}
           icon={Users}
           gradient="from-blue-500 to-indigo-600"
           subtitle={
             <div className="flex items-center gap-2 mt-1">
-              <span className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md font-semibold">Male: {(stats?.maleCount ?? 0).toLocaleString()}</span>
-              <span className="bg-pink-100 text-pink-700 px-2 py-0.5 rounded-md font-semibold">Female: {(stats?.femaleCount ?? 0).toLocaleString()}</span>
+              <span className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md font-semibold">
+                Male: {(stats?.maleCount ?? 0).toLocaleString()}
+              </span>
+              <span className="bg-pink-100 text-pink-700 px-2 py-0.5 rounded-md font-semibold">
+                Female: {(stats?.femaleCount ?? 0).toLocaleString()}
+              </span>
             </div>
           }
         />
@@ -406,7 +412,7 @@ const Dashboard = () => {
         title="Stage-wise Candidate Pipeline"
         icon={BarChart3}
         iconBg="bg-indigo-50/80 text-indigo-600"
-        badge={`${stats?.stageWiseCounts?.find(s => s.stage === 'Cadets')?.count ?? 0} Total`}
+        badge={`${stats?.stageWiseCounts?.find((s) => s.stage === "Cadets")?.count ?? 0} Total`}
       >
         <div className="p-6 relative">
           {pipelineLoading && (
@@ -457,7 +463,11 @@ const Dashboard = () => {
                           {info.label}
                         </span>
                       </div>
-                      <PipelineProgressBar count={stage.count} percentage={Number(percentage)} info={info} />
+                      <PipelineProgressBar
+                        count={stage.count}
+                        percentage={Number(percentage)}
+                        info={info}
+                      />
                     </div>
                   </div>
                 );
