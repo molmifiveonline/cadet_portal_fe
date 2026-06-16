@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ListChecks, Search, Edit, Upload } from 'lucide-react';
+import { ListChecks, Search, Edit, Upload, Eye } from 'lucide-react';
+
 import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import { useAuth } from '../../context/AuthContext';
@@ -344,7 +345,7 @@ const InstituteShortlistedCadets = () => {
                 <Upload size={16} />
               </Button>
             )}
-            {row.can_edit_pending_details && (
+            {row.can_edit_pending_details ? (
               <Button
                 variant='ghost'
                 size='icon'
@@ -359,6 +360,16 @@ const InstituteShortlistedCadets = () => {
                 title='Edit Cadet'
               >
                 <Edit size={16} />
+              </Button>
+            ) : (
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 text-gray-600 hover:text-gray-700 hover:bg-gray-50'
+                onClick={() => navigate(`/cadets/view/${row.id}`)}
+                title='View Cadet'
+              >
+                <Eye size={16} />
               </Button>
             )}
           </div>

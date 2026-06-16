@@ -66,7 +66,6 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const fileInputRef = useRef(null);
-
   const fetchCadets = useCallback(async () => {
     try {
       setLoading(true);
@@ -101,17 +100,25 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
     setCurrentPage(1);
   }, [debouncedSearchTerm, selectedStatus, perPage]);
 
+  const isInstituteUser = user?.role === "Institute";
+
   const sortedCadets = useMemo(() => {
     const statusOrder = { passed: 1, missing_twelfth: 2, failed: 3 };
 
     return [...cadets].sort((a, b) => {
+      if (isInstituteUser) {
+        const canEditA = a.can_edit_pending_details ? 1 : 0;
+        const canEditB = b.can_edit_pending_details ? 1 : 0;
+        if (canEditA !== canEditB) {
+          return canEditB - canEditA;
+        }
+      }
+
       const statusA = getShortlistCriteriaStatus(a).type;
       const statusB = getShortlistCriteriaStatus(b).type;
       return (statusOrder[statusA] || 4) - (statusOrder[statusB] || 4);
     });
-  }, [cadets]);
-
-  const isInstituteUser = user?.role === "Institute";
+  }, [cadets, isInstituteUser]);
 
   const handleUploadClick = (cadet) => {
     setSelectedUploadCadet(cadet);

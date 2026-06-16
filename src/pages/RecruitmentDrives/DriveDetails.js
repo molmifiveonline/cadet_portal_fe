@@ -191,8 +191,8 @@ const DriveDetails = () => {
     !Number(drive?.institute_reverted_excel);
   const canSubmitCadets =
     !isInstituteUser &&
-    Number(drive?.institute_reverted_excel) &&
-    Number(stats?.total_uploaded || 0) === 0;
+    (Number(drive?.has_pending_submission) ||
+      (Number(drive?.institute_reverted_excel) && Number(stats?.total_uploaded || 0) === 0));
   const canSendShortlistEmail =
     !isInstituteUser && Number(drive?.institute_reverted_excel);
   const hasPendingCadetDataRequest =

@@ -631,7 +631,7 @@ const InterviewForm = () => {
                   <SelectItem value='selected'>
                     Selected (Advance to Medical)
                   </SelectItem>
-                  <SelectItem value='rejected'>Rejected</SelectItem>
+                  <SelectItem value='rejected'>Release</SelectItem>
                   <SelectItem value='waitlisted'>Waitlisted</SelectItem>
                 </SelectContent>
               </Select>
