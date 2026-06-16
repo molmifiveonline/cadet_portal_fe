@@ -36,6 +36,48 @@ const getStageInfo = (stage) => {
       text: "text-slate-700",
     };
 
+  const customStages = {
+    cadets: {
+      label: "Cadets",
+      color: "from-indigo-500 to-indigo-600",
+      bg: "bg-indigo-50/50",
+      text: "text-indigo-700",
+    },
+    shortlisted: {
+      label: "Shortlisted",
+      color: "from-purple-500 to-purple-600",
+      bg: "bg-purple-50/50",
+      text: "text-purple-700",
+    },
+    assessment: {
+      label: "Assessment",
+      color: "from-cyan-500 to-cyan-600",
+      bg: "bg-cyan-50/50",
+      text: "text-cyan-700",
+    },
+    interview: {
+      label: "Interview",
+      color: "from-emerald-500 to-emerald-600",
+      bg: "bg-emerald-50/50",
+      text: "text-emerald-700",
+    },
+    medical: {
+      label: "Medical",
+      color: "from-lime-500 to-lime-600",
+      bg: "bg-lime-50/50",
+      text: "text-lime-700",
+    },
+    documents: {
+      label: "Documents",
+      color: "from-slate-500 to-slate-600",
+      bg: "bg-slate-50/50",
+      text: "text-slate-700",
+    },
+  };
+
+  const key = stage.toLowerCase().trim();
+  if (customStages[key]) return customStages[key];
+
   if (STAGE_CONFIG[stage]) return STAGE_CONFIG[stage];
 
   // Try normalized string format (e.g., "CV Submitted" -> "cv_submitted")
@@ -57,40 +99,146 @@ const getStageInfo = (stage) => {
   };
 };
 
+const PipelineProgressBar = ({ count, percentage, info }) => {
+  const [animatedCount, setAnimatedCount] = useState(0);
+
+  useEffect(() => {
+    let animationFrameId;
+    const duration = 1000; // 1 second
+    const startCount = 0;
+    const endCount = count;
+    const startTime = performance.now();
+
+    const animate = (currentTime) => {
+      const elapsedTime = currentTime - startTime;
+      const progressFraction = Math.min(elapsedTime / duration, 1);
+
+      const easeOutQuad = (t) => t * (2 - t);
+      const easedFraction = easeOutQuad(progressFraction);
+
+      const currentCount = Math.round(
+        startCount + easedFraction * (endCount - startCount),
+      );
+
+      setAnimatedCount(currentCount);
+
+      if (progressFraction < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [count]);
+
+  const currentPercentage =
+    count > 0 ? (animatedCount / count) * percentage : 0;
+
+  return (
+    <div className="flex-1 flex items-center gap-3">
+      <div className="flex-1 h-6 sm:h-8 bg-slate-100 rounded-xl overflow-hidden relative">
+        <div
+          className={cn(
+            "h-full rounded-xl bg-gradient-to-r transition-none",
+            info.color,
+          )}
+          style={{ width: `${Math.max(currentPercentage, 3)}%` }}
+        />
+      </div>
+      <div className="w-12 sm:w-16 text-right">
+        <span className={cn("text-xs sm:text-sm font-bold", info.text)}>
+          {animatedCount}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 // ─── Stats Card ─────────────────────────────────────────────────────────────
-const StatsCard = ({ title, value, icon: Icon, gradient, subtitle }) => (
-  <div
-    className={cn(
-      "relative overflow-hidden rounded-3xl p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-white/40 shadow-lg",
-      "bg-white/60 backdrop-blur-2xl",
-    )}
-  >
+const StatsCard = ({ title, value, icon: Icon, gradient, subtitle }) => {
+  const [animatedValue, setAnimatedValue] = useState(0);
+
+  useEffect(() => {
+    if (typeof value !== "number") {
+      setAnimatedValue(value);
+      return;
+    }
+
+    let animationFrameId;
+    const duration = 1000; // 1 second
+    const startValue = 0;
+    const endValue = value;
+    const startTime = performance.now();
+
+    const animate = (currentTime) => {
+      const elapsedTime = currentTime - startTime;
+      const progressFraction = Math.min(elapsedTime / duration, 1);
+
+      const easeOutQuad = (t) => t * (2 - t);
+      const easedFraction = easeOutQuad(progressFraction);
+
+      const currentValue = Math.round(
+        startValue + easedFraction * (endValue - startValue),
+      );
+
+      setAnimatedValue(currentValue);
+
+      if (progressFraction < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [value]);
+
+  const displayValue =
+    typeof value === "number" ? animatedValue.toLocaleString() : value;
+
+  return (
     <div
-      className={`absolute right-0 top-0 w-24 h-24 sm:w-32 sm:h-32 opacity-20 rounded-bl-full bg-gradient-to-br ${gradient} -mr-6 -mt-6 sm:-mr-8 sm:-mt-8`}
-    />
-    <div className="relative z-10">
+      className={cn(
+        "relative overflow-hidden rounded-3xl p-4 sm:p-6 min-h-[140px] sm:min-h-[180px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl border border-white/40 shadow-lg",
+        "bg-white/60 backdrop-blur-2xl",
+      )}
+    >
       <div
-        className={cn(
-          "inline-flex p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br text-white shadow-lg shadow-black/5",
-          gradient,
-        )}
-      >
-        <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+        className={`absolute right-0 top-0 w-24 h-24 sm:w-32 sm:h-32 opacity-20 rounded-bl-full bg-gradient-to-br ${gradient} -mr-6 -mt-6 sm:-mr-8 sm:-mt-8`}
+      />
+      <div className="relative z-10">
+        <div
+          className={cn(
+            "inline-flex p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br text-white shadow-lg shadow-black/5",
+            gradient,
+          )}
+        >
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+        </div>
+      </div>
+      <div className="absolute inset-x-4 sm:inset-x-6 bottom-4 sm:bottom-6 z-10 flex items-end justify-between gap-2 sm:gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] sm:text-sm font-semibold text-slate-500 truncate">
+            {title}
+          </p>
+          {subtitle && (
+            <div className="text-[10px] sm:text-xs text-slate-400 mt-1">
+              {subtitle}
+            </div>
+          )}
+        </div>
+        <h3 className="text-2xl sm:text-4xl font-bold text-slate-800 tracking-tight text-right leading-none">
+          {displayValue}
+        </h3>
       </div>
     </div>
-    <div className="absolute inset-x-4 sm:inset-x-6 bottom-4 sm:bottom-6 z-10 flex items-end justify-between gap-2 sm:gap-4">
-      <div className="min-w-0">
-        <p className="text-[11px] sm:text-sm font-semibold text-slate-500 truncate">{title}</p>
-        {subtitle && (
-          <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>
-        )}
-      </div>
-      <h3 className="text-2xl sm:text-4xl font-bold text-slate-800 tracking-tight text-right leading-none">
-        {value}
-      </h3>
-    </div>
-  </div>
-);
+  );
+};
 
 // ─── Section Wrapper ────────────────────────────────────────────────────────
 const Section = ({ title, icon: Icon, iconBg, children, badge }) => (
@@ -151,25 +299,60 @@ const TableHeader = ({ columns }) => (
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pipelineLoading, setPipelineLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [drives, setDrives] = useState([]);
+  const [selectedDriveId, setSelectedDriveId] = useState("all");
+
+  useEffect(() => {
+    const fetchDrives = async () => {
+      try {
+        const response = await api.get("/recruitment-drives?limit=1000");
+        setDrives(response.data?.data || []);
+      } catch (err) {
+        console.error("Error fetching drives:", err);
+      }
+    };
+    fetchDrives();
+  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        setLoading(true);
-        const response = await api.get("/dashboard/stats");
-        setStats(response.data.data);
+        if (!stats) {
+          setLoading(true);
+        } else {
+          setPipelineLoading(true);
+        }
+
+        const url =
+          selectedDriveId && selectedDriveId !== "all"
+            ? `/dashboard/stats?driveId=${selectedDriveId}`
+            : "/dashboard/stats";
+        const response = await api.get(url);
+
+        if (stats) {
+          // If we already have stats, only update the stageWiseCounts to prevent re-rendering other components
+          setStats((prev) => ({
+            ...prev,
+            stageWiseCounts: response.data.data.stageWiseCounts,
+          }));
+        } else {
+          setStats(response.data.data);
+        }
       } catch (err) {
         console.error("Dashboard fetch error:", err);
-        setError("Failed to load dashboard data");
+        if (!stats) setError("Failed to load dashboard data");
       } finally {
         setLoading(false);
+        setPipelineLoading(false);
       }
     };
     fetchStats();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDriveId]);
 
-  if (loading) {
+  if (loading && !stats) {
     return <PageLoader />;
   }
 
@@ -192,33 +375,36 @@ const Dashboard = () => {
   return (
     <>
       {/* ── Stats Cards ──────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
         <StatsCard
           title="Total Institutes"
-          value={(stats?.totalInstitutes ?? 0).toLocaleString()}
+          value={stats?.totalInstitutes ?? 0}
           icon={GraduationCap}
           gradient="from-violet-500 to-purple-600"
         />
         <StatsCard
-          title="Total Candidates"
-          value={(stats?.totalCandidates ?? 0).toLocaleString()}
+          title="Total Cadets"
+          value={stats?.totalCandidates ?? 0}
           icon={Users}
           gradient="from-blue-500 to-indigo-600"
+          subtitle={
+            <div className="flex items-center gap-2 mt-1">
+              <span className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-md font-semibold">
+                Male: {(stats?.maleCount ?? 0).toLocaleString()}
+              </span>
+              <span className="bg-pink-100 text-pink-700 px-2 py-0.5 rounded-md font-semibold">
+                Female: {(stats?.femaleCount ?? 0).toLocaleString()}
+              </span>
+            </div>
+          }
         />
         <StatsCard
           title="Pending Documents"
-          value={(stats?.pendingDocuments?.length ?? 0).toLocaleString()}
+          value={stats?.pendingDocuments?.length ?? 0}
           icon={FileText}
           gradient="from-amber-500 to-orange-600"
           subtitle="Awaiting review"
         />
-        {/* <StatsCard
-          title="CTV Ready"
-          value={(stats?.ctvReadyCandidates?.length ?? 0).toLocaleString()}
-          icon={Ship}
-          gradient="from-emerald-500 to-teal-600"
-          subtitle="Ready for CTV"
-        /> */}
       </div>
 
       {/* ── Stage-wise Candidate Pipeline ───────────────────────────── */}
@@ -226,9 +412,33 @@ const Dashboard = () => {
         title="Stage-wise Candidate Pipeline"
         icon={BarChart3}
         iconBg="bg-indigo-50/80 text-indigo-600"
-        badge={`${stats?.totalCandidates ?? 0} Total`}
+        badge={`${stats?.stageWiseCounts?.find((s) => s.stage === "Cadets")?.count ?? 0} Total`}
       >
-        <div className="p-6">
+        <div className="p-6 relative">
+          {pipelineLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[2px] rounded-b-3xl">
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-indigo-600" />
+            </div>
+          )}
+          {/* Recruitment Drive Filter */}
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Filter by Recruitment Drive
+            </span>
+            <select
+              value={selectedDriveId}
+              onChange={(e) => setSelectedDriveId(e.target.value)}
+              className="w-full sm:w-72 rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-md transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            >
+              <option value="all">All Recruitment Drives</option>
+              {drives.map((drive) => (
+                <option key={drive.id} value={drive.id}>
+                  {drive.drive_name} ({drive.institute_name})
+                </option>
+              ))}
+            </select>
+          </div>
+
           {!stats?.stageWiseCounts?.length ? (
             <EmptyState message="No candidate data available" />
           ) : (
@@ -249,31 +459,15 @@ const Dashboard = () => {
                             info.color,
                           )}
                         />
-                        <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate">
+                        <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate capitalize">
                           {info.label}
                         </span>
                       </div>
-                      <div className="flex-1 flex items-center gap-3">
-                        <div className="flex-1 h-6 sm:h-8 bg-slate-100 rounded-xl overflow-hidden relative">
-                          <div
-                            className={cn(
-                              "h-full rounded-xl bg-gradient-to-r transition-all duration-700 ease-out",
-                              info.color,
-                            )}
-                            style={{ width: `${Math.max(percentage, 3)}%` }}
-                          />
-                        </div>
-                        <div className="w-12 sm:w-16 text-right">
-                          <span
-                            className={cn(
-                              "text-xs sm:text-sm font-bold",
-                              info.text,
-                            )}
-                          >
-                            {stage.count}
-                          </span>
-                        </div>
-                      </div>
+                      <PipelineProgressBar
+                        count={stage.count}
+                        percentage={Number(percentage)}
+                        info={info}
+                      />
                     </div>
                   </div>
                 );

@@ -10,6 +10,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 import PageHeader from '../../components/common/PageHeader';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -29,6 +30,7 @@ const MedicalResultForm = () => {
   const [cadet, setCadet] = useState(null);
   const [medicalCenters, setMedicalCenters] = useState([]);
   const [reportFile, setReportFile] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [formData, setFormData] = useState({
     medical_date: new Date().toISOString().split('T')[0],
@@ -108,6 +110,26 @@ const MedicalResultForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.medical_date) {
+      toast.error('Examination date is required');
+      return;
+    }
+    if (!formData.medical_time) {
+      toast.error('Examination time is required');
+      return;
+    }
+    if (!formData.medical_center_id) {
+      toast.error('Medical center is required');
+      return;
+    }
+    if (cadet && !Number(cadet.institute_detail_filled || 0)) {
+      setShowConfirmModal(true);
+    } else {
+      saveMedicalResult();
+    }
+  };
+
+  const saveMedicalResult = async () => {
     setSaving(true);
     try {
       const data = new FormData();
@@ -167,10 +189,9 @@ const MedicalResultForm = () => {
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Examination Date
+                Examination Date <span className="text-red-500">*</span>
               </label>
               <div className='relative'>
-                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                 <Input
                   type='date'
                   name='medical_date'
@@ -179,12 +200,13 @@ const MedicalResultForm = () => {
                   className='pl-10'
                   required
                 />
+                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
               </div>
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Examination Time
+                Examination Time <span className="text-red-500">*</span>
               </label>
               <div className='relative'>
                 <Activity className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
@@ -194,19 +216,21 @@ const MedicalResultForm = () => {
                   value={formData.medical_time}
                   onChange={handleInputChange}
                   className='pl-10'
+                  required
                 />
               </div>
             </div>
 
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Medical Center
+                Medical Center <span className="text-red-500">*</span>
               </label>
               <Select
                 value={formData.medical_center_id}
                 onValueChange={(val) =>
                   setFormData((p) => ({ ...p, medical_center_id: val }))
                 }
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder='Select medical center' />
@@ -241,26 +265,6 @@ const MedicalResultForm = () => {
                     Fit with Restrictions
                   </SelectItem>
                   <SelectItem value='pending'>Pending Investigation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Final Decision
-              </label>
-              <Select
-                value={formData.final_decision}
-                onValueChange={(val) =>
-                  setFormData((p) => ({ ...p, final_decision: val }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select final decision' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='pass'>Pass</SelectItem>
-                  <SelectItem value='fail'>Fail</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -306,6 +310,26 @@ const MedicalResultForm = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Final Decision
+              </label>
+              <Select
+                value={formData.final_decision}
+                onValueChange={(val) =>
+                  setFormData((p) => ({ ...p, final_decision: val }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select final decision' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='pass'>Pass</SelectItem>
+                  <SelectItem value='fail'>Fail</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className='space-y-2'>
@@ -339,7 +363,7 @@ const MedicalResultForm = () => {
               placeholder='Add specific medical observations...'
             />
             <p className='text-xs text-slate-500'>
-              Candidates marked `Pass` move to the selected stage. Candidates marked `Fail` stop here.
+              Cadets marked `Pass` move to the selected stage. Cadets marked `Fail` stop here.
             </p>
           </div>
 
@@ -362,6 +386,18 @@ const MedicalResultForm = () => {
           </div>
         </form>
       </div>
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          saveMedicalResult();
+        }}
+        title="Pending Institute Details"
+        message={`Cadet ${cadet?.name_as_in_indos_cert}'s institute details are pending. Do you want to proceed and save the medical result anyway?`}
+        confirmText="Yes"
+        cancelText="No"
+      />
     </div>
   );
 };

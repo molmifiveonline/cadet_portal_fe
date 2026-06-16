@@ -66,7 +66,7 @@ export const isDateColumn = (header) => {
 
 export const isPhoneColumn = (header) => !!getPhoneFieldName(header);
 
-// Check if a value is a valid day-first date in dd-mm-yyyy or dd/mm/yyyy format.
+// Check if a value is a valid day-first date in DD-MM-YYYY or DD/MM/YYYY format.
 export const isValidDate = (value) => {
   if (!value) return false;
   const str = String(value).trim();

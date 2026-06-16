@@ -1,20 +1,20 @@
-import React from 'react';
-import { LayoutProvider, useLayout } from '../../context/LayoutContext';
-import Sidebar from './Sidebar';
-import Navbar from './Navbar';
-import { cn } from '../../lib/utils/utils';
-import TitleManager from '../common/TitleManager';
+import React from "react";
+import { LayoutProvider, useLayout } from "../../context/LayoutContext";
+import Sidebar from "./Sidebar";
+import Navbar from "./Navbar";
+import { cn } from "../../lib/utils/utils";
+import TitleManager from "../common/TitleManager";
 
 const MainLayoutInner = ({ children }) => {
   const { isOpen } = useLayout();
 
   return (
-    <div className='relative flex h-[100dvh] w-full overflow-hidden bg-slate-50/50'>
+    <div className="relative flex h-[100dvh] w-full overflow-hidden bg-slate-50/50">
       {/* Mesh Gradient Background */}
       <div
-        className='absolute inset-0 -z-10'
+        className="absolute inset-0 -z-10"
         style={{
-          backgroundColor: '#f8fafc',
+          backgroundColor: "#f8fafc",
           backgroundImage: `
                 radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 0.1) 0, transparent 50%), 
                 radial-gradient(at 50% 10%, hsla(225, 39%, 30%, 0.1) 0, transparent 50%), 
@@ -31,16 +31,18 @@ const MainLayoutInner = ({ children }) => {
 
       <main
         className={cn(
-          'flex-1 flex flex-col transition-all duration-300 ease-in-out min-w-0 h-full overflow-y-auto relative',
-          isOpen ? 'md:pl-64' : 'md:pl-20',
-          'pl-0',
+          "flex-1 flex flex-col transition-all duration-300 ease-in-out min-w-0 h-full overflow-y-auto relative",
+          isOpen ? "md:pl-64" : "md:pl-20",
+          "pl-0",
         )}
       >
-        <div className='sticky top-0 z-30 px-2 sm:px-0'>
+        <div className="sticky top-0 z-30 px-2 sm:px-0">
           <Navbar />
         </div>
 
-        <div className='flex-1 p-3 sm:p-6 md:p-8 w-full max-w-full overflow-x-hidden'>{children}</div>
+        <div className="flex-1 p-3 sm:p-6 md:p-8 w-full max-w-full ">
+          {children}
+        </div>
       </main>
     </div>
   );

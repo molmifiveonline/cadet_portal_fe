@@ -18,6 +18,7 @@ import ReusableDataTable from "../../components/common/ReusableDataTable";
 import StageInviteModal from "./StageInviteModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 const hasAssessmentValue = (value) => {
   if (value === null || value === undefined) return false;
@@ -56,6 +57,10 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
   const [perPage, setPerPage] = useState(10);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [sendingInvites, setSendingInvites] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState("");
 
   const fetchCadets = useCallback(async () => {
     try {
@@ -94,7 +99,11 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
   const handleSendInvites = async (entries) => {
     try {
       setSendingInvites(true);
-      await api.post(`/recruitment-drives/${drive.id}/send-assessment-invites`, entries);
+      await api.post(`/recruitment-drives/${drive.id}/send-assessment-invites`, entries, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       toast.success("Assessment invites sent successfully");
       setIsInviteOpen(false);
       setSelectedCadets([]);
@@ -108,6 +117,30 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
       );
     } finally {
       setSendingInvites(false);
+    }
+  };
+
+  const handleSendInviteClick = () => {
+    const hasPending = selectedRows.some(row => !Number(row.institute_detail_filled || 0));
+    if (hasPending) {
+      setConfirmTitle("Pending Institute Details");
+      setConfirmMessage("Some of the selected cadets have pending institute details. Do you want to proceed with sending assessment invites?");
+      setConfirmAction({ execute: () => setIsInviteOpen(true) });
+      setShowConfirmModal(true);
+    } else {
+      setIsInviteOpen(true);
+    }
+  };
+
+  const handleStartAssessmentClick = (row) => {
+    const navigateToForm = () => navigate(`/cadets/assess/${row.id}`);
+    if (!Number(row.institute_detail_filled || 0)) {
+      setConfirmTitle("Pending Institute Details");
+      setConfirmMessage(`Cadet ${row.name_as_in_indos_cert}'s institute details are pending. Do you want to proceed to the assessment anyway?`);
+      setConfirmAction({ execute: navigateToForm });
+      setShowConfirmModal(true);
+    } else {
+      navigateToForm();
     }
   };
 
@@ -249,7 +282,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
       cellClassName: "bg-white",
       align: "right",
       renderCell: ({ row }) => {
-        const disableStartAssessment = isAssessmentLocked(row) || !Number(row.institute_detail_filled || 0);
+        const disableStartAssessment = isAssessmentLocked(row);
         
         return (
           <div className="flex items-center justify-end gap-2">
@@ -257,16 +290,12 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
               variant="ghost"
               size="sm"
               disabled={disableStartAssessment}
-              onClick={() => navigate(`/cadets/assess/${row.id}`)}
+              onClick={() => handleStartAssessmentClick(row)}
               className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
               title={
-                !Number(row.institute_detail_filled || 0)
-                  ? "Pending institute details"
-                  : disableStartAssessment
-                    ? "Assessment completed"
-                    : row.assessment_id
-                      ? "Edit assessment"
-                      : "Start assessment"
+                disableStartAssessment
+                  ? "Assessment completed"
+                  : `${row.assessment_id ? "Edit assessment" : "Start assessment"}${!Number(row.institute_detail_filled || 0) ? " (Pending institute details)" : ""}`
               }
             >
               {row.assessment_id ? <Edit size={16} /> : <Plus size={16} />}
@@ -315,7 +344,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
           {!readOnly ? (
             <Button
               variant="outline"
-              onClick={() => setIsInviteOpen(true)}
+              onClick={handleSendInviteClick}
               disabled={selectedRows.length === 0}
               className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
             >
@@ -332,7 +361,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
           rows={cadets}
           loading={loading}
           checkboxSelection={!readOnly}
-          isRowSelectable={!readOnly ? (row) => !isAssessmentLocked(row) && Number(row.institute_detail_filled || 0) : undefined}
+          isRowSelectable={!readOnly ? (row) => !isAssessmentLocked(row) : undefined}
           rowSelectionModel={!readOnly ? selectedCadets : []}
           onRowSelectionModelChange={!readOnly ? setSelectedCadets : undefined}
           emptyMessage={
@@ -392,6 +421,24 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
           ]}
         />
       ) : null}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setConfirmAction(null);
+        }}
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          if (confirmAction?.execute) {
+            confirmAction.execute();
+          }
+          setConfirmAction(null);
+        }}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmText="Yes"
+        cancelText="No"
+      />
     </div>
   );
 };

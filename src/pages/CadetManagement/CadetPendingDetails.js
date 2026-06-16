@@ -61,8 +61,15 @@ const CadetPendingDetails = () => {
         setCadet(data);
         setImageError(false);
 
-        // Format dates for form
+        // Format dates and gender for form
         const formData = { ...data };
+        if (formData.gender) {
+          formData.gender = formData.gender.toLowerCase() === 'male'
+            ? 'Male'
+            : formData.gender.toLowerCase() === 'female'
+            ? 'Female'
+            : formData.gender;
+        }
         ['date_of_birth', 'passing_out_date'].forEach((field) => {
           if (formData[field]) {
             formData[field] = formatDateForInput(formData[field]);

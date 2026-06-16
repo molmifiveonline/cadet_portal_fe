@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Loader2, X, Link as LinkIcon, AlertCircle } from "lucide-react";
+import { Loader2, X, Link as LinkIcon, AlertCircle, ChevronDown, Check } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { DOCUMENT_TYPES } from "../../lib/constant";
@@ -14,17 +14,17 @@ const DocumentRequestModal = ({
   // Each entry: { cadet_id, onedrive_link }
   const [cadetLinks, setCadetLinks] = useState({});
   const [cadetRemarks, setCadetRemarks] = useState({});
-  const [documentName, setDocumentName] = useState("");
-  const [documentType, setDocumentType] = useState("CV");
+  const [documentTypes, setDocumentTypes] = useState(["CV"]);
   const [remarks, setRemarks] = useState("");
+  const [isOpenDropdown, setIsOpenDropdown] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setCadetLinks({});
       setCadetRemarks({});
-      setDocumentName("");
-      setDocumentType("CV");
+      setDocumentTypes(["CV"]);
       setRemarks("");
+      setIsOpenDropdown(false);
     }
   }, [isOpen]);
 
@@ -44,7 +44,7 @@ const DocumentRequestModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (filledCadets.length === 0) return;
+    if (filledCadets.length === 0 || documentTypes.length === 0) return;
 
     const cadetLinksPayload = filledCadets.map(([cadetId, link]) => ({
       cadet_id: cadetId,
@@ -55,9 +55,16 @@ const DocumentRequestModal = ({
     await onSubmit({
       cadet_links: cadetLinksPayload,
       remarks: remarks.trim(),
-      document_name: documentName.trim() || undefined,
-      document_type: documentType,
+      document_types: documentTypes,
     });
+  };
+
+  const toggleDocumentType = (type) => {
+    setDocumentTypes((prev) =>
+      prev.includes(type)
+        ? prev.filter((t) => t !== type)
+        : [...prev, type]
+    );
   };
 
   return (
@@ -99,35 +106,48 @@ const DocumentRequestModal = ({
               </div>
             </div>
 
-            {/* Document Details */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Document Name <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  placeholder="E.g., Passport Copy, INDOS Certificate..."
-                  value={documentName}
-                  onChange={(e) => setDocumentName(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                  Document Type
-                </label>
-                <select
-                  value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value)}
-                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                >
-                  {DOCUMENT_TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* Document Types Multiselect */}
+            <div className="relative">
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                Document Types <span className="text-red-500">*</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsOpenDropdown(!isOpenDropdown)}
+                className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              >
+                <span className="truncate text-slate-700">
+                  {documentTypes.length === 0
+                    ? "Select document types..."
+                    : documentTypes.join(", ")}
+                </span>
+                <ChevronDown className="h-4 w-4 text-slate-500" />
+              </button>
+
+              {isOpenDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsOpenDropdown(false)}
+                  />
+                  <div className="absolute left-0 right-0 z-20 mt-1 max-h-60 overflow-y-auto rounded-md border border-slate-200 bg-white p-1.5 shadow-lg">
+                    {DOCUMENT_TYPES.map((type) => {
+                      const isChecked = documentTypes.includes(type);
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => toggleDocumentType(type)}
+                          className="flex w-full cursor-pointer items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-slate-50 text-left"
+                        >
+                          <span className="text-slate-700">{type}</span>
+                          {isChecked && <Check className="h-4 w-4 text-blue-600" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Remarks */}
@@ -205,7 +225,7 @@ const DocumentRequestModal = ({
             </Button>
             <Button
               type="submit"
-              disabled={loading || filledCadets.length === 0}
+              disabled={loading || filledCadets.length === 0 || documentTypes.length === 0}
             >
               {loading ? (
                 <>

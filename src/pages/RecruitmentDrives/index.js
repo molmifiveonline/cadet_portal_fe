@@ -17,6 +17,7 @@ import {
   Stethoscope,
   Trash2,
   Upload,
+  Edit,
   UserCheck,
   Users,
   X,
@@ -92,10 +93,84 @@ const getCourseCfg = (t) =>
     icon: GraduationCap,
   };
 
+const ProgressCircle = ({ progress }) => {
+  const [animatedProgress, setAnimatedProgress] = useState(0);
+
+  useEffect(() => {
+    let animationFrameId;
+    const duration = 1000; // 1 second
+    const startProgress = 0;
+    const endProgress = progress;
+    const startTime = performance.now();
+
+    const animate = (currentTime) => {
+      const elapsedTime = currentTime - startTime;
+      const progressFraction = Math.min(elapsedTime / duration, 1);
+
+      // Use easeOutQuad for a smoother deceleration at the end
+      const easeOutQuad = (t) => t * (2 - t);
+      const easedFraction = easeOutQuad(progressFraction);
+
+      const currentProgress = Math.round(
+        startProgress + easedFraction * (endProgress - startProgress)
+      );
+
+      setAnimatedProgress(currentProgress);
+
+      if (progressFraction < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [progress]);
+
+  return (
+    <div className="relative flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center">
+      <svg className="h-full w-full -rotate-90 transform">
+        <circle
+          cx="50%"
+          cy="50%"
+          r="40%"
+          stroke="currentColor"
+          strokeWidth="3"
+          fill="transparent"
+          className="text-slate-100"
+        />
+        <circle
+          cx="50%"
+          cy="50%"
+          r="40%"
+          stroke="currentColor"
+          strokeWidth="3"
+          fill="transparent"
+          strokeDasharray="100 100"
+          strokeDashoffset={100 - animatedProgress}
+          strokeLinecap="round"
+          className={`transition-none ${progress >= 80
+              ? "text-emerald-500"
+              : progress >= 50
+                ? "text-amber-500"
+                : "text-blue-500"
+            }`}
+          pathLength="100"
+        />
+      </svg>
+      <span className="absolute text-[9px] sm:text-[11px] font-black text-slate-800">
+        {animatedProgress}%
+      </span>
+    </div>
+  );
+};
+
 // ─── Pipeline stages config ──────────────────────────────────────────────────
 const getPipelineStages = (drive) => [
   {
-    label: "Uploaded",
+    label: "Cadets",
     value: drive.total_uploaded || 0,
     icon: Upload,
     color: "text-indigo-600",
@@ -190,6 +265,8 @@ const RecruitmentDrives = () => {
     isOpen: false,
     driveId: null,
     driveName: "",
+    isForce: false,
+    message: "",
   });
 
   const fetchDrives = useCallback(
@@ -285,9 +362,12 @@ const RecruitmentDrives = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await api.delete(`/recruitment-drives/${deleteModal.driveId}`);
+      const url = deleteModal.isForce
+        ? `/recruitment-drives/${deleteModal.driveId}?force=true`
+        : `/recruitment-drives/${deleteModal.driveId}`;
+      await api.delete(url);
       toast.success("Recruitment drive deleted successfully");
-      setDeleteModal({ isOpen: false, driveId: null, driveName: "" });
+      setDeleteModal({ isOpen: false, driveId: null, driveName: "", isForce: false, message: "" });
 
       const targetPage =
         drives.length === 1 && pagination.current_page > 1
@@ -304,9 +384,20 @@ const RecruitmentDrives = () => {
       );
     } catch (error) {
       console.error("Error deleting recruitment drive:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to delete recruitment drive",
-      );
+      if (error.response?.status === 409 && !deleteModal.isForce) {
+        setDeleteModal({
+          isOpen: true,
+          driveId: deleteModal.driveId,
+          driveName: deleteModal.driveName,
+          isForce: true,
+          message: `${error.response.data?.message || "This recruitment drive has cadets/progress."} Force deleting it will permanently delete all associated cadet records and their progress. Are you sure you want to proceed?`,
+        });
+      } else {
+        toast.error(
+          error.response?.data?.message || "Failed to delete recruitment drive",
+        );
+        setDeleteModal({ isOpen: false, driveId: null, driveName: "", isForce: false, message: "" });
+      }
     }
   };
 
@@ -411,7 +502,7 @@ const RecruitmentDrives = () => {
               <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-600" />
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {drives.map((drive) => {
               const progress = calculateProgress(drive);
@@ -432,60 +523,28 @@ const RecruitmentDrives = () => {
                 >
                   <div className="p-5">
                     {/* ── Header row ─────────────────────────────────────────── */}
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <h3 className="truncate text-base font-bold text-slate-800 leading-tight">
+                    <div className="mb-3 flex flex-col gap-2">
+                      <h3 className="text-base font-bold text-slate-800 leading-tight whitespace-nowrap overflow-x-auto pb-1">
                         {drive.drive_name}
                       </h3>
 
-                      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                        {/* Circular Progress Ring */}
-                        {user?.role !== "Institute" && (
-                        <div className="relative flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center">
-                          <svg className="h-full w-full -rotate-90 transform">
-                            <circle
-                              cx="50%"
-                              cy="50%"
-                              r="40%"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              fill="transparent"
-                              className="text-slate-100"
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                          {/* Circular Progress Ring */}
+                          {user?.role !== "Institute" && (
+                            <ProgressCircle progress={progress} />
+                          )}
+
+                          {/* Status badge with dot */}
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${statusCfg.badge}`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`}
                             />
-                            <circle
-                              cx="50%"
-                              cy="50%"
-                              r="40%"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              fill="transparent"
-                              strokeDasharray="100 100"
-                              strokeDashoffset={100 - progress}
-                              strokeLinecap="round"
-                              className={`transition-all duration-1000 ease-out ${
-                                progress >= 80
-                                  ? "text-emerald-500"
-                                  : progress >= 50
-                                    ? "text-amber-500"
-                                    : "text-blue-500"
-                              }`}
-                              pathLength="100"
-                            />
-                          </svg>
-                          <span className="absolute text-[9px] sm:text-[11px] font-black text-slate-800">
-                            {progress}%
+                            {drive.status}
                           </span>
                         </div>
-                        )}
-
-                        {/* Status badge with dot */}
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${statusCfg.badge}`}
-                        >
-                          <span
-                            className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`}
-                          />
-                          {drive.status}
-                        </span>
 
                         {user?.role !== "Institute" ? (
                           <Permission module="recruitment_drives" action="delete">
@@ -497,6 +556,8 @@ const RecruitmentDrives = () => {
                                   isOpen: true,
                                   driveId: drive.id,
                                   driveName: drive.drive_name,
+                                  isForce: false,
+                                  message: `Are you sure you want to delete "${drive.drive_name}"? This action cannot be undone.`,
                                 });
                               }}
                               className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400
@@ -536,6 +597,31 @@ const RecruitmentDrives = () => {
                       </div>
                     ) : null}
 
+                    {/* ── Academic pending alert ───────────────────────────────── */}
+                    {Number(drive.academic_data_pending_count || 0) > 0 ? (
+                      <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-amber-800">
+                            Academic data update request is pending for {drive.academic_data_pending_count} cadet{Number(drive.academic_data_pending_count) > 1 ? "s" : ""}
+                          </p>
+                          {user?.role === "Institute" ? (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                navigate(`/institute/shortlisted-cadets?drive_id=${drive.id}`);
+                              }}
+                              className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-amber-700 hover:text-amber-900"
+                            >
+                              <Edit className="h-3 w-3" />
+                              Update cadet details
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+
                     {/* Institute row */}
                     <div className="mb-3 flex items-start gap-1.5 text-[11px] sm:text-[12px] text-slate-500">
                       <Building2 className="mt-0.5 h-3 sm:h-3.5 w-3 sm:w-3.5 text-slate-400 shrink-0" />
@@ -564,24 +650,34 @@ const RecruitmentDrives = () => {
 
                     {/* ── Metric Grid (The "Pucks") ────────────────────────────── */}
                     {user?.role !== "Institute" && (
-                    <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {stages.map((stage) => (
-                        <div
-                          key={stage.label}
-                          className={`flex flex-col items-center rounded-xl border border-slate-100 ${stage.bg} py-2.5 transition-all hover:border-slate-200 hover:shadow-sm`}
-                        >
-                          <stage.icon
-                            className={`mb-1 h-3.5 w-3.5 ${stage.color} opacity-80`}
-                          />
-                          <span className={`text-sm font-black ${stage.color}`}>
-                            {stage.value}
-                          </span>
-                          <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
-                            {stage.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                      <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {stages.map((stage) => (
+                          <div
+                            key={stage.label}
+                            className={`flex flex-col items-center rounded-xl border border-slate-100 ${stage.bg} py-2.5 transition-all hover:border-slate-200 hover:shadow-sm`}
+                          >
+                            <stage.icon
+                              className={`mb-1 h-3.5 w-3.5 ${stage.color} opacity-80`}
+                            />
+                            <span className={`text-sm font-black ${stage.color}`}>
+                              {stage.value}
+                            </span>
+                            <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">
+                              {stage.label}
+                            </span>
+                            {stage.label === "Cadets" && (
+                              <div className="mt-1 flex gap-1 text-[8px] font-bold">
+                                <span className="rounded bg-sky-50 px-1 text-sky-700">
+                                  M: {drive.male_count || 0}
+                                </span>
+                                <span className="rounded bg-pink-50 px-1 text-pink-700">
+                                  F: {drive.female_count || 0}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     )}
 
                     {/* ── Footer ─────────────────────────────────────────────── */}
@@ -681,11 +777,11 @@ const RecruitmentDrives = () => {
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={() =>
-          setDeleteModal({ isOpen: false, driveId: null, driveName: "" })
+          setDeleteModal({ isOpen: false, driveId: null, driveName: "", isForce: false, message: "" })
         }
         onConfirm={handleConfirmDelete}
-        title="Delete Recruitment Drive"
-        message={`Are you sure you want to delete "${deleteModal.driveName}"? This action cannot be undone.`}
+        title={deleteModal.isForce ? "Force Delete Recruitment Drive" : "Delete Recruitment Drive"}
+        message={deleteModal.message || `Are you sure you want to delete "${deleteModal.driveName}"? This action cannot be undone.`}
       />
     </div>
   );

@@ -15,7 +15,7 @@ export const formatDateForInput = (date) => {
 };
 
 /**
- * Formats a date string into DD/MM/YYYY for display.
+ * Formats a date string into DD-MM-YYYY for display.
  * @param {string|Date} date - The date to format.
  * @returns {string} - Formatted date string or '-' if invalid.
  */
@@ -27,7 +27,7 @@ export const formatDateForDisplay = (date) => {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   
-  return `${day}/${month}/${year}`;
+  return `${day}-${month}-${year}`;
 };
 
 const parseDateValue = (date) => {

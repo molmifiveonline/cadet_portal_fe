@@ -223,7 +223,7 @@ const ShortlistedCadetsView = () => {
             </div>
             <div>
               <p className='text-sm text-gray-600 mb-1'>
-                Institutes with Candidates
+                Institutes with Cadets
               </p>
               <p className='text-3xl font-bold text-indigo-600'>
                 {shortlistStats.institutes?.length || 0}

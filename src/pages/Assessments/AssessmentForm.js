@@ -18,6 +18,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 import PageHeader from '../../components/common/PageHeader';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -53,6 +54,7 @@ const AssessmentForm = () => {
   const [existingEssay, setExistingEssay] = useState(null);
   const [previewScore, setPreviewScore] = useState(null);
   const [errors, setErrors] = useState({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     // Calculate preview score: CES1 + English + Essay
@@ -166,6 +168,14 @@ const AssessmentForm = () => {
       return;
     }
 
+    if (cadet && !Number(cadet.institute_detail_filled || 0)) {
+      setShowConfirmModal(true);
+    } else {
+      saveAssessmentData();
+    }
+  };
+
+  const saveAssessmentData = async () => {
     setSaving(true);
 
     try {
@@ -202,6 +212,12 @@ const AssessmentForm = () => {
   };
 
   const downloadEssay = () => {
+    if (essayFile) {
+      const fileURL = URL.createObjectURL(essayFile);
+      window.open(fileURL, '_blank');
+      return;
+    }
+
     const userStr = localStorage.getItem('user');
     let token = '';
     try {
@@ -261,7 +277,7 @@ const AssessmentForm = () => {
             <p className='font-bold'>Institute Details Pending</p>
             <p className='text-sm'>
               The institute has not yet filled or completed all required details for this cadet. 
-              Assessment recording is blocked until the institute submits the complete profile.
+              You can still record the assessment, but please note that some profile information may be missing.
             </p>
           </div>
         </div>
@@ -281,7 +297,6 @@ const AssessmentForm = () => {
                   Assessment Date <span className="text-red-500">*</span>
                 </label>
                 <div className='relative'>
-                  <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                   <Input
                     name='assessment_date'
                     type='date'
@@ -290,6 +305,7 @@ const AssessmentForm = () => {
                     invalid={!!errors.assessment_date}
                     className={inputClass}
                   />
+                  <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
                 </div>
                 {errors.assessment_date && <p className={errorTextClass}>{errors.assessment_date}</p>}
               </div>
@@ -565,7 +581,7 @@ const AssessmentForm = () => {
             <Button
               type='submit'
               className='bg-[#3a5f9e] hover:bg-[#325186] text-white px-8 py-2.5 h-auto rounded-lg shadow-sm font-medium transition-all active:scale-95'
-              disabled={saving || (cadet && !Number(cadet.institute_detail_filled || 0))}
+              disabled={saving}
             >
               {saving ? (
                 <>
@@ -582,6 +598,18 @@ const AssessmentForm = () => {
           </div>
         </form>
       </div>
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          saveAssessmentData();
+        }}
+        title="Pending Institute Details"
+        message={`Cadet ${cadet?.name_as_in_indos_cert}'s institute details are pending. Do you want to proceed and save the assessment anyway?`}
+        confirmText="Yes"
+        cancelText="No"
+      />
     </div>
   );
 };

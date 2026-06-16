@@ -111,9 +111,9 @@ const DriveDetails = () => {
       new URLSearchParams(location.search).get("tab");
 
     if (requestedTab) {
-      setActiveTab(requestedTab);
+      setActiveTab(isInstituteUser && requestedTab === "shortlist" ? "cadets" : requestedTab);
     }
-  }, [location.search, location.state]);
+  }, [isInstituteUser, location.search, location.state]);
 
   const handlePreviewSubmit = async () => {
     try {
@@ -191,8 +191,8 @@ const DriveDetails = () => {
     !Number(drive?.institute_reverted_excel);
   const canSubmitCadets =
     !isInstituteUser &&
-    Number(drive?.institute_reverted_excel) &&
-    Number(stats?.total_uploaded || 0) === 0;
+    (Number(drive?.has_pending_submission) ||
+      (Number(drive?.institute_reverted_excel) && Number(stats?.total_uploaded || 0) === 0));
   const canSendShortlistEmail =
     !isInstituteUser && Number(drive?.institute_reverted_excel);
   const hasPendingCadetDataRequest =
@@ -213,7 +213,7 @@ const DriveDetails = () => {
   const progressCards = useMemo(
     () => [
       {
-        label: "Total Uploaded",
+        label: "Total Cadets",
         value: stats?.total_uploaded || 0,
         tone: "text-blue-600",
         onClick: () => {
@@ -308,7 +308,6 @@ const DriveDetails = () => {
           disabledReason: instituteUploadDisabledMessage,
         },
         { id: "cadets", label: "Cadets", icon: Users },
-        { id: "shortlist", label: "Shortlisted Cadets", icon: ListChecks },
       ]
     : [
         { id: "info", label: "Drive Info", icon: FileText },
@@ -456,6 +455,16 @@ const DriveDetails = () => {
                 <div className="mt-1 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-500">
                   {card.label}
                 </div>
+                {card.label === "Total Cadets" && (
+                  <div className="mt-2 flex gap-1.5 text-[10px] font-semibold">
+                    <span className="rounded bg-sky-50 px-1.5 py-0.5 text-sky-700">
+                      M: {stats?.male_count || 0}
+                    </span>
+                    <span className="rounded bg-pink-50 px-1.5 py-0.5 text-pink-700">
+                      F: {stats?.female_count || 0}
+                    </span>
+                  </div>
+                )}
               </button>
             ))}
           </div>
@@ -580,43 +589,6 @@ const DriveDetails = () => {
                   </div>
                 </div>
               ) : null}
-
-              {!isInstituteUser && (
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Uploaded
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {stats?.total_uploaded || 0}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Assessment Passed
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {stats?.assessment_passed || 0}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Interview Selected
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {stats?.interview_selected || 0}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Rejected
-                  </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
-                    {stats?.rejected_count || 0}
-                  </p>
-                </div>
-              </div>
-              )}
 
             </div>
           ) : null}

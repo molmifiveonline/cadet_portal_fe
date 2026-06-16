@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ListChecks, Search, Edit } from 'lucide-react';
+import { ListChecks, Search, Edit, Upload, Eye } from 'lucide-react';
+
 import PageHeader from '../../components/common/PageHeader';
 import api from '../../lib/utils/apiConfig';
 import { useAuth } from '../../context/AuthContext';
@@ -13,7 +14,10 @@ const InstituteShortlistedCadets = () => {
   const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingCadetId, setUploadingCadetId] = useState(null);
+  const [selectedUploadCadet, setSelectedUploadCadet] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const fileInputRef = useRef(null);
   const [pagination, setPagination] = useState({
     current_page: 1,
     per_page: 10,
@@ -25,6 +29,22 @@ const InstituteShortlistedCadets = () => {
     key: 'created_at',
     direction: 'desc',
   });
+
+  const [pendingSummary, setPendingSummary] = useState([]);
+  const [selectedDriveId, setSelectedDriveId] = useState('all');
+
+  const fetchPendingSummary = async () => {
+    try {
+      const response = await api.get('/cadets/institute-pending-summary');
+      setPendingSummary(response.data?.data || []);
+    } catch (error) {
+      console.error('Error fetching pending request summary:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingSummary();
+  }, []);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -40,6 +60,7 @@ const InstituteShortlistedCadets = () => {
     limit = pagination.per_page,
     search = searchTerm,
     sort = sortConfig,
+    driveId = selectedDriveId,
   ) => {
     try {
       setLoading(true);
@@ -49,6 +70,7 @@ const InstituteShortlistedCadets = () => {
         search: search || undefined,
         sort_key: sort.key,
         sort_dir: sort.direction,
+        drive_id: driveId !== 'all' ? driveId : undefined,
       };
 
       const response = await api.get('/cadets/institute-shortlisted', {
@@ -102,6 +124,96 @@ const InstituteShortlistedCadets = () => {
     setSearchTerm(value);
   };
 
+  const handleDriveFilterChange = (driveId) => {
+    setSelectedDriveId(driveId);
+    fetchShortlistedCadets(1, pagination.per_page, searchTerm, sortConfig, driveId);
+  };
+
+  const getUniqueDrivesList = () => {
+    const drivesMap = new Map();
+    // Add drives from pending summary
+    pendingSummary.forEach(item => {
+      if (item.drive_id) {
+        drivesMap.set(String(item.drive_id), item.drive_name || `Drive #${item.drive_id}`);
+      } else {
+        drivesMap.set('null', 'Unassigned / General');
+      }
+    });
+    // Add drives from current cadets list
+    cadets.forEach(cadet => {
+      if (cadet.drive_id) {
+        drivesMap.set(String(cadet.drive_id), cadet.drive_name || `Drive #${cadet.drive_id}`);
+      } else {
+        drivesMap.set('null', 'Unassigned / General');
+      }
+    });
+
+    return Array.from(drivesMap.entries()).map(([id, name]) => ({
+      id,
+      name,
+    }));
+  };
+
+  const handleUploadClick = (cadet) => {
+    setSelectedUploadCadet(cadet);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleCvTemplateUpload = async (event) => {
+    const file = event.target.files?.[0];
+    const cadet = selectedUploadCadet;
+
+    if (!file || !cadet) return;
+
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      toast.error('Please upload the completed .xlsx CV template.');
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      setUploadingCadetId(cadet.id);
+      const formData = new FormData();
+      formData.append('file', file);
+      if (cadet.drive_id) {
+        formData.append('drive_id', cadet.drive_id);
+      }
+
+      const response = await api.post(
+        `/cadets/${cadet.id}/cv-template-upload`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        },
+      );
+
+      toast.success(
+        response.data?.message || 'Cadet CV details updated successfully',
+      );
+      fetchPendingSummary();
+      fetchShortlistedCadets(
+        pagination.current_page,
+        pagination.per_page,
+        searchTerm,
+        sortConfig,
+      );
+    } catch (error) {
+      const errors = error.response?.data?.errors;
+      const message =
+        Array.isArray(errors) && errors.length > 0
+          ? errors.join('\n')
+          : error.response?.data?.message || 'Failed to upload CV template';
+      toast.error(message);
+    } finally {
+      setUploadingCadetId(null);
+      setSelectedUploadCadet(null);
+      event.target.value = '';
+    }
+  };
+
   const columns = [
     {
       field: 'cadet_unique_id',
@@ -119,12 +231,29 @@ const InstituteShortlistedCadets = () => {
       headerName: 'Name',
       width: '200px',
       sortable: true,
+      renderCell: ({ value, row }) => (
+        <div className='flex flex-col gap-1 w-full'>
+          <span
+            className='font-medium text-gray-900 truncate block w-full'
+            title={value}
+          >
+            {value}
+          </span>
+          {row.has_pending_academic_request && (
+            <span className='inline-flex items-center w-max px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 border border-amber-200' title={`Data pending for drive ${row.drive_name || 'Unassigned'}`}>
+              📋 Data Pending {row.drive_name ? `— ${row.drive_name}` : ''}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      field: 'drive_name',
+      headerName: 'Drive',
+      width: '150px',
       renderCell: ({ value }) => (
-        <span
-          className='font-medium text-gray-900 truncate block w-full'
-          title={value}
-        >
-          {value}
+        <span className='truncate block w-full text-gray-600 font-medium' title={value || 'Unassigned'}>
+          {value || 'Unassigned'}
         </span>
       ),
     },
@@ -196,36 +325,111 @@ const InstituteShortlistedCadets = () => {
       sticky: 'right',
       cellClassName: 'bg-white',
       headerClassName: 'bg-white',
-      renderCell: ({ row }) => (
-        <div className='flex justify-end gap-1'>
-          <Button
-            variant='ghost'
-            size='icon'
-            className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-            onClick={() =>
-              navigate(`/cadets/fill-details/${row.id}`, {
-                state: {
-                  returnPath: '/institute/shortlisted-cadets',
-                },
-              })
-            }
-            title='Edit Cadet'
-          >
-            <Edit size={16} />
-          </Button>
-        </div>
-      ),
+      renderCell: ({ row }) => {
+        const canUpload =
+          row.can_edit_pending_details &&
+          Number(row.institute_detail_filled || 0) !== 1;
+        const isUploading = uploadingCadetId === row.id;
+
+        return (
+          <div className='flex justify-end gap-1'>
+            {canUpload && (
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50'
+                onClick={() => handleUploadClick(row)}
+                disabled={isUploading}
+                title={isUploading ? 'Uploading Excel...' : 'Upload completed Excel'}
+              >
+                <Upload size={16} />
+              </Button>
+            )}
+            {row.can_edit_pending_details ? (
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                onClick={() =>
+                  navigate(`/cadets/fill-details/${row.id}`, {
+                    state: {
+                      returnPath: '/institute/shortlisted-cadets',
+                    },
+                  })
+                }
+                title='Edit Cadet'
+              >
+                <Edit size={16} />
+              </Button>
+            ) : (
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 text-gray-600 hover:text-gray-700 hover:bg-gray-50'
+                onClick={() => navigate(`/cadets/view/${row.id}`)}
+                title='View Cadet'
+              >
+                <Eye size={16} />
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <div className='py-6 px-4 md:px-8 bg-slate-50 min-h-screen'>
+      <input
+        ref={fileInputRef}
+        type='file'
+        accept='.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        className='hidden'
+        onChange={handleCvTemplateUpload}
+      />
+
       {/* Header */}
       <PageHeader
         title="Shortlisted Cadets"
         subtitle={`${user?.first_name || 'Institute Portal'} — Shortlisted cadets from your institute`}
         icon={ListChecks}
       />
+
+      {/* Pending Academic Data Request Banners */}
+      {pendingSummary.map((summary) => {
+        const driveName = summary.drive_name || 'Unassigned / General';
+        const driveId = summary.drive_id !== null ? String(summary.drive_id) : 'null';
+        const count = summary.pending_count;
+
+        if (count === 0) return null;
+
+        return (
+          <div
+            key={driveId}
+            className='mb-6 p-4 bg-amber-50 border border-amber-300 text-amber-800 rounded-xl flex items-center justify-between gap-3 shadow-sm'
+          >
+            <div className='flex items-start gap-3'>
+              <span className='text-lg mt-0.5'>⚠️</span>
+              <div>
+                <h4 className='font-semibold text-sm text-amber-900'>Pending Request</h4>
+                <p className='text-xs text-amber-700 mt-0.5'>
+                  There are <strong>{count}</strong> cadet(s) with pending academic data requests in recruitment drive <strong>{driveName}</strong>. Please update cadet details.
+                </p>
+              </div>
+            </div>
+            {selectedDriveId !== driveId && (
+              <Button
+                variant='outline'
+                size='sm'
+                className='bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-900 text-xs font-semibold'
+                onClick={() => handleDriveFilterChange(driveId)}
+              >
+                Filter to this Drive
+              </Button>
+            )}
+          </div>
+        );
+      })}
 
       {/* Stats Card */}
       <div className='bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center justify-between'>
@@ -247,7 +451,7 @@ const InstituteShortlistedCadets = () => {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search & Filter */}
       <div className='bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6'>
         <div className='flex flex-col md:flex-row justify-between items-center gap-4'>
           <div className='flex items-center bg-gray-50 rounded-xl px-3 border border-gray-200 w-full md:w-96 focus-within:ring-2 focus-within:ring-green-100 focus-within:border-green-300 transition-all'>
@@ -259,6 +463,24 @@ const InstituteShortlistedCadets = () => {
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
             />
+          </div>
+          <div className='flex items-center gap-2 w-full md:w-auto'>
+            <label htmlFor="drive-filter" className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              Recruitment Drive:
+            </label>
+            <select
+              id="drive-filter"
+              className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl focus:ring-green-100 focus:border-green-300 block p-2.5 transition-all outline-none min-w-[200px]"
+              value={selectedDriveId}
+              onChange={(e) => handleDriveFilterChange(e.target.value)}
+            >
+              <option value="all">All Drives</option>
+              {getUniqueDrivesList().map(drive => (
+                <option key={drive.id} value={drive.id}>
+                  {drive.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

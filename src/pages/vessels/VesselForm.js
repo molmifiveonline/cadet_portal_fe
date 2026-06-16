@@ -330,7 +330,6 @@ const VesselForm = () => {
                 Joining Date
               </label>
               <div className='relative'>
-                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
                 <Input
                   name='joining_date'
                   type='date'
@@ -338,6 +337,7 @@ const VesselForm = () => {
                   onChange={handleInputChange}
                   className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
                 />
+                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
               </div>
             </div>
           </div>

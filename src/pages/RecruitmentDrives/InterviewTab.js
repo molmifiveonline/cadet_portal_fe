@@ -21,6 +21,8 @@ const DECISION_COLORS = {
   selected: "bg-green-100 text-green-700",
   rejected: "bg-red-100 text-red-700",
   waitlisted: "bg-amber-100 text-amber-700",
+  pass: "bg-green-100 text-green-700",
+  fail: "bg-red-100 text-red-700",
 };
 
 const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
@@ -165,10 +167,34 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
       renderCell: ({ row }) => formatDateForDisplay(row.interview_email_date),
     },
     {
-      field: "panel_members",
-      headerName: "Panel",
-      width: "180px",
-      renderCell: ({ value }) => value || "-",
+      field: "interviewers",
+      headerName: "Panel / Interviewers",
+      width: "220px",
+      renderCell: ({ row }) => {
+        const interviewers = row.interviewers;
+        if (interviewers) {
+          try {
+            const list = typeof interviewers === 'string' ? JSON.parse(interviewers) : interviewers;
+            if (Array.isArray(list) && list.length > 0) {
+              const formattedTitle = list.map((i) => `${i.name}${i.designation ? ` (${i.designation})` : ''}`).join(', ');
+              return (
+                <div className="flex flex-col gap-0.5 max-w-[200px] overflow-hidden py-1" title={formattedTitle}>
+                  {list.map((interviewer, idx) => (
+                    <span key={idx} className="truncate text-xs text-slate-700 block">
+                      {interviewer.name} {interviewer.designation && (
+                        <span className="text-[10px] text-slate-400 font-medium">({interviewer.designation})</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              );
+            }
+          } catch (e) {
+            console.error('Error parsing interviewers row:', e);
+          }
+        }
+        return <span className="block truncate text-slate-700">{row.panel_members || "-"}</span>;
+      },
     },
     {
       field: "evaluation_score",
@@ -189,9 +215,10 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
       width: "120px",
       renderCell: ({ value }) => {
         if (!value) return "-";
-        const tone = DECISION_COLORS[value] || "bg-slate-100 text-slate-700";
+        const normalized = value.toLowerCase();
+        const tone = DECISION_COLORS[normalized] || "bg-slate-100 text-slate-700";
         return (
-          <span className={`rounded-full px-2 py-1 text-xs font-semibold ${tone}`}>
+          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
             {value}
           </span>
         );
@@ -245,7 +272,7 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
             size="sm"
             onClick={() =>
               window.open(
-                `/cadets/interview/${row.id}?returnTo=${encodeURIComponent(returnTo)}`,
+                `/cadets/interview/${row.id}?returnTo=${encodeURIComponent(returnTo)}&view=true`,
                 "_blank",
               )
             }

@@ -102,9 +102,16 @@ const CadetDetails = () => {
           console.error('Error fetching stage data:', err);
         }
 
-        // Format dates for form
+        // Format dates and gender for form
         const formData = {
           ...data,
+          gender: data.gender
+            ? (data.gender.toLowerCase() === 'male'
+              ? 'Male'
+              : data.gender.toLowerCase() === 'female'
+              ? 'Female'
+              : data.gender)
+            : null,
           date_of_birth: formatDateForInput(data.date_of_birth),
           passing_out_date: formatDateForInput(data.passing_out_date)
         };

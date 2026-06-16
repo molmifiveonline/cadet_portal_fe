@@ -601,13 +601,7 @@ const DocumentsTab = ({ drive }) => {
                         rows={cadet.documents || []}
                         loading={false}
                         emptyMessage="No documents uploaded or requested yet."
-                        pageSize={5}
-                        pagination={{
-                          current_page: 1,
-                          per_page: Math.max((cadet.documents || []).length, 1),
-                          total: (cadet.documents || []).length,
-                          last_page: 1,
-                        }}
+                        hidePagination={true}
                       />
                     </div>
                   </div>
