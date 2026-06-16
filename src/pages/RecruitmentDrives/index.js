@@ -265,6 +265,8 @@ const RecruitmentDrives = () => {
     isOpen: false,
     driveId: null,
     driveName: "",
+    isForce: false,
+    message: "",
   });
 
   const fetchDrives = useCallback(
@@ -360,9 +362,12 @@ const RecruitmentDrives = () => {
 
   const handleConfirmDelete = async () => {
     try {
-      await api.delete(`/recruitment-drives/${deleteModal.driveId}`);
+      const url = deleteModal.isForce
+        ? `/recruitment-drives/${deleteModal.driveId}?force=true`
+        : `/recruitment-drives/${deleteModal.driveId}`;
+      await api.delete(url);
       toast.success("Recruitment drive deleted successfully");
-      setDeleteModal({ isOpen: false, driveId: null, driveName: "" });
+      setDeleteModal({ isOpen: false, driveId: null, driveName: "", isForce: false, message: "" });
 
       const targetPage =
         drives.length === 1 && pagination.current_page > 1
@@ -379,9 +384,20 @@ const RecruitmentDrives = () => {
       );
     } catch (error) {
       console.error("Error deleting recruitment drive:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to delete recruitment drive",
-      );
+      if (error.response?.status === 409 && !deleteModal.isForce) {
+        setDeleteModal({
+          isOpen: true,
+          driveId: deleteModal.driveId,
+          driveName: deleteModal.driveName,
+          isForce: true,
+          message: `${error.response.data?.message || "This recruitment drive has cadets/progress."} Force deleting it will permanently delete all associated cadet records and their progress. Are you sure you want to proceed?`,
+        });
+      } else {
+        toast.error(
+          error.response?.data?.message || "Failed to delete recruitment drive",
+        );
+        setDeleteModal({ isOpen: false, driveId: null, driveName: "", isForce: false, message: "" });
+      }
     }
   };
 
@@ -540,6 +556,8 @@ const RecruitmentDrives = () => {
                                   isOpen: true,
                                   driveId: drive.id,
                                   driveName: drive.drive_name,
+                                  isForce: false,
+                                  message: `Are you sure you want to delete "${drive.drive_name}"? This action cannot be undone.`,
                                 });
                               }}
                               className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400
@@ -759,11 +777,11 @@ const RecruitmentDrives = () => {
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={() =>
-          setDeleteModal({ isOpen: false, driveId: null, driveName: "" })
+          setDeleteModal({ isOpen: false, driveId: null, driveName: "", isForce: false, message: "" })
         }
         onConfirm={handleConfirmDelete}
-        title="Delete Recruitment Drive"
-        message={`Are you sure you want to delete "${deleteModal.driveName}"? This action cannot be undone.`}
+        title={deleteModal.isForce ? "Force Delete Recruitment Drive" : "Delete Recruitment Drive"}
+        message={deleteModal.message || `Are you sure you want to delete "${deleteModal.driveName}"? This action cannot be undone.`}
       />
     </div>
   );
