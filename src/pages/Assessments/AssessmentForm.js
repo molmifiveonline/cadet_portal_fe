@@ -47,7 +47,7 @@ const AssessmentForm = () => {
     english_test: '',
     essay_writing_mark: '',
     remarks: '',
-    status: 'pass',
+    status: 'pending',
     mark_for_interview: false,
     calculated_score: null,
   });
@@ -93,7 +93,7 @@ const AssessmentForm = () => {
             english_test: data.english_test || '',
             essay_writing_mark: data.essay_writing_mark || '',
             remarks: data.remarks || '',
-            status: data.status || 'pass',
+            status: data.status || 'pending',
             mark_for_interview: !!data.mark_for_interview,
             calculated_score: data.calculated_score || null,
           });
@@ -160,6 +160,11 @@ const AssessmentForm = () => {
         newErrors[field.key] = `${field.name} is required`;
         hasError = true;
       }
+    }
+
+    if (!formData.status || formData.status === 'pending') {
+      newErrors.status = 'Overall assessment status is required';
+      hasError = true;
     }
 
     if (hasError) {
@@ -473,14 +478,23 @@ const AssessmentForm = () => {
                   </label>
                   <Select
                     value={formData.status}
-                    onValueChange={(val) =>
-                      setFormData((prev) => ({ ...prev, status: val }))
-                    }
+                    onValueChange={(val) => {
+                      setFormData((prev) => ({ ...prev, status: val }));
+                      if (errors.status) {
+                        setErrors((prev) => ({ ...prev, status: '' }));
+                      }
+                    }}
                   >
                     <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
                       <SelectValue placeholder='Select outcome' />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value='pending'>
+                        <div className='flex items-center gap-2 text-gray-500'>
+                          <AlertCircle size={16} />
+                          <span>Pending</span>
+                        </div>
+                      </SelectItem>
                       <SelectItem value='pass'>
                         <div className='flex items-center gap-2 text-green-600'>
                           <CheckCircle size={16} />
@@ -495,6 +509,7 @@ const AssessmentForm = () => {
                       </SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.status && <p className={errorTextClass}>{errors.status}</p>}
                 </div>
 
                 <div className='space-y-2'>
