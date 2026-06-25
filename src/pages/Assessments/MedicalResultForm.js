@@ -8,6 +8,8 @@ import {
   Activity,
   MessageSquare,
   Loader2,
+  X,
+  Plus
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
@@ -22,6 +24,62 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 
+const MultiSelectDropdown = ({ options, value, onChange, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedValues = Array.isArray(value) ? value : [];
+  
+  return (
+    <div className="relative">
+      <div 
+        onClick={() => setOpen(!open)}
+        className="flex min-h-[40px] w-full cursor-pointer flex-wrap items-center gap-1 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm outline-none hover:border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+      >
+        {selectedValues.length === 0 ? (
+          <span className="text-gray-500">{placeholder || "Select..."}</span>
+        ) : (
+          <span className="truncate">{selectedValues.length} selected</span>
+        )}
+      </div>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-[55]" onClick={() => setOpen(false)} />
+          <div className="absolute z-[60] mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+            <div
+              className="flex cursor-pointer items-center px-3 py-2 text-sm hover:bg-gray-50"
+              onClick={() => {
+                 if (selectedValues.length === options.length && options.length > 0) {
+                   onChange([]);
+                 } else {
+                   onChange(options.map(o => o.value));
+                 }
+              }}
+            >
+              <input type="checkbox" checked={selectedValues.length === options.length && options.length > 0} readOnly className="mr-2" />
+              <span className="font-medium">Select All</span>
+            </div>
+            {options.map(option => (
+              <div
+                key={option.value}
+                className="flex cursor-pointer items-center px-3 py-2 text-sm hover:bg-gray-50"
+                onClick={() => {
+                  if (selectedValues.includes(option.value)) {
+                    onChange(selectedValues.filter(v => v !== option.value));
+                  } else {
+                    onChange([...selectedValues, option.value]);
+                  }
+                }}
+              >
+                <input type="checkbox" checked={selectedValues.includes(option.value)} readOnly className="mr-2" />
+                <span>{option.label}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 const MedicalResultForm = () => {
   const { cadet_id } = useParams();
   const navigate = useNavigate();
@@ -29,18 +87,16 @@ const MedicalResultForm = () => {
   const [saving, setSaving] = useState(false);
   const [cadet, setCadet] = useState(null);
   const [medicalCenters, setMedicalCenters] = useState([]);
+  const [medicalReports, setMedicalReports] = useState([]);
+  const [assignedReports, setAssignedReports] = useState([]);
   const [reportFile, setReportFile] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [formData, setFormData] = useState({
-    medical_date: new Date().toISOString().split('T')[0],
-    medical_time: '',
-    medical_center_id: '',
-    fit_status: 'fit',
+    appointments: [{ medical_date: new Date().toISOString().split('T')[0], medical_time: '', medical_center_id: '', medical_reports: [] }],
     final_decision: 'pass',
-    psychometric_status: 'pending',
-    profiling_status: 'pending',
     remarks: '',
+    report_results: [],
   });
 
 
@@ -50,29 +106,59 @@ const MedicalResultForm = () => {
       const cadetRes = await api.get(`/cadets/${cadet_id}`);
       setCadet(cadetRes.data?.data || null);
 
-      // Fetch medical centers
-      const centersRes = await api.get('/medical-centers');
+      const [centersRes, reportsRes] = await Promise.all([
+        api.get('/medical-centers'),
+        api.get('/medical-reports')
+      ]);
+
       if (centersRes.data.success) {
         setMedicalCenters(centersRes.data.data);
       }
+      
+      const allReports = reportsRes.data?.data || [];
+      setMedicalReports(allReports);
 
       try {
         const medicalRes = await api.get(`/medical-results/${cadet_id}`);
         if (medicalRes.data.success && medicalRes.data.data) {
           const data = medicalRes.data.data;
+          let parsedAppointments = [];
+          try {
+            parsedAppointments = typeof data.appointments === 'string' ? JSON.parse(data.appointments) : (data.appointments || []);
+          } catch(e) {}
+          
+          let parsedReportResults = [];
+          try {
+            parsedReportResults = typeof data.report_results === 'string' ? JSON.parse(data.report_results) : (data.report_results || []);
+          } catch(e) {}
+
+          const assignedReportIds = new Set();
+          parsedAppointments.forEach(app => {
+            (app.medical_reports || []).forEach(rId => assignedReportIds.add(rId));
+          });
+          
+          const initialReportResults = Array.from(assignedReportIds).map(rId => {
+            const existing = parsedReportResults.find(r => String(r.report_id) === String(rId));
+            return existing || { report_id: rId, status: 'pending', remarks: '' };
+          });
+          
+          parsedReportResults.forEach(pr => {
+             if (!assignedReportIds.has(String(pr.report_id))) {
+               initialReportResults.push(pr);
+             }
+          });
+
+          const assignedList = initialReportResults.map(r => {
+             const reportDef = allReports.find(mr => String(mr.id) === String(r.report_id));
+             return { id: r.report_id, name: reportDef ? reportDef.name : r.report_id };
+          });
+          setAssignedReports(assignedList);
+
           setFormData({
-            medical_date: data.medical_date
-              ? data.medical_date.split('T')[0]
-              : new Date().toISOString().split('T')[0],
-            medical_time: data.medical_time || '',
-            medical_center_id: data.medical_center_id || '',
-            fit_status: data.fit_status || 'fit',
-            final_decision:
-              data.final_decision ||
-              (data.fit_status === 'fit' ? 'pass' : 'fail'),
-            psychometric_status: data.psychometric_status || 'pending',
-            profiling_status: data.profiling_status || 'pending',
+            appointments: parsedAppointments.length > 0 ? parsedAppointments : [{ medical_date: new Date().toISOString().split('T')[0], medical_time: '', medical_center_id: '', medical_reports: [] }],
+            final_decision: data.final_decision || 'pass',
             remarks: data.remarks || '',
+            report_results: initialReportResults,
           });
         }
       } catch (err) {
@@ -89,6 +175,20 @@ const MedicalResultForm = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    // Dynamically update assigned reports list when appointments change
+    const assignedReportIds = new Set();
+    formData.appointments.forEach(app => {
+      (app.medical_reports || []).forEach(rId => assignedReportIds.add(rId));
+    });
+    
+    const assignedList = Array.from(assignedReportIds).map(rId => {
+       const reportDef = medicalReports.find(mr => String(mr.id) === String(rId));
+       return { id: rId, name: reportDef ? reportDef.name : rId };
+    });
+    setAssignedReports(assignedList);
+  }, [formData.appointments, medicalReports]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -110,16 +210,8 @@ const MedicalResultForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.medical_date) {
-      toast.error('Examination date is required');
-      return;
-    }
-    if (!formData.medical_time) {
-      toast.error('Examination time is required');
-      return;
-    }
-    if (!formData.medical_center_id) {
-      toast.error('Medical center is required');
+    if (formData.appointments.some(a => !a.medical_date || !a.medical_time || !a.medical_center_id)) {
+      toast.error('All appointments must have a date, time, and medical center.');
       return;
     }
     if (cadet && !Number(cadet.institute_detail_filled || 0)) {
@@ -133,17 +225,22 @@ const MedicalResultForm = () => {
     setSaving(true);
     try {
       const data = new FormData();
-      data.append('medical_date', formData.medical_date);
-      data.append('medical_time', formData.medical_time);
-      data.append('medical_center_id', formData.medical_center_id);
-      data.append('fit_status', formData.fit_status);
       data.append('final_decision', formData.final_decision);
-      data.append('psychometric_status', formData.psychometric_status);
-      data.append('profiling_status', formData.profiling_status);
       data.append('remarks', formData.remarks);
+      data.append('appointments', JSON.stringify(formData.appointments));
 
       if (reportFile) {
         data.append('report', reportFile);
+      }
+
+      if (formData.report_results && formData.report_results.length > 0) {
+        // filter report results to only include those that are currently assigned
+        const assignedReportIds = new Set();
+        formData.appointments.forEach(app => {
+          (app.medical_reports || []).forEach(rId => assignedReportIds.add(rId));
+        });
+        const activeResults = formData.report_results.filter(r => assignedReportIds.has(r.report_id));
+        data.append('report_results', JSON.stringify(activeResults));
       }
 
       await api.post(`/medical-results/${cadet_id}`, data, {
@@ -186,151 +283,197 @@ const MedicalResultForm = () => {
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8'>
         <form onSubmit={handleSubmit} className='space-y-8'>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Examination Date <span className="text-red-500">*</span>
-              </label>
-              <div className='relative'>
-                <Input
-                  type='date'
-                  name='medical_date'
-                  value={formData.medical_date}
-                  onChange={handleInputChange}
-                  className='pl-10'
-                  required
-                />
-                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
+          <div className='space-y-6'>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">Appointments</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {formData.appointments.map((appt, index) => (
+                <div key={index} className="relative rounded-lg border border-gray-200 bg-gray-50 p-4 pt-8">
+                  {formData.appointments.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newAppts = [...formData.appointments];
+                        newAppts.splice(index, 1);
+                        setFormData(p => ({ ...p, appointments: newAppts }));
+                      }}
+                      className="absolute right-2 top-2 rounded p-1 text-gray-400 hover:bg-gray-200 hover:text-red-500"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className='space-y-2'>
+                      <label className='text-sm font-medium text-gray-700'>
+                        Medical Center <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        value={appt.medical_center_id}
+                        onValueChange={(val) => {
+                          const newAppts = [...formData.appointments];
+                          newAppts[index].medical_center_id = val;
+                          setFormData(p => ({ ...p, appointments: newAppts }));
+                        }}
+                        required
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder='Select medical center' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {medicalCenters.map((center) => (
+                            <SelectItem key={center.id} value={center.id}>
+                              {center.center_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className='space-y-2'>
+                      <label className='text-sm font-medium text-gray-700'>
+                        Examination Date <span className="text-red-500">*</span>
+                      </label>
+                      <div className='relative'>
+                        <Input
+                          type='date'
+                          value={appt.medical_date}
+                          onChange={(e) => {
+                            const newAppts = [...formData.appointments];
+                            newAppts[index].medical_date = e.target.value;
+                            setFormData(p => ({ ...p, appointments: newAppts }));
+                          }}
+                          className='pl-10 bg-white'
+                          required
+                        />
+                        <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
+                      </div>
+                    </div>
+
+                    <div className='space-y-2'>
+                      <label className='text-sm font-medium text-gray-700'>
+                        Examination Time <span className="text-red-500">*</span>
+                      </label>
+                      <div className='relative'>
+                        <Activity className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
+                        <Input
+                          type='time'
+                          value={appt.medical_time}
+                          onChange={(e) => {
+                            const newAppts = [...formData.appointments];
+                            newAppts[index].medical_time = e.target.value;
+                            setFormData(p => ({ ...p, appointments: newAppts }));
+                          }}
+                          className='pl-10 bg-white'
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className='space-y-2'>
+                      <label className='text-sm font-medium text-gray-700'>
+                        Medical Reports
+                      </label>
+                      <MultiSelectDropdown
+                        options={medicalReports.map(r => ({ label: r.name, value: r.id }))}
+                        value={appt.medical_reports}
+                        onChange={(val) => {
+                          const newAppts = [...formData.appointments];
+                          newAppts[index].medical_reports = val;
+                          setFormData(p => ({ ...p, appointments: newAppts }));
+                        }}
+                        placeholder="Select medical reports"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFormData(p => ({
+                    ...p,
+                    appointments: [
+                      ...p.appointments,
+                      { medical_date: new Date().toISOString().split('T')[0], medical_time: '', medical_center_id: '', medical_reports: [] }
+                    ]
+                  }));
+                }}
+                className="w-full border-dashed"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add More Appointments
+              </Button>
+            </div>
+            
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100'>
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  Final Decision
+                </label>
+                <Select
+                  value={formData.final_decision}
+                  onValueChange={(val) =>
+                    setFormData((p) => ({ ...p, final_decision: val }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder='Select final decision' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value='pass'>Pass</SelectItem>
+                    <SelectItem value='fail'>Fail</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Examination Time <span className="text-red-500">*</span>
-              </label>
-              <div className='relative'>
-                <Activity className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
-                <Input
-                  type='time'
-                  name='medical_time'
-                  value={formData.medical_time}
-                  onChange={handleInputChange}
-                  className='pl-10'
-                  required
-                />
-              </div>
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Medical Center <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.medical_center_id}
-                onValueChange={(val) =>
-                  setFormData((p) => ({ ...p, medical_center_id: val }))
-                }
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select medical center' />
-                </SelectTrigger>
-                <SelectContent>
-                  {medicalCenters.map((center) => (
-                    <SelectItem key={center.id} value={center.id}>
-                      {center.center_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Fitness Outcome
-              </label>
-              <Select
-                value={formData.fit_status}
-                onValueChange={(val) =>
-                  setFormData((p) => ({ ...p, fit_status: val }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select status' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='fit'>Fit for Sea Service</SelectItem>
-                  <SelectItem value='unfit'>Unfit</SelectItem>
-                  <SelectItem value='fit_with_rest'>
-                    Fit with Restrictions
-                  </SelectItem>
-                  <SelectItem value='pending'>Pending Investigation</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Psychometric Test
-              </label>
-              <Select
-                value={formData.psychometric_status}
-                onValueChange={(val) =>
-                  setFormData((p) => ({ ...p, psychometric_status: val }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select psychometric status' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='pending'>Pending</SelectItem>
-                  <SelectItem value='pass'>Pass</SelectItem>
-                  <SelectItem value='fail'>Fail</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Profiling Test
-              </label>
-              <Select
-                value={formData.profiling_status}
-                onValueChange={(val) =>
-                  setFormData((p) => ({ ...p, profiling_status: val }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select profiling status' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='pending'>Pending</SelectItem>
-                  <SelectItem value='pass'>Pass</SelectItem>
-                  <SelectItem value='fail'>Fail</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Final Decision
-              </label>
-              <Select
-                value={formData.final_decision}
-                onValueChange={(val) =>
-                  setFormData((p) => ({ ...p, final_decision: val }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select final decision' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='pass'>Pass</SelectItem>
-                  <SelectItem value='fail'>Fail</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
+
+          {assignedReports.length > 0 && (
+            <div className='space-y-4 rounded-xl border border-blue-100 bg-blue-50/30 p-6'>
+              <h3 className='text-sm font-bold uppercase tracking-wider text-blue-800'>
+                Individual Report Outcomes
+              </h3>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                {assignedReports.map((report) => {
+                  const resultIdx = formData.report_results.findIndex(r => String(r.report_id) === String(report.id));
+                  const result = resultIdx >= 0 ? formData.report_results[resultIdx] : { status: 'pending', remarks: '' };
+
+                  return (
+                    <div key={report.id} className='rounded-lg border border-white bg-white/60 p-4 shadow-sm'>
+                      <label className='text-sm font-medium text-slate-800 mb-2 block'>
+                        {report.name}
+                      </label>
+                      <Select
+                        value={result.status}
+                        onValueChange={(val) => {
+                          const newResults = [...formData.report_results];
+                          if (resultIdx >= 0) {
+                            newResults[resultIdx] = { ...newResults[resultIdx], status: val };
+                          } else {
+                            newResults.push({ report_id: report.id, status: val, remarks: '' });
+                          }
+                          setFormData(p => ({ ...p, report_results: newResults }));
+                        }}
+                      >
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder='Select status' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value='pending'>Pending</SelectItem>
+                          <SelectItem value='pass'>Pass</SelectItem>
+                          <SelectItem value='fail'>Fail</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className='space-y-2'>
             {' '}

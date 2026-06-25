@@ -3,11 +3,23 @@ import { Loader2, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 
+const buildInitialBlock = (subFields) => {
+  const block = {};
+  subFields.forEach((f) => {
+    block[f.key] = f.defaultValue ?? (f.type === "multiselect" ? [] : "");
+  });
+  return block;
+};
+
 const buildInitialEntries = (cadets, fields) =>
   cadets.map((cadet) => {
     const entry = { cadet_id: cadet.id };
     fields.filter(f => !f.global).forEach((field) => {
-      entry[field.key] = field.defaultValue ?? "";
+      if (field.type === "repeater") {
+        entry[field.key] = [buildInitialBlock(field.subFields)];
+      } else {
+        entry[field.key] = field.defaultValue ?? (field.type === "multiselect" ? [] : "");
+      }
     });
     return entry;
   });
@@ -15,9 +27,65 @@ const buildInitialEntries = (cadets, fields) =>
 const buildInitialGlobalValues = (fields) => {
   const globalValues = {};
   fields.filter(f => f.global).forEach(field => {
-    globalValues[field.key] = field.defaultValue ?? (field.type === 'file' ? null : "");
+    globalValues[field.key] = field.defaultValue ?? (field.type === 'file' ? null : (field.type === 'multiselect' ? [] : ""));
   });
   return globalValues;
+};
+
+const MultiSelectDropdown = ({ options, value, onChange, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedValues = Array.isArray(value) ? value : [];
+  
+  return (
+    <div className="relative">
+      <div 
+        onClick={() => setOpen(!open)}
+        className="flex min-h-[38px] w-full cursor-pointer flex-wrap items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm outline-none hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+      >
+        {selectedValues.length === 0 ? (
+          <span className="text-slate-500">{placeholder || "Select..."}</span>
+        ) : (
+          <span className="truncate">{selectedValues.length} selected</span>
+        )}
+      </div>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-[55]" onClick={() => setOpen(false)} />
+          <div className="absolute z-[60] mt-1 max-h-60 w-full overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg">
+            <div
+              className="flex cursor-pointer items-center px-3 py-2 text-sm hover:bg-slate-50"
+              onClick={() => {
+                 if (selectedValues.length === options.length && options.length > 0) {
+                   onChange([]);
+                 } else {
+                   onChange(options.map(o => o.value));
+                 }
+              }}
+            >
+              <input type="checkbox" checked={selectedValues.length === options.length && options.length > 0} readOnly className="mr-2" />
+              <span className="font-medium">Select All</span>
+            </div>
+            {options.map(option => (
+              <div
+                key={option.value}
+                className="flex cursor-pointer items-center px-3 py-2 text-sm hover:bg-slate-50"
+                onClick={() => {
+                  if (selectedValues.includes(option.value)) {
+                    onChange(selectedValues.filter(v => v !== option.value));
+                  } else {
+                    onChange([...selectedValues, option.value]);
+                  }
+                }}
+              >
+                <input type="checkbox" checked={selectedValues.includes(option.value)} readOnly className="mr-2" />
+                <span>{option.label}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
 const StageInviteModal = ({
@@ -64,9 +132,27 @@ const StageInviteModal = ({
 
     const missingField = entries.some((entry) =>
       fields.filter(f => !f.global).some(
-        (field) =>
-          field.required &&
-          (entry[field.key] === "" || entry[field.key] === null || entry[field.key] === undefined),
+        (field) => {
+          if (field.type === "repeater") {
+            return entry[field.key].some((block) =>
+              field.subFields.some(
+                (sub) =>
+                  sub.required &&
+                  (block[sub.key] === "" ||
+                    block[sub.key] === null ||
+                    block[sub.key] === undefined ||
+                    (Array.isArray(block[sub.key]) && block[sub.key].length === 0)),
+              ),
+            );
+          }
+          return (
+            field.required &&
+            (entry[field.key] === "" ||
+              entry[field.key] === null ||
+              entry[field.key] === undefined ||
+              (Array.isArray(entry[field.key]) && entry[field.key].length === 0))
+          );
+        }
       ),
     );
 
@@ -101,7 +187,7 @@ const StageInviteModal = ({
     await onSubmit(formData, submissions);
   };
 
-  const renderField = (field, value, onChange) => {
+  const renderField = (field, value, onChange, entryBlock = {}) => {
     if (field.type === "textarea") {
       return (
         <textarea
@@ -115,6 +201,7 @@ const StageInviteModal = ({
     }
 
     if (field.type === "select") {
+      const options = field.getOptions ? field.getOptions(entryBlock) : (field.options || []);
       return (
         <select
           value={value}
@@ -122,7 +209,7 @@ const StageInviteModal = ({
           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         >
           <option value="">{field.placeholder || "Select option"}</option>
-          {(field.options || []).map((option) => (
+          {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -138,6 +225,74 @@ const StageInviteModal = ({
           onChange={(event) => onChange(event.target.files[0])}
           className="cursor-pointer"
         />
+      );
+    }
+
+    if (field.type === "multiselect") {
+      const options = field.getOptions ? field.getOptions(entryBlock) : (field.options || []);
+      return (
+        <MultiSelectDropdown
+          options={options}
+          value={value}
+          onChange={onChange}
+          placeholder={field.placeholder}
+        />
+      );
+    }
+
+    if (field.type === "repeater") {
+      const blocks = value || [];
+      return (
+        <div className="col-span-full space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+          {blocks.map((block, index) => (
+            <div key={index} className="relative rounded-md border border-slate-100 bg-slate-50 p-3 pt-6">
+              {blocks.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newBlocks = [...blocks];
+                    newBlocks.splice(index, 1);
+                    onChange(newBlocks);
+                  }}
+                  className="absolute right-2 top-2 rounded p-1 text-slate-400 hover:bg-slate-200 hover:text-red-500"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {field.subFields.map((subField) => (
+                  <div key={subField.key} className={subField.type === "textarea" ? "md:col-span-2" : ""}>
+                    <label className="mb-2 block text-xs font-medium text-slate-700">
+                      {subField.label}
+                      {subField.required ? <span className="ml-1 text-red-500">*</span> : null}
+                    </label>
+                    {renderField(
+                      subField,
+                      block[subField.key],
+                      (val) => {
+                        const newBlocks = [...blocks];
+                        newBlocks[index] = { ...newBlocks[index], [subField.key]: val };
+                        onChange(newBlocks);
+                      },
+                      block
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              onChange([...blocks, buildInitialBlock(field.subFields)]);
+            }}
+            className="w-full border-dashed"
+          >
+            + Add {field.addLabel || "More"}
+          </Button>
+        </div>
       );
     }
 
@@ -224,7 +379,7 @@ const StageInviteModal = ({
                       {perCadetFields.map((field) => (
                         <div
                           key={`${entry.cadet_id}-${field.key}`}
-                          className={field.type === "textarea" ? "md:col-span-2" : ""}
+                          className={field.type === "textarea" || field.type === "repeater" ? "md:col-span-2" : ""}
                         >
                           <label className="mb-2 block text-sm font-medium text-slate-700">
                             {field.label}
@@ -232,7 +387,7 @@ const StageInviteModal = ({
                               <span className="ml-1 text-red-500">*</span>
                             ) : null}
                           </label>
-                          {renderField(field, entry[field.key], (val) => updateEntry(entry.cadet_id, field.key, val))}
+                          {renderField(field, entry[field.key], (val) => updateEntry(entry.cadet_id, field.key, val), entry)}
                         </div>
                       ))}
                     </div>
