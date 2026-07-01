@@ -43,7 +43,6 @@ const AssessmentForm = () => {
     assessment_time: '',
     ces_test: '',
     ces_test_2: '',
-    qa_test: '',
     english_test: '',
     essay_writing_mark: '',
     remarks: '',
@@ -89,7 +88,6 @@ const AssessmentForm = () => {
             assessment_time: data.assessment_time || '',
             ces_test: data.ces_test || '',
             ces_test_2: data.ces_test_2 || '',
-            qa_test: data.qa_test || '',
             english_test: data.english_test || '',
             essay_writing_mark: data.essay_writing_mark || '',
             remarks: data.remarks || '',
@@ -143,7 +141,6 @@ const AssessmentForm = () => {
       { key: 'assessment_date', name: 'Assessment Date' },
       { key: 'assessment_time', name: 'Assessment Time' },
       { key: 'ces_test', name: 'CES Test (Attempt 1)' },
-      { key: 'qa_test', name: 'QA Test Score' },
       { key: 'english_test', name: 'English Test Score' },
       { key: 'essay_writing_mark', name: 'Essay Writing Mark' },
     ];
@@ -189,7 +186,6 @@ const AssessmentForm = () => {
       data.append('assessment_time', formData.assessment_time);
       data.append('ces_test', formData.ces_test);
       data.append('ces_test_2', formData.ces_test_2);
-      data.append('qa_test', formData.qa_test);
       data.append('english_test', formData.english_test);
       data.append('essay_writing_mark', formData.essay_writing_mark);
       data.append('remarks', formData.remarks);
@@ -370,23 +366,7 @@ const AssessmentForm = () => {
                 </p>
               </div>
 
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-700'>
-                  QA Test Score <span className="text-red-500">*</span>
-                </label>
-                <div className='relative'>
-                  <ClipboardList className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
-                  <Input
-                    name='qa_test'
-                    value={formData.qa_test}
-                    onChange={handleInputChange}
-                    placeholder='Enter score'
-                    invalid={!!errors.qa_test}
-                    className={inputClass}
-                  />
-                </div>
-                {errors.qa_test && <p className={errorTextClass}>{errors.qa_test}</p>}
-              </div>
+
 
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700'>
