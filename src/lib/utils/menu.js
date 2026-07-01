@@ -65,10 +65,23 @@ export const MenuItems = [
   {
     title: "Medical Center",
     icon: FileBadge,
-    url: "/medical-centers",
     module: "medical-centers",
     action: "view",
     allowedRoles: ["SuperAdmin", "Institute"],
+    subItems: [
+      {
+        title: "All Medical Centers",
+        url: "/medical-centers",
+        module: "medical-centers",
+        action: "view",
+      },
+      {
+        title: "Medical Reports",
+        url: "/medical-reports",
+        module: "medical-centers",
+        action: "view",
+      },
+    ],
   },
   // {
   //   title: 'Cadet Management',

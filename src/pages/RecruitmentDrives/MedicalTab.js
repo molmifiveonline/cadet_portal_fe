@@ -144,6 +144,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
   const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
   const [medicalCenters, setMedicalCenters] = useState([]);
+  const [medicalReports, setMedicalReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCadets, setSelectedCadets] = useState([]);
@@ -179,14 +180,16 @@ const MedicalTab = ({ drive, onRefresh }) => {
   const fetchData = useCallback(async (isFreshLoad = false) => {
     try {
       setLoading(true);
-      const [cadetResponse, centerResponse] = await Promise.all([
+      const [cadetResponse, centerResponse, reportsResponse] = await Promise.all([
         api.get(`/recruitment-drives/${drive.id}/cadets?queue=medical`),
         api.get("/medical-centers"),
+        api.get("/medical-reports"),
       ]);
 
       const cadetsList = cadetResponse.data?.data || [];
       setCadets(cadetsList);
       setMedicalCenters(centerResponse.data?.data || []);
+      setMedicalReports(reportsResponse.data?.data || []);
 
       if (isFreshLoad) {
         const groups = {
@@ -1170,24 +1173,58 @@ const MedicalTab = ({ drive, onRefresh }) => {
         loading={sendingInvites}
         fields={[
           {
-            key: "medical_center_id",
-            label: "Medical Center",
-            type: "select",
-            required: true,
-            options: medicalCenterOptions,
-            placeholder: "Select medical center",
-          },
-          {
-            key: "medical_date",
-            label: "Medical Date",
-            type: "date",
-            required: true,
-          },
-          {
-            key: "medical_time",
-            label: "Medical Time",
-            type: "time",
-            required: true,
+            key: "appointments",
+            label: "Appointments",
+            type: "repeater",
+            addLabel: "Appointment",
+            subFields: [
+              {
+                key: "medical_date",
+                label: "Medical Date",
+                type: "date",
+                required: true,
+              },
+              {
+                key: "medical_time",
+                label: "Medical Time",
+                type: "time",
+                required: true,
+              },
+              {
+                key: "medical_center_id",
+                label: "Medical Center",
+                type: "select",
+                required: true,
+                options: medicalCenterOptions,
+                placeholder: "Select medical center",
+              },
+              {
+                key: "medical_reports",
+                label: "Medical Reports",
+                type: "multiselect",
+                placeholder: "Select reports",
+                getOptions: (block) => {
+                  const centerId = block?.medical_center_id;
+                  if (!centerId) return [];
+                  const center = medicalCenters.find(c => String(c.id) === String(centerId));
+                  if (!center || !center.medical_reports) return [];
+                  let reportIds = [];
+                  try {
+                    reportIds = typeof center.medical_reports === 'string' 
+                      ? JSON.parse(center.medical_reports) 
+                      : center.medical_reports;
+                  } catch (e) {
+                    return [];
+                  }
+                  if (!Array.isArray(reportIds)) return [];
+                  
+                  return reportIds.map(rId => {
+                    const r = medicalReports.find(mr => String(mr.id) === String(rId));
+                    return { value: rId, label: r ? r.name : rId };
+                  });
+                }
+              }
+            ]
           },
           {
             key: "remarks",

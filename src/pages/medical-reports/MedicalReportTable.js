@@ -2,11 +2,7 @@ import React, { useState } from 'react';
 import {
   Trash2,
   Search,
-  MapPin,
-  Activity,
-  User,
-  Mail,
-  Stethoscope,
+  ClipboardList,
   Edit,
 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
@@ -14,8 +10,8 @@ import DeleteConfirmationModal from '../../components/common/DeleteConfirmationM
 import Permission from '../../components/common/Permission';
 import { Button } from '../../components/ui/button';
 
-const MedicalCenterTable = ({
-  centers,
+const MedicalReportTable = ({
+  reports,
   loading,
   searchTerm,
   pagination,
@@ -27,12 +23,12 @@ const MedicalCenterTable = ({
   handleSortChange,
   handleSearch,
 }) => {
-  const [deleteCenter, setDeleteCenter] = useState(null);
+  const [deleteReport, setDeleteReport] = useState(null);
 
   const confirmDelete = () => {
-    if (deleteCenter) {
-      handleDelete(deleteCenter.id, deleteCenter.center_name);
-      setDeleteCenter(null);
+    if (deleteReport) {
+      handleDelete(deleteReport.id);
+      setDeleteReport(null);
     }
   };
 
@@ -44,69 +40,18 @@ const MedicalCenterTable = ({
       sortable: false,
       renderCell: ({ index }) => (
         <span className='text-sm text-gray-500 font-medium'>
-          {(pagination?.page - 1) * pagination?.limit + index + 1}
+          {pagination?.page ? (pagination.page - 1) * pagination.limit + index + 1 : index + 1}
         </span>
       ),
     },
     {
-      field: 'center_name',
-      headerName: 'Center Name',
+      field: 'name',
+      headerName: 'Report Name',
       sortable: true,
       renderCell: ({ row }) => (
         <div className='flex items-center gap-2'>
-          <Stethoscope size={16} className='text-blue-500 flex-shrink-0' />
-          <span className='font-semibold text-gray-900'>{row.center_name}</span>
-        </div>
-      ),
-    },
-    {
-      field: 'location',
-      headerName: 'Location',
-      sortable: true,
-      renderCell: ({ row }) => (
-        <div className='flex items-center gap-2 text-sm text-gray-600'>
-          <MapPin size={14} className='flex-shrink-0 text-gray-400' />
-          <span>{row.location}</span>
-        </div>
-      ),
-    },
-    {
-      field: 'medical_reports',
-      headerName: 'Reports Offered',
-      sortable: false,
-      renderCell: ({ row }) => (
-        <div className='flex items-center gap-2 text-sm text-gray-600'>
-          <Activity size={14} className='flex-shrink-0 text-gray-400' />
-          <span>
-            {row.medical_reports_names && row.medical_reports_names.length > 0
-              ? row.medical_reports_names.join(', ')
-              : (row.tests_offered || '-')}
-          </span>
-        </div>
-      ),
-    },
-    {
-      field: 'contact_person',
-      headerName: 'Contact Person',
-      sortable: true,
-      renderCell: ({ row }) => (
-        <div className='flex items-center gap-2 text-sm text-gray-600'>
-          <User size={14} className='flex-shrink-0 text-gray-400' />
-          <span>{row.contact_person || '-'}</span>
-        </div>
-      ),
-    },
-    {
-      field: 'email',
-      headerName: 'Email',
-      sortable: true,
-      renderCell: ({ row }) => (
-        <div
-          className='flex items-center gap-2 text-sm text-gray-600'
-          title={row.email}
-        >
-          <Mail size={14} className='flex-shrink-0 text-gray-400' />
-          <span className='break-all'>{row.email || '-'}</span>
+          <ClipboardList size={16} className='text-blue-500 flex-shrink-0' />
+          <span className='font-semibold text-gray-900'>{row.name}</span>
         </div>
       ),
     },
@@ -145,7 +90,7 @@ const MedicalCenterTable = ({
               size='icon'
               onClick={() => handleEdit(row)}
               className='p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors'
-              title='Edit center'
+              title='Edit report'
             >
               <Edit size={16} />
             </Button>
@@ -154,9 +99,9 @@ const MedicalCenterTable = ({
             <Button
               variant='ghosy'
               size='icon'
-              onClick={() => setDeleteCenter(row)}
+              onClick={() => setDeleteReport(row)}
               className='p-2 rounded-lg text-red-600 hover:bg-red-100 transition-colors'
-              title='Delete center'
+              title='Delete report'
             >
               <Trash2 size={16} />
             </Button>
@@ -174,7 +119,7 @@ const MedicalCenterTable = ({
             <Search className='text-gray-400' size={18} />
             <input
               type='text'
-              placeholder='Search by center name, location, contact...'
+              placeholder='Search by report name...'
               className='w-full p-2.5 bg-transparent outline-none text-gray-700 placeholder-gray-400 text-sm'
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
@@ -187,34 +132,34 @@ const MedicalCenterTable = ({
         <ReusableDataTable
           sortConfig={sortConfig}
           columns={columns}
-          rows={centers}
+          rows={reports}
           loading={loading}
-          pagination={{
+          pagination={pagination ? {
             ...pagination,
             current_page: pagination.page,
             per_page: pagination.limit,
-          }}
+          } : undefined}
           handlePageChange={handlePageChange}
           handlePerPageChange={handlePerPageChange}
           handleSortChange={handleSortChange}
           checkboxSelection={false}
           emptyMessage={
             searchTerm
-              ? `No medical centers found matching "${searchTerm}"`
-              : 'No medical centers available'
+              ? `No medical reports found matching "${searchTerm}"`
+              : 'No medical reports available'
           }
         />
       </div>
 
       <DeleteConfirmationModal
-        isOpen={!!deleteCenter}
-        onClose={() => setDeleteCenter(null)}
+        isOpen={!!deleteReport}
+        onClose={() => setDeleteReport(null)}
         onConfirm={confirmDelete}
-        title='Delete Medical Center'
-        message={`Are you sure you want to delete ${deleteCenter?.center_name}? This action cannot be undone.`}
+        title='Delete Medical Report'
+        message={`Are you sure you want to delete "${deleteReport?.name}"? This action cannot be undone.`}
       />
     </>
   );
 };
 
-export default MedicalCenterTable;
+export default MedicalReportTable;

@@ -38,6 +38,8 @@ const VesselList = lazy(() => import('./pages/vessels'));
 const VesselForm = lazy(() => import('./pages/vessels/VesselForm'));
 const MedicalCenterList = lazy(() => import('./pages/medical-centers'));
 const MedicalCenterForm = lazy(() => import('./pages/medical-centers/MedicalCenterForm'));
+const MedicalReportList = lazy(() => import('./pages/medical-reports'));
+const MedicalReportForm = lazy(() => import('./pages/medical-reports/MedicalReportForm'));
 const AssessmentForm = lazy(() => import('./pages/Assessments/AssessmentForm'));
 const AssessmentManagement = lazy(() => import('./pages/Assessments'));
 const InterviewForm = lazy(() => import('./pages/Assessments/InterviewForm'));
@@ -521,6 +523,46 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='medical-centers' action='edit'>
                       <MedicalCenterForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Medical Report Master Routes */}
+            <Route
+              path='/medical-reports'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='view'>
+                      <MedicalReportList />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-reports/add'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='create'>
+                      <MedicalReportForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-reports/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='edit'>
+                      <MedicalReportForm />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
