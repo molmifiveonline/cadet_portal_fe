@@ -9,7 +9,9 @@ import {
   MessageSquare,
   Loader2,
   X,
-  Plus
+  Plus,
+  Eye,
+  FileText
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
@@ -89,7 +91,8 @@ const MedicalResultForm = () => {
   const [medicalCenters, setMedicalCenters] = useState([]);
   const [medicalReports, setMedicalReports] = useState([]);
   const [assignedReports, setAssignedReports] = useState([]);
-  const [reportFile, setReportFile] = useState(null);
+  const [reportFiles, setReportFiles] = useState([]);
+  const [existingFiles, setExistingFiles] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -160,6 +163,7 @@ const MedicalResultForm = () => {
             remarks: data.remarks || '',
             report_results: initialReportResults,
           });
+          setExistingFiles(data.files || []);
         }
       } catch (err) {
         console.log('No existing medical result found');
@@ -196,16 +200,19 @@ const MedicalResultForm = () => {
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    const validFiles = [];
+    let hasError = false;
+    for (const file of files) {
       if (file.size > 10 * 1024 * 1024) {
-        toast.error('File is too large. Maximum size is 10MB.');
-        e.target.value = '';
-        setReportFile(null);
-        return;
+        hasError = true;
+      } else {
+        validFiles.push(file);
       }
-      setReportFile(file);
     }
+    if (hasError) toast.error('Some files are too large. Maximum size is 10MB.');
+    setReportFiles(prev => [...prev, ...validFiles]);
+    e.target.value = '';
   };
 
   const handleSubmit = async (e) => {
@@ -229,9 +236,9 @@ const MedicalResultForm = () => {
       data.append('remarks', formData.remarks);
       data.append('appointments', JSON.stringify(formData.appointments));
 
-      if (reportFile) {
-        data.append('report', reportFile);
-      }
+      reportFiles.forEach(file => {
+        data.append('reports', file);
+      });
 
       if (formData.report_results && formData.report_results.length > 0) {
         // filter report results to only include those that are currently assigned
@@ -482,10 +489,97 @@ const MedicalResultForm = () => {
             </label>
             <Input
               type='file'
+              multiple
               onChange={handleFileChange}
               className='cursor-pointer rounded-xl bg-gray-50'
               accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
             />
+            {reportFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm font-medium text-gray-700">New Reports to Upload:</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {reportFiles.map((file, i) => {
+                    const isImage = file.type.startsWith('image/');
+                    const fileUrl = isImage ? URL.createObjectURL(file) : null;
+                    return (
+                      <div key={i} className="group relative flex flex-col items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all h-36">
+                        {isImage ? (
+                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
+                            <img src={fileUrl} alt={file.name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500">
+                            <FileText size={32} />
+                          </div>
+                        )}
+                        <span className="text-xs text-gray-600 truncate w-full text-center mt-2" title={file.name}>
+                          {file.name}
+                        </span>
+                        <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200">
+                          {isImage && (
+                            <a
+                              href={fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 bg-white rounded-full text-blue-600 hover:bg-blue-50 transition-colors shadow-sm"
+                              title="View File"
+                            >
+                              <Eye size={18} />
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setReportFiles(p => p.filter((_, idx) => idx !== i))}
+                            className="p-2 bg-white rounded-full text-red-600 hover:bg-red-50 transition-colors shadow-sm"
+                            title="Remove File"
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {existingFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm font-medium text-gray-700">Previously Uploaded Reports:</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {existingFiles.map((file, i) => {
+                    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(file.file_name);
+                    const fileUrl = `${process.env.REACT_APP_API_URL?.replace('/api', '') || ''}${file.file_path}`;
+                    return (
+                      <div key={i} className="group relative flex flex-col items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all h-36">
+                        {isImage ? (
+                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
+                            <img src={fileUrl} alt={file.file_name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
+                            <FileText size={32} />
+                          </div>
+                        )}
+                        <span className="text-xs text-gray-600 truncate w-full text-center mt-2" title={file.file_name}>
+                          {file.file_name}
+                        </span>
+                        <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200">
+                          <a
+                            href={fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 bg-white rounded-full text-blue-600 hover:bg-blue-50 transition-colors shadow-sm"
+                            title="View File"
+                          >
+                            <Eye size={18} />
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <p className='text-xs text-gray-400 mt-1'>
               Supported: PDF, Word, Images (Up to 10MB)
             </p>
