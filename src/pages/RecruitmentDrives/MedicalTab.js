@@ -118,6 +118,7 @@ const INTERVIEW_DECISION_COLORS = {
 const MEDICAL_DECISION_COLORS = {
   pass: "bg-green-100 text-green-700 border border-green-200",
   fail: "bg-red-100 text-red-700 border border-red-200",
+  retest: "bg-blue-100 text-blue-700 border border-blue-200",
 };
 
 const FIT_STATUS_LABELS = {

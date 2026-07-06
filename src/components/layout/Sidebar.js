@@ -212,7 +212,7 @@ const Sidebar = () => {
                             size={20}
                           />
                           {isOpen && (
-                            <span className="text-sm font-medium transition-all duration-200 whitespace-nowrap">
+                            <span className="text-base font-medium transition-all duration-200 whitespace-nowrap">
                               {item.title}
                             </span>
                           )}
@@ -267,7 +267,7 @@ const Sidebar = () => {
                           <div className="flex items-center gap-2 overflow-hidden">
                             <span
                               className={cn(
-                                "text-sm transition-all duration-200 whitespace-nowrap",
+                                "text-base transition-all duration-200 whitespace-nowrap",
                                 isActive ? "font-semibold" : "font-medium",
                               )}
                             >
@@ -318,7 +318,7 @@ const Sidebar = () => {
                                   if (window.innerWidth < 768) setIsOpen(false);
                                 }}
                                 className={cn(
-                                  "flex items-center py-2 px-3 rounded-md text-[13px] transition-all duration-300 ease-out",
+                                  "flex items-center py-2 px-3 rounded-md text-sm transition-all duration-300 ease-out",
                                   isSubActive
                                     ? "text-[#3a5f9e] bg-blue-100 font-bold shadow-sm ring-1 ring-blue-200 scale-[1.02]"
                                     : "text-slate-500 hover:text-[#3a5f9e] hover:bg-[#3a5f9e]/5 hover:translate-x-2 hover:shadow-sm",
@@ -352,7 +352,7 @@ const Sidebar = () => {
                   size={18}
                 />
                 {isOpen && (
-                  <span className="font-medium text-xs transition-colors whitespace-nowrap">
+                  <span className="font-medium text-sm transition-colors whitespace-nowrap">
                     Log Out
                   </span>
                 )}

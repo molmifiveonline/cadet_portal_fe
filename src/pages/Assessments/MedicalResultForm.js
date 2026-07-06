@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import StageInviteModal from '../RecruitmentDrives/StageInviteModal';
+
 
 const MultiSelectDropdown = ({ options, value, onChange, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -94,10 +96,13 @@ const MedicalResultForm = () => {
   const [reportFiles, setReportFiles] = useState([]);
   const [existingFiles, setExistingFiles] = useState([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showRetestModal, setShowRetestModal] = useState(false);
+  const [sendingRetest, setSendingRetest] = useState(false);
 
   const [formData, setFormData] = useState({
     appointments: [{ medical_date: new Date().toISOString().split('T')[0], medical_time: '', medical_center_id: '', medical_reports: [] }],
     final_decision: 'pass',
+    retest_reports: [],
     remarks: '',
     report_results: [],
   });
@@ -228,6 +233,44 @@ const MedicalResultForm = () => {
     }
   };
 
+  const handleRetestClick = () => {
+    if (formData.retest_reports.length === 0) {
+      toast.error('Please select at least one medical report for retest.');
+      return;
+    }
+    setShowRetestModal(true);
+  };
+
+  const handleSendRetestInvite = async (modalFormData, submissions) => {
+    try {
+      setSendingRetest(true);
+      const payload = {
+        cadets: submissions.map(sub => ({
+          cadet_id: sub.cadet_id,
+          remarks: sub.remarks,
+          appointments: sub.appointments.map(app => ({
+            ...app,
+            medical_reports: app.medical_reports || []
+          }))
+        }))
+      };
+
+      await api.post(`/medical-results/${cadet_id}/send-retest-invite`, payload);
+      toast.success('Retest invite sent successfully');
+      setShowRetestModal(false);
+      navigate(-1);
+    } catch (error) {
+      toast.error('Failed to send retest invite');
+    } finally {
+      setSendingRetest(false);
+    }
+  };
+
+  const medicalCenterOptions = medicalCenters.map((center) => ({
+    label: center.center_name,
+    value: center.id,
+  }));
+
   const saveMedicalResult = async () => {
     setSaving(true);
     try {
@@ -298,6 +341,11 @@ const MedicalResultForm = () => {
             <div className="space-y-4">
               {formData.appointments.map((appt, index) => (
                 <div key={index} className="relative rounded-lg border border-gray-200 bg-gray-50 p-4 pt-8">
+                  {appt.is_retest && (
+                    <span className="absolute left-4 top-2.5 rounded bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-850">
+                      Retest
+                    </span>
+                  )}
                   {formData.appointments.length > 1 && (
                     <button
                       type="button"
@@ -414,28 +462,6 @@ const MedicalResultForm = () => {
               >
                 <Plus className="mr-2 h-4 w-4" /> Add More Appointments
               </Button>
-            </div>
-            
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100'>
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-700'>
-                  Final Decision
-                </label>
-                <Select
-                  value={formData.final_decision}
-                  onValueChange={(val) =>
-                    setFormData((p) => ({ ...p, final_decision: val }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder='Select final decision' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='pass'>Pass</SelectItem>
-                    <SelectItem value='fail'>Fail</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           </div>
 
@@ -604,6 +630,54 @@ const MedicalResultForm = () => {
             </p>
           </div>
 
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-100'>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>
+                Final Decision
+              </label>
+              <Select
+                value={formData.final_decision}
+                onValueChange={(val) =>
+                  setFormData((p) => ({ ...p, final_decision: val }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder='Select final decision' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='pass'>Pass</SelectItem>
+                  <SelectItem value='fail'>Fail</SelectItem>
+                  <SelectItem value='retest'>Retest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.final_decision === 'retest' && (
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  Medical Reports for Retest
+                </label>
+                <div className='flex items-center gap-3'>
+                  <div className='flex-1'>
+                    <MultiSelectDropdown
+                      options={medicalReports.map(r => ({ label: r.name, value: r.id }))}
+                      value={formData.retest_reports}
+                      onChange={(val) => setFormData(p => ({ ...p, retest_reports: val }))}
+                      placeholder="Select reports"
+                    />
+                  </div>
+                  <Button
+                    type='button'
+                    className='bg-orange-600 hover:bg-orange-700 text-white shrink-0 h-[40px]'
+                    onClick={handleRetestClick}
+                  >
+                    <MessageSquare className='w-4 h-4 mr-2' />
+                    Retest Action
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200'>
             <Button type='button' variant='ghost' onClick={() => navigate(-1)}>
               Cancel
@@ -634,6 +708,75 @@ const MedicalResultForm = () => {
         message={`Cadet ${cadet?.name_as_in_indos_cert}'s institute details are pending. Do you want to proceed and save the medical result anyway?`}
         confirmText="Yes"
         cancelText="No"
+      />
+
+      <StageInviteModal
+        isOpen={showRetestModal}
+        onClose={() => setShowRetestModal(false)}
+        onSubmit={handleSendRetestInvite}
+        title="Send Retest Invites"
+        description="Set the medical center, appointment schedule, and remarks for the retest."
+        cadets={cadet ? [cadet] : []}
+        loading={sendingRetest}
+        fields={[
+          {
+            key: "appointments",
+            label: "Appointments",
+            type: "repeater",
+            addLabel: "Appointment",
+            subFields: [
+              {
+                key: "medical_date",
+                label: "Medical Date",
+                type: "date",
+                required: true,
+              },
+              {
+                key: "medical_time",
+                label: "Medical Time",
+                type: "time",
+                required: true,
+              },
+              {
+                key: "medical_center_id",
+                label: "Medical Center",
+                type: "select",
+                required: true,
+                options: medicalCenterOptions,
+                placeholder: "Select medical center",
+              },
+              {
+                key: "medical_reports",
+                label: "Medical Reports",
+                type: "multiselect",
+                required: true,
+                getOptions: (block) => {
+                  const selectedCenter = medicalCenters.find(c => String(c.id) === String(block.medical_center_id));
+                  let centerReportIds = [];
+                  if (selectedCenter && selectedCenter.medical_reports) {
+                    try {
+                      centerReportIds = typeof selectedCenter.medical_reports === 'string'
+                        ? JSON.parse(selectedCenter.medical_reports)
+                        : selectedCenter.medical_reports;
+                    } catch (e) {
+                      console.error("Error parsing medical reports from center:", e);
+                    }
+                  }
+                  return medicalReports
+                    .filter(r => centerReportIds.includes(r.id) || centerReportIds.includes(String(r.id)))
+                    .map(r => ({ label: r.name, value: r.id }));
+                },
+                placeholder: "Select medical reports",
+              }
+            ]
+          },
+          {
+            key: "remarks",
+            label: "Remarks",
+            type: "textarea",
+            placeholder: "Add medical instructions or remarks",
+          },
+        ]}
       />
     </div>
   );

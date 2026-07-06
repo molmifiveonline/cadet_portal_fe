@@ -32,7 +32,7 @@ const buildInitialGlobalValues = (fields) => {
   return globalValues;
 };
 
-const MultiSelectDropdown = ({ options, value, onChange, placeholder }) => {
+export const MultiSelectDropdown = ({ options, value, onChange, placeholder }) => {
   const [open, setOpen] = useState(false);
   const selectedValues = Array.isArray(value) ? value : [];
   
