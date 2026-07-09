@@ -19,11 +19,18 @@ const getPhoneFieldName = (header = '') => {
 export const HEADER_KEYWORDS = [
   'name',
   'email',
+  'e-mail',
   'contact',
+  'cellphone',
   'date_of_birth',
   'dob',
   'gender',
+  'genre',
   'batch',
+  'gpa',
+  'cest',
+  'ces test',
+  'english',
 ];
 
 export const validateFileType = (file) => {
