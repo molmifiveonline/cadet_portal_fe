@@ -8,9 +8,11 @@ import {
   Clock,
   XCircle,
   User,
+  Eye,
 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
+import InstituteDetailModal from './InstituteDetailModal';
 import { Button } from 'components/ui/button';
 import Permission from '../../components/common/Permission';
 import { formatDateForDisplay } from '../../lib/utils/dateUtils';
@@ -32,6 +34,7 @@ const InstitutesTable = ({
   onSelectionChange,
 }) => {
   const [deleteId, setDeleteId] = React.useState(null);
+  const [viewInstitute, setViewInstitute] = React.useState(null);
 
   const confirmDelete = () => {
     if (deleteId) {
@@ -180,6 +183,17 @@ const InstitutesTable = ({
               ),
             },
             {
+              field: 'institute_upload_type',
+              headerName: 'Upload Format',
+              width: '130px',
+              sortable: false,
+              renderCell: ({ row }) => (
+                <span className='inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700'>
+                  {row.institute_upload_type || 'Other'}
+                </span>
+              ),
+            },
+            {
               field: 'status',
               headerName: 'Status',
               width: '100px',
@@ -233,10 +247,11 @@ const InstitutesTable = ({
             {
               field: 'location',
               headerName: 'Location',
-              width: '120px',
+              width: '150px',
               renderCell: ({ row }) => (
                 <div
                   className='flex items-center gap-2 text-sm text-gray-600 truncate'
+                  style={{ minWidth: '120px', maxWidth: '150px' }}
                   title={row.location}
                 >
                   <MapPin size={14} className='flex-shrink-0 text-gray-400' />
@@ -251,6 +266,7 @@ const InstitutesTable = ({
               renderCell: ({ row }) => (
                 <div
                   className='text-sm text-gray-600 truncate'
+                  style={{ minWidth: '170px', maxWidth: '200px' }}
                   title={row.address}
                 >
                   <p className='truncate'>{row.address}</p>
@@ -260,7 +276,7 @@ const InstitutesTable = ({
             {
               field: 'actions',
               headerName: 'Actions',
-              width: '130px',
+              width: '160px',
               align: 'right',
               sortable: false,
               sticky: 'right',
@@ -268,6 +284,17 @@ const InstitutesTable = ({
               headerClassName: 'bg-white',
               renderCell: ({ row }) => (
                 <div className='flex items-center justify-end gap-1'>
+                  <Permission module='institutes' action='view'>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      onClick={() => setViewInstitute(row)}
+                      className='p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors'
+                      title='View Details'
+                    >
+                      <Eye size={16} />
+                    </Button>
+                  </Permission>
                   {/* Extend token – only if email has been sent */}
                   {row.temp_expiry && (
                     <Permission module='institutes' action='edit'>
@@ -332,6 +359,13 @@ const InstitutesTable = ({
         onConfirm={confirmDelete}
         title='Confirm Delete'
         message='Are you sure you want to delete this institute? This action cannot be undone.'
+      />
+
+      {/* View Institute Detail Modal */}
+      <InstituteDetailModal
+        isOpen={!!viewInstitute}
+        onClose={() => setViewInstitute(null)}
+        institute={viewInstitute}
       />
     </>
   );

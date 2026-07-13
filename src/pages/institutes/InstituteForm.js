@@ -37,6 +37,10 @@ const INSTITUTE_TYPE_OPTIONS = [
   { label: 'Engine', value: 'Engine' },
   { label: 'Both', value: 'Both' },
 ];
+const INSTITUTE_UPLOAD_TYPE_OPTIONS = [
+  { label: 'Other', value: 'Other' },
+  { label: 'Panama', value: 'Panama' },
+];
 
 const normalizeInstituteType = (value) => {
   if (!value) return INSTITUTE_TYPE_NONE;
@@ -46,6 +50,15 @@ const normalizeInstituteType = (value) => {
   );
 
   return option ? option.value : INSTITUTE_TYPE_NONE;
+};
+
+const normalizeInstituteUploadType = (value) => {
+  const normalized = value ? String(value).trim().toLowerCase() : '';
+  const option = INSTITUTE_UPLOAD_TYPE_OPTIONS.find(
+    ({ value: optionValue }) => optionValue.toLowerCase() === normalized,
+  );
+
+  return option ? option.value : 'Other';
 };
 
 const createEmptyContacts = () =>
@@ -100,6 +113,7 @@ const InstituteForm = () => {
       location: '',
       address: '',
       institute_type: INSTITUTE_TYPE_NONE,
+      institute_upload_type: 'Other',
       status: 'active',
       contact_emails: createEmptyContacts(),
     },
@@ -128,6 +142,9 @@ const InstituteForm = () => {
         location: data.location || '',
         address: data.address || '',
         institute_type: normalizeInstituteType(data.institute_type),
+        institute_upload_type: normalizeInstituteUploadType(
+          data.institute_upload_type,
+        ),
         status: data.status
           ? String(data.status).toLowerCase().trim()
           : 'active',
@@ -166,6 +183,7 @@ const InstituteForm = () => {
         location: '',
         address: '',
         institute_type: INSTITUTE_TYPE_NONE,
+        institute_upload_type: 'Other',
         status: 'active',
         contact_emails: createEmptyContacts(),
       });
@@ -184,6 +202,9 @@ const InstituteForm = () => {
       ...data,
       institute_type:
         data.institute_type === INSTITUTE_TYPE_NONE ? '' : data.institute_type,
+      institute_upload_type: normalizeInstituteUploadType(
+        data.institute_upload_type,
+      ),
       contact_emails: contactEmails,
     };
 
@@ -371,8 +392,8 @@ const InstituteForm = () => {
               </div>
             </div>
 
-            {/* Institute Type and Status Row */}
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-6 lg:col-span-2'>
+            {/* Institute Type, Upload Format and Status Row */}
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-6 lg:col-span-2'>
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-gray-700 ml-1'>
                   Institute Type
@@ -401,6 +422,41 @@ const InstituteForm = () => {
                     </Select>
                   )}
                 />
+              </div>
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700 ml-1'>
+                  Cadet Upload Format <span className='text-red-500'>*</span>
+                </label>
+                <Controller
+                  name='institute_upload_type'
+                  control={control}
+                  defaultValue='Other'
+                  rules={{ required: 'Cadet upload format is required' }}
+                  render={({ field }) => (
+                    <Select
+                      key={`upload-type-${field.value || 'Other'}`}
+                      value={field.value || 'Other'}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className='w-full rounded-xl border border-gray-300 bg-gray-50/50 h-[42px]'>
+                        <SelectValue placeholder='Select format...' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {INSTITUTE_UPLOAD_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.institute_upload_type && (
+                  <span className={`${errorTextClass} ml-1`}>
+                    {errors.institute_upload_type.message}
+                  </span>
+                )}
               </div>
 
               <div className='space-y-2'>

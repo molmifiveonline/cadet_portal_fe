@@ -169,7 +169,7 @@ const InstituteShortlistedCadets = () => {
     if (!file || !cadet) return;
 
     if (!file.name.toLowerCase().endsWith('.xlsx')) {
-      toast.error('Please upload the completed .xlsx CV template.');
+      toast.error('Please upload the completed .xlsx pending details template.');
       event.target.value = '';
       return;
     }
@@ -191,7 +191,7 @@ const InstituteShortlistedCadets = () => {
       );
 
       toast.success(
-        response.data?.message || 'Cadet CV details updated successfully',
+        response.data?.message || 'Cadet pending details updated successfully',
       );
       fetchPendingSummary();
       fetchShortlistedCadets(
@@ -205,7 +205,7 @@ const InstituteShortlistedCadets = () => {
       const message =
         Array.isArray(errors) && errors.length > 0
           ? errors.join('\n')
-          : error.response?.data?.message || 'Failed to upload CV template';
+          : error.response?.data?.message || 'Failed to upload pending details template';
       toast.error(message);
     } finally {
       setUploadingCadetId(null);
