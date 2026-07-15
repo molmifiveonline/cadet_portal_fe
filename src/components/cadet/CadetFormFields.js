@@ -49,6 +49,7 @@ const CadetFormFields = ({
   medicalData = null,
   assessmentData = null,
   user = null,
+  instituteUploadType = null,
 }) => {
   const navigate = useNavigate();
   const isAdmin = user?.role?.toLowerCase() === 'superadmin';
@@ -56,6 +57,9 @@ const CadetFormFields = ({
   const canViewStageDetails = isAdmin;
   const canManageStageDetails = isAdmin;
   const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
+
+  const resolvedUploadType = instituteUploadType || cadet?.institute_upload_type || 'Other';
+  const isPanama = resolvedUploadType === 'Panama';
 
   // Watch current address to sync with permanent when checkbox is on
   const currentAddress = watch ? watch('address') : '';
@@ -115,6 +119,7 @@ const CadetFormFields = ({
             <DetailItem label='Hometown' value={cadet.home_town_or_nearby_airport} name='home_town_or_nearby_airport' icon={MapPin} />
             <DetailItem label='Nationality' value={cadet.nationality} name='nationality' icon={Globe} />
             <DetailItem label='Languages Known' value={cadet.language_known} name='language_known' icon={Globe} />
+            <DetailItem label='Panama ID' value={cadet.national_id_number} name='national_id_number' icon={Hash} disabled={!isPanama} />
           </div>
 
           {/* Physical */}
@@ -219,24 +224,24 @@ const CadetFormFields = ({
             <div className='space-y-4'>
               <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider'>10th Standard</h4>
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
-                <DetailItem label='Board' value={cadet.tenth_std_board} name='tenth_std_board' icon={School} />
-                <DetailItem label='Year' value={cadet.tenth_std_pass_out_year} name='tenth_std_pass_out_year' type='number' icon={Calendar} />
-                <DetailItem label='Percentage' value={cadet.tenth_avg_percentage} name='tenth_avg_percentage' type='text' icon={Percent} />
-                <DetailItem label='Maths' value={cadet.tenth_std_maths} name='tenth_std_maths' type='text' icon={Percent} />
-                <DetailItem label='Science' value={cadet.tenth_std_science} name='tenth_std_science' type='text' icon={Percent} />
-                <DetailItem label='English' value={cadet.tenth_std_english} name='tenth_std_english' type='text' icon={Percent} />
+                <DetailItem label='Board' value={cadet.tenth_std_board} name='tenth_std_board' icon={School} disabled={isPanama} />
+                <DetailItem label='Year' value={cadet.tenth_std_pass_out_year} name='tenth_std_pass_out_year' type='number' icon={Calendar} disabled={isPanama} />
+                <DetailItem label='Percentage' value={cadet.tenth_avg_percentage} name='tenth_avg_percentage' type='text' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Maths' value={cadet.tenth_std_maths} name='tenth_std_maths' type='text' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Science' value={cadet.tenth_std_science} name='tenth_std_science' type='text' icon={Percent} disabled={isPanama} />
+                <DetailItem label='English' value={cadet.tenth_std_english} name='tenth_std_english' type='text' icon={Percent} disabled={isPanama} />
               </div>
             </div>
             <div className='space-y-4'>
               <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider'>12th Standard</h4>
               <div className='grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4'>
-                <DetailItem label='Board' value={cadet.twelfth_std_board} name='twelfth_std_board' icon={School} />
-                <DetailItem label='Year' value={cadet.twelfth_std_pass_out_year} name='twelfth_std_pass_out_year' type='text' icon={Calendar} />
-                <DetailItem label='PCM %' value={cadet.twelfth_pcm_avg_percentage} name='twelfth_pcm_avg_percentage' type='text' icon={Percent} />
-                <DetailItem label='Maths' value={cadet.twelfth_std_maths} name='twelfth_std_maths' type='text' icon={Percent} />
-                <DetailItem label='Physics' value={cadet.twelfth_std_physics} name='twelfth_std_physics' type='text' icon={Percent} />
-                <DetailItem label='Chemistry' value={cadet.twelfth_std_chemistry} name='twelfth_std_chemistry' type='text' icon={Percent} />
-                <DetailItem label='English' value={cadet.twelfth_std_english} name='twelfth_std_english' type='text' icon={Percent} />
+                <DetailItem label='Board' value={cadet.twelfth_std_board} name='twelfth_std_board' icon={School} disabled={isPanama} />
+                <DetailItem label='Year' value={cadet.twelfth_std_pass_out_year} name='twelfth_std_pass_out_year' type='text' icon={Calendar} disabled={isPanama} />
+                <DetailItem label='PCM %' value={cadet.twelfth_pcm_avg_percentage} name='twelfth_pcm_avg_percentage' type='text' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Maths' value={cadet.twelfth_std_maths} name='twelfth_std_maths' type='text' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Physics' value={cadet.twelfth_std_physics} name='twelfth_std_physics' type='text' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Chemistry' value={cadet.twelfth_std_chemistry} name='twelfth_std_chemistry' type='text' icon={Percent} disabled={isPanama} />
+                <DetailItem label='English' value={cadet.twelfth_std_english} name='twelfth_std_english' type='text' icon={Percent} disabled={isPanama} />
               </div>
             </div>
           </div>
@@ -245,21 +250,21 @@ const CadetFormFields = ({
           <div className='pt-6 border-t border-gray-200 grid grid-cols-1 lg:grid-cols-2 gap-8'>
             <div className='space-y-4'>
               <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider'>Graduation</h4>
-              <DetailItem label='University' value={cadet.graduation_university} name='graduation_university' icon={School} />
+              <DetailItem label='University' value={cadet.graduation_university} name='graduation_university' icon={School} disabled={isPanama} />
             </div>
             <div className='space-y-4'>
               <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider'>IMU Performance</h4>
               <div className='grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4'>
-                <DetailItem label='IMU Rank' value={cadet.imu_rank} name='imu_rank' type='text' icon={Award} />
+                <DetailItem label='IMU Rank' value={cadet.imu_rank} name='imu_rank' type='text' icon={Award} disabled={isPanama} />
                 <DetailItem label='Avg %' value={cadet.imu_avg_all_semester_percentage} name='imu_avg_all_semester_percentage' type='text' icon={Percent} />
-                <DetailItem label='Sem 1' value={cadet.imu_sem_1_percentage} name='imu_sem_1_percentage' type='float' icon={Percent} />
-                <DetailItem label='Sem 2' value={cadet.imu_sem_2_percentage} name='imu_sem_2_percentage' type='float' icon={Percent} />
-                <DetailItem label='Sem 3' value={cadet.imu_sem_3_percentage} name='imu_sem_3_percentage' type='float' icon={Percent} />
-                <DetailItem label='Sem 4' value={cadet.imu_sem_4_percentage} name='imu_sem_4_percentage' type='float' icon={Percent} />
-                <DetailItem label='Sem 5' value={cadet.imu_sem_5_percentage} name='imu_sem_5_percentage' type='float' icon={Percent} />
-                <DetailItem label='Sem 6' value={cadet.imu_sem_6_percentage} name='imu_sem_6_percentage' type='float' icon={Percent} />
-                <DetailItem label='Sem 7' value={cadet.imu_sem_7_percentage} name='imu_sem_7_percentage' type='float' icon={Percent} />
-                <DetailItem label='Sem 8' value={cadet.imu_sem_8_percentage} name='imu_sem_8_percentage' type='float' icon={Percent} />
+                <DetailItem label='Sem 1' value={cadet.imu_sem_1_percentage} name='imu_sem_1_percentage' type='float' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Sem 2' value={cadet.imu_sem_2_percentage} name='imu_sem_2_percentage' type='float' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Sem 3' value={cadet.imu_sem_3_percentage} name='imu_sem_3_percentage' type='float' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Sem 4' value={cadet.imu_sem_4_percentage} name='imu_sem_4_percentage' type='float' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Sem 5' value={cadet.imu_sem_5_percentage} name='imu_sem_5_percentage' type='float' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Sem 6' value={cadet.imu_sem_6_percentage} name='imu_sem_6_percentage' type='float' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Sem 7' value={cadet.imu_sem_7_percentage} name='imu_sem_7_percentage' type='float' icon={Percent} disabled={isPanama} />
+                <DetailItem label='Sem 8' value={cadet.imu_sem_8_percentage} name='imu_sem_8_percentage' type='float' icon={Percent} disabled={isPanama} />
               </div>
             </div>
           </div>
@@ -268,8 +273,8 @@ const CadetFormFields = ({
           <div className='pt-6 border-t border-gray-200'>
             <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider mb-4'>Course & Training Details</h4>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem label='Batch Rank' value={cadet.batch_rank_out_of_72_cadets} name='batch_rank_out_of_72_cadets' icon={Award} />
-              <DetailItem label='Arrears' value={cadet.no_of_arrears} name='no_of_arrears' type='number' icon={Book} />
+              <DetailItem label='Batch Rank' value={cadet.batch_rank_out_of_72_cadets} name='batch_rank_out_of_72_cadets' icon={Award} disabled={isPanama} />
+              <DetailItem label='Arrears' value={cadet.no_of_arrears} name='no_of_arrears' type='number' icon={Book} disabled={isPanama} />
               <DetailItem label='Passing Out Year' value={formatDateForDisplay(cadet.passing_out_date)} name='passing_out_date' type='date' icon={Calendar} />
               <DetailItem label='Age at Passing' value={cadet.age_when_passing_out} name='age_when_passing_out' type='number' icon={User} />
             </div>
@@ -279,11 +284,11 @@ const CadetFormFields = ({
           <div className='pt-6 border-t border-gray-200'>
             <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider mb-4'>Family & Additional Info</h4>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-              <DetailItem label="Father's Occupation" value={cadet.father_occupation} name='father_occupation' icon={Briefcase} />
-              <DetailItem label="Mother's Occupation" value={cadet.mother_occupation} name='mother_occupation' icon={Briefcase} />
-              <DetailItem label="Sibling's Occupation" value={cadet.sibling_occupation} name='sibling_occupation' icon={Briefcase} />
-              <DetailItem label='Any Relative in Marine Field' value={cadet.marine_relative} name='marine_relative' icon={User} />
-              <DetailItem label='Loan' value={cadet.educational_loan} name='educational_loan' icon={FileText} />
+              <DetailItem label="Father's Occupation" value={cadet.father_occupation} name='father_occupation' icon={Briefcase} disabled={isPanama} />
+              <DetailItem label="Mother's Occupation" value={cadet.mother_occupation} name='mother_occupation' icon={Briefcase} disabled={isPanama} />
+              <DetailItem label="Sibling's Occupation" value={cadet.sibling_occupation} name='sibling_occupation' icon={Briefcase} disabled={isPanama} />
+              <DetailItem label='Any Relative in Marine Field' value={cadet.marine_relative} name='marine_relative' icon={User} disabled={isPanama} />
+              <DetailItem label='Loan' value={cadet.educational_loan} name='educational_loan' icon={FileText} disabled={isPanama} />
               <DetailItem type='textarea' label='Extra Curricular' value={cadet.any_extra_curricular_achievement} name='any_extra_curricular_achievement' icon={Activity} />
             </div>
           </div>
@@ -292,14 +297,14 @@ const CadetFormFields = ({
           <div className='pt-6 border-t border-gray-200'>
             <h4 className='text-sm font-bold text-gray-400 uppercase tracking-wider mb-4'>STCW Courses</h4>
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-              <DetailItem label='Elementary/Medical First Aid/Medicare' value={cadet.stcw_elementary_first_aid} name='stcw_elementary_first_aid' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Syringe} />
-              <DetailItem label='Security Training for Sea Farers' value={cadet.stcw_security_training} name='stcw_security_training' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Book} />
-              <DetailItem label='Personal Safety & Social Responsibility' value={cadet.stcw_personal_safety} name='stcw_personal_safety' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={User} />
-              <DetailItem label='Petrol Tanker Familiarization' value={cadet.stcw_petrol_tanker} name='stcw_petrol_tanker' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Book} />
-              <DetailItem label='Fire Prevention and Fire Fighting' value={cadet.stcw_fire_prevention} name='stcw_fire_prevention' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Activity} />
-              <DetailItem label='Chemical Tanker Familiarization' value={cadet.stcw_chemical_tanker} name='stcw_chemical_tanker' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Book} />
-              <DetailItem label='Personal Survival Techniques' value={cadet.stcw_personal_survival} name='stcw_personal_survival' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Activity} />
-              <DetailItem label='Gas Tanker Familiarization' value={cadet.stcw_gas_tanker} name='stcw_gas_tanker' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Book} />
+              <DetailItem label='Elementary/Medical First Aid/Medicare' value={cadet.stcw_elementary_first_aid} name='stcw_elementary_first_aid' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Syringe} disabled={isPanama} />
+              <DetailItem label='Security Training for Sea Farers' value={cadet.stcw_security_training} name='stcw_security_training' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Book} disabled={isPanama} />
+              <DetailItem label='Personal Safety & Social Responsibility' value={cadet.stcw_personal_safety} name='stcw_personal_safety' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={User} disabled={isPanama} />
+              <DetailItem label='Petrol Tanker Familiarization' value={cadet.stcw_petrol_tanker} name='stcw_petrol_tanker' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Book} disabled={isPanama} />
+              <DetailItem label='Fire Prevention and Fire Fighting' value={cadet.stcw_fire_prevention} name='stcw_fire_prevention' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Activity} disabled={isPanama} />
+              <DetailItem label='Chemical Tanker Familiarization' value={cadet.stcw_chemical_tanker} name='stcw_chemical_tanker' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Book} disabled={isPanama} />
+              <DetailItem label='Personal Survival Techniques' value={cadet.stcw_personal_survival} name='stcw_personal_survival' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Activity} disabled={isPanama} />
+              <DetailItem label='Gas Tanker Familiarization' value={cadet.stcw_gas_tanker} name='stcw_gas_tanker' type='select' options={[{ label: 'Not Done', value: 'Not Done' }, { label: 'Done', value: 'Done' }]} icon={Book} disabled={isPanama} />
             </div>
           </div>
         </div>
