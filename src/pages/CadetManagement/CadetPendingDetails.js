@@ -293,6 +293,7 @@ const CadetPendingDetails = () => {
               setValue={setValue}
               isSubmitting={isSubmitting}
               user={user}
+              instituteUploadType={cadet?.institute_upload_type}
             />
           </div>
         </div>

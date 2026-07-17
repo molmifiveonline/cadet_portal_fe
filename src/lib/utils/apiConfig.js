@@ -44,11 +44,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && [401, 403].includes(error.response.status)) {
+      const isAuthEndpoint = error.config && error.config.url && error.config.url.includes('/auth/');
+      
       // Clear local storage and redirect to login if token is invalid or access is forbidden (e.g., inactive user)
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      // but only if it's not an authentication request itself (like login or requesting an OTP)
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

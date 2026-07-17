@@ -407,6 +407,7 @@ const CadetDetails = () => {
             medicalData={stageData.medical}
             assessmentData={stageData.assessment}
             user={user}
+            instituteUploadType={cadet?.institute_upload_type}
           />
         </div>
       </div>
