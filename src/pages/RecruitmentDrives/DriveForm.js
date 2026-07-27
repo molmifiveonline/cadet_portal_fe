@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { Loader2, ArrowLeft, Save, Rocket } from "lucide-react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import api from "../../lib/utils/apiConfig";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
@@ -19,12 +19,14 @@ import { errorTextClass } from "../../lib/utils/formStyles";
 const DriveForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [institutesLoading, setInstitutesLoading] = useState(false);
   const [institutes, setInstitutes] = useState([]);
   const previousCourseTypeRef = useRef("");
   const isEdit = !!id;
+  const returnTab = location.state?.returnTab;
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 6 }, (_, index) =>
     String(currentYear - 2 + index),
@@ -133,6 +135,14 @@ const DriveForm = () => {
     }
   }, [currentYear, id, isEdit, reset, navigate]);
 
+  const handleBack = () => {
+    if (isEdit) {
+      navigate(`/drives/${id}${returnTab ? `?tab=${returnTab}` : ""}`);
+    } else {
+      navigate("/drives");
+    }
+  };
+
   const onSubmit = async (data) => {
     try {
       setLoading(true);
@@ -146,7 +156,7 @@ const DriveForm = () => {
       if (isEdit) {
         await api.put(`/recruitment-drives/${id}`, payload);
         toast.success("Recruitment drive updated successfully");
-        navigate(`/drives/${id}`);
+        navigate(`/drives/${id}${returnTab ? `?tab=${returnTab}` : ""}`);
       } else {
         const response = await api.post("/recruitment-drives", payload);
         toast.success("Recruitment drive created successfully");
@@ -190,7 +200,7 @@ const DriveForm = () => {
         backButton={
           <Button
             variant="ghost"
-            onClick={() => navigate("/drives")}
+            onClick={handleBack}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -398,7 +408,7 @@ const DriveForm = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate("/drives")}
+              onClick={handleBack}
               disabled={isSubmitting}
             >
               Cancel

@@ -133,7 +133,12 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
   };
 
   const handleStartAssessmentClick = (row) => {
-    const navigateToForm = () => navigate(`/cadets/assess/${row.id}`);
+    const navigateToForm = () => navigate(`/cadets/assess/${row.id}`, {
+      state: {
+        returnPath: `/drives/${drive.id}`,
+        returnState: { activeTab: "assessment" },
+      },
+    });
     if (!Number(row.institute_detail_filled || 0)) {
       setConfirmTitle("Pending Institute Details");
       setConfirmMessage(`Cadet ${row.name_as_in_indos_cert}'s institute details are pending. Do you want to proceed to the assessment anyway?`);

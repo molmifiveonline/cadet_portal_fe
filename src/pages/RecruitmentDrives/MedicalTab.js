@@ -384,7 +384,12 @@ const MedicalTab = ({ drive, onRefresh }) => {
 
   const handleStartMedicalResultClick = useCallback(
     (row) => {
-      const navigateToForm = () => navigate(`/cadets/medical/${row.id}`);
+      const navigateToForm = () => navigate(`/cadets/medical/${row.id}`, {
+        state: {
+          returnPath: `/drives/${drive.id}`,
+          returnState: { activeTab: "medical" },
+        },
+      });
       if (!Number(row.institute_detail_filled || 0)) {
         setConfirmTitle("Pending Institute Details");
         setConfirmMessage(`Cadet ${row.name_as_in_indos_cert}'s institute details are pending. Do you want to proceed to recording medical results anyway?`);
@@ -394,7 +399,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
         navigateToForm();
       }
     },
-    [navigate]
+    [navigate, drive.id]
   );
 
   const handleSendMedicalInviteClick = () => {

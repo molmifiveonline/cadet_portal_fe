@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Save,
@@ -34,6 +34,17 @@ import { errorTextClass } from '../../lib/utils/formStyles';
 const AssessmentForm = () => {
   const { cadet_id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleBack = () => {
+    const returnPath = location.state?.returnPath;
+    const returnState = location.state?.returnState;
+    if (returnPath) {
+      navigate(returnPath, { state: returnState });
+    } else {
+      navigate(-1);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cadet, setCadet] = useState(null);
@@ -106,7 +117,7 @@ const AssessmentForm = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load cadet information');
-      navigate(-1);
+      handleBack();
     } finally {
       setLoading(false);
     }
@@ -203,7 +214,7 @@ const AssessmentForm = () => {
       });
 
       toast.success('Assessment saved successfully');
-      navigate(-1);
+      handleBack();
     } catch (error) {
       console.error('Error saving assessment:', error);
       toast.error(error.response?.data?.message || 'Failed to save assessment');
@@ -263,7 +274,7 @@ const AssessmentForm = () => {
         icon={ClipboardList}
         backButton={
           <button
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
             className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
           >
             <ArrowLeft size={24} />
@@ -568,7 +579,7 @@ const AssessmentForm = () => {
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200 mt-8'>
             <button
               type='button'
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className='px-6 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors'
             >
               Cancel

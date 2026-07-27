@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import {
   AlertCircle,
   Anchor,
-  ChevronLeft,
   Building2,
   Calendar,
   ChevronRight,
@@ -247,12 +246,13 @@ const RecruitmentDrives = () => {
 
   const [drives, setDrives] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [institutes, setInstitutes] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [pagination, setPagination] = useState({
     current_page: 1,
-    per_page: 10,
+    per_page: 12,
     total: 0,
     last_page: 1,
   });
@@ -277,9 +277,14 @@ const RecruitmentDrives = () => {
       filterStatus = filters.status,
       filterCourseType = filters.course_type,
       filterInstituteId = filters.institute_id,
+      append = false,
     ) => {
       try {
-        setLoading(true);
+        if (append) {
+          setLoadingMore(true);
+        } else {
+          setLoading(true);
+        }
         const params = new URLSearchParams({
           page,
           limit,
@@ -292,7 +297,8 @@ const RecruitmentDrives = () => {
         const response = await api.get(
           `/recruitment-drives?${params.toString()}`,
         );
-        setDrives(response.data?.data || []);
+        const fetchedDrives = response.data?.data || [];
+        setDrives((prev) => (append ? [...prev, ...fetchedDrives] : fetchedDrives));
         setPagination({
           current_page: response.data.page,
           per_page: response.data.limit,
@@ -307,6 +313,7 @@ const RecruitmentDrives = () => {
         toast.error("Failed to fetch recruitment drives");
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     },
     [
@@ -318,6 +325,19 @@ const RecruitmentDrives = () => {
       debouncedSearchTerm,
     ],
   );
+
+  const handleLoadMore = () => {
+    const nextPage = pagination.current_page + 1;
+    fetchDrives(
+      nextPage,
+      pagination.per_page,
+      debouncedSearchTerm,
+      filters.status,
+      filters.course_type,
+      filters.institute_id,
+      true, // append = true
+    );
+  };
 
   useEffect(() => {
     fetchDrives(1, pagination.per_page, debouncedSearchTerm);
@@ -369,19 +389,15 @@ const RecruitmentDrives = () => {
       toast.success("Recruitment drive deleted successfully");
       setDeleteModal({ isOpen: false, driveId: null, driveName: "", isForce: false, message: "" });
 
-      const targetPage =
-        drives.length === 1 && pagination.current_page > 1
-          ? pagination.current_page - 1
-          : pagination.current_page;
-
-      fetchDrives(
-        targetPage,
-        pagination.per_page,
-        debouncedSearchTerm,
-        filters.status,
-        filters.course_type,
-        filters.institute_id,
-      );
+      setDrives((prev) => prev.filter((d) => d.id !== deleteModal.driveId));
+      setPagination((prev) => {
+        const nextTotal = Math.max(0, prev.total - 1);
+        return {
+          ...prev,
+          total: nextTotal,
+          last_page: Math.max(1, Math.ceil(nextTotal / prev.per_page)),
+        };
+      });
     } catch (error) {
       console.error("Error deleting recruitment drive:", error);
       if (error.response?.status === 409 && !deleteModal.isForce) {
@@ -718,59 +734,27 @@ const RecruitmentDrives = () => {
             </div>
           ) : null}
 
-          {pagination.last_page > 1 ? (
-            <div className="mt-6 flex items-center justify-between rounded-lg border bg-white px-4 py-3 shadow-sm">
-              <div className="hidden sm:block">
-                <p className="text-sm text-slate-700">
-                  Showing page{" "}
-                  <span className="font-medium">{pagination.current_page}</span> of{" "}
-                  <span className="font-medium">{pagination.last_page}</span>
-                </p>
-              </div>
-              <nav
-                className="inline-flex items-center gap-2"
-                aria-label="Pagination"
-              >
+          {pagination.total > 0 && (
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <p className="text-sm font-medium text-slate-500">
+                Showing <span className="font-semibold text-slate-800">{drives.length}</span> of{" "}
+                <span className="font-semibold text-slate-800">{pagination.total}</span> drives
+              </p>
+              {drives.length < pagination.total && (
                 <Button
                   variant="outline"
-                  className="h-9 px-2"
-                  onClick={() =>
-                    fetchDrives(
-                      pagination.current_page - 1,
-                      pagination.per_page,
-                      debouncedSearchTerm,
-                      filters.status,
-                      filters.course_type,
-                      filters.institute_id,
-                    )
-                  }
-                  disabled={pagination.current_page === 1}
+                  className="mt-1 flex items-center justify-center gap-2 border-slate-300 px-6 py-2.5 font-semibold text-slate-700 transition-all hover:bg-slate-50 hover:border-slate-400 active:scale-95 shadow-sm"
+                  onClick={handleLoadMore}
+                  disabled={loading || loadingMore}
                 >
-                  <ChevronLeft className="h-5 w-5" />
+                  {loadingMore ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-transparent" />
+                  ) : null}
+                  {loadingMore ? "Loading..." : "Load More Drives"}
                 </Button>
-                <div className="flex h-9 items-center border-y border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900">
-                  {pagination.current_page} / {pagination.last_page}
-                </div>
-                <Button
-                  variant="outline"
-                  className="h-9 px-2"
-                  onClick={() =>
-                    fetchDrives(
-                      pagination.current_page + 1,
-                      pagination.per_page,
-                      debouncedSearchTerm,
-                      filters.status,
-                      filters.course_type,
-                      filters.institute_id,
-                    )
-                  }
-                  disabled={pagination.current_page === pagination.last_page}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-              </nav>
+              )}
             </div>
-          ) : null}
+          )}
         </div>
       )}
 
