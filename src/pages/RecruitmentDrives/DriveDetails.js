@@ -105,6 +105,21 @@ const DriveDetails = () => {
     fetchDriveData();
   }, [fetchDriveData]);
 
+  const handleTabChange = useCallback((tabId) => {
+    setActiveTab(tabId);
+    const params = new URLSearchParams(location.search);
+    if (tabId === "info") {
+      params.delete("tab");
+    } else {
+      params.set("tab", tabId);
+    }
+    const newSearch = params.toString();
+    navigate(
+      { pathname: location.pathname, search: newSearch ? `?${newSearch}` : "" },
+      { replace: true }
+    );
+  }, [location.pathname, location.search, navigate]);
+
   useEffect(() => {
     const requestedTab =
       location.state?.activeTab ||
@@ -217,7 +232,7 @@ const DriveDetails = () => {
         value: stats?.total_uploaded || 0,
         tone: "text-blue-600",
         onClick: () => {
-          setActiveTab("cadets");
+          handleTabChange("cadets");
           setStatusFilter("all");
         },
       },
@@ -226,7 +241,7 @@ const DriveDetails = () => {
         value: stats?.shortlisted_count || 0,
         tone: "text-purple-600",
         onClick: () => {
-          setActiveTab("shortlist");
+          handleTabChange("shortlist");
           setStatusFilter("Shortlisted");
         },
       },
@@ -234,27 +249,27 @@ const DriveDetails = () => {
         label: "Assessment Passed",
         value: stats?.assessment_passed || 0,
         tone: "text-teal-600",
-        onClick: () => setActiveTab("assessment"),
+        onClick: () => handleTabChange("assessment"),
       },
-      // TEMP DEMO: post-assessment progress counts hidden.
+      // TEMP DEMO: post-assessment stages hidden.
       // TODO: Re-enable after demo.
       {
         label: "Interview Selected",
         value: stats?.interview_selected || 0,
         tone: "text-emerald-600",
-        onClick: () => setActiveTab("interview"),
+        onClick: () => handleTabChange("interview"),
       },
       {
         label: "Medical",
         value: stats?.medical_queue_count || 0,
         tone: "text-lime-600",
-        onClick: () => setActiveTab("medical"),
+        onClick: () => handleTabChange("medical"),
       },
       {
         label: "Documents",
         value: stats?.document_count || 0,
         tone: "text-indigo-600",
-        onClick: () => setActiveTab("documents"),
+        onClick: () => handleTabChange("documents"),
       },
       // Phase 2: re-enable CTV Assigned and Onboarded progress cards.
       // {
@@ -262,7 +277,7 @@ const DriveDetails = () => {
       //   value: stats?.ctv_assigned || 0,
       //   tone: "text-amber-600",
       //   onClick: () => {
-      //     setActiveTab("cadets");
+      //     handleTabChange("cadets");
       //     setStatusFilter("CTV Assigned");
       //   },
       // },
@@ -271,30 +286,12 @@ const DriveDetails = () => {
       //   value: stats?.onboarded || 0,
       //   tone: "text-lime-600",
       //   onClick: () => {
-      //     setActiveTab("cadets");
-      //     setStatusFilter("Onboarded");
-      //   },
-      // Phase 2: re-enable CTV Assigned and Onboarded progress cards.
-      // {
-      //   label: "CTV Assigned",
-      //   value: stats?.ctv_assigned || 0,
-      //   tone: "text-amber-600",
-      //   onClick: () => {
-      //     setActiveTab("cadets");
-      //     setStatusFilter("CTV Assigned");
-      //   },
-      // },
-      // {
-      //   label: "Onboarded",
-      //   value: stats?.onboarded || 0,
-      //   tone: "text-lime-600",
-      //   onClick: () => {
-      //     setActiveTab("cadets");
+      //     handleTabChange("cadets");
       //     setStatusFilter("Onboarded");
       //   },
       // },
     ],
-    [stats],
+    [stats, handleTabChange],
   );
 
   const tabs = isInstituteUser
@@ -394,7 +391,7 @@ const DriveDetails = () => {
             <Permission module="recruitment_drives" action="edit">
               <Button
                 variant="outline"
-                onClick={() => navigate(`/drives/edit/${id}`)}
+                onClick={() => navigate(`/drives/edit/${id}`, { state: { returnTab: activeTab } })}
                 className="flex items-center gap-2"
               >
                 <Edit className="h-4 w-4" />
@@ -423,7 +420,7 @@ const DriveDetails = () => {
             </div>
             {isInstituteUser ? (
               <Button
-                onClick={() => setActiveTab("upload")}
+                onClick={() => handleTabChange("upload")}
                 disabled={!canInstituteUploadCadets}
                 className="flex items-center gap-2 bg-amber-600 text-white hover:bg-amber-700"
               >
@@ -483,7 +480,7 @@ const DriveDetails = () => {
                 type="button"
                 onClick={() => {
                   if (!tab.disabled) {
-                    setActiveTab(tab.id);
+                    handleTabChange(tab.id);
                   }
                 }}
                 disabled={tab.disabled}

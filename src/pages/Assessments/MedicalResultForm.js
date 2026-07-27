@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Save,
@@ -87,6 +87,17 @@ const MultiSelectDropdown = ({ options, value, onChange, placeholder }) => {
 const MedicalResultForm = () => {
   const { cadet_id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleBack = () => {
+    const returnPath = location.state?.returnPath;
+    const returnState = location.state?.returnState;
+    if (returnPath) {
+      navigate(returnPath, { state: returnState });
+    } else {
+      navigate(-1);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cadet, setCadet] = useState(null);
@@ -258,7 +269,7 @@ const MedicalResultForm = () => {
       await api.post(`/medical-results/${cadet_id}/send-retest-invite`, payload);
       toast.success('Retest invite sent successfully');
       setShowRetestModal(false);
-      navigate(-1);
+      handleBack();
     } catch (error) {
       toast.error('Failed to send retest invite');
     } finally {
@@ -299,7 +310,7 @@ const MedicalResultForm = () => {
         },
       });
       toast.success('Medical result recorded successfully');
-      navigate(-1);
+      handleBack();
     } catch (error) {
       toast.error('Failed to save medical result');
     } finally {
@@ -323,7 +334,7 @@ const MedicalResultForm = () => {
         icon={Activity}
         backButton={
           <button
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
             className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
           >
             <ArrowLeft size={24} />
@@ -679,7 +690,7 @@ const MedicalResultForm = () => {
           </div>
 
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200'>
-            <Button type='button' variant='ghost' onClick={() => navigate(-1)}>
+            <Button type='button' variant='ghost' onClick={handleBack}>
               Cancel
             </Button>
             <Button

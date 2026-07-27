@@ -272,7 +272,9 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`/cadets/view/${row.id}`)}
+              onClick={() => navigate(`/cadets/view/${row.id}`, {
+                state: { returnPath: `/drives/${drive.id}`, returnState: { activeTab: "cadets" } },
+              })}
               className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
               title="View details"
             >
@@ -302,7 +304,9 @@ const CadetsTab = ({ drive, initialStatus = "all", onStatusFilterChange }) => {
                     return;
                   }
 
-                  navigate(`/cadets/view/${row.id}`);
+                  navigate(`/cadets/view/${row.id}`, {
+                    state: { returnPath: `/drives/${drive.id}`, returnState: { activeTab: "cadets" } },
+                  });
                 }}
                 className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
                 title={isInstituteUser ? "Edit pending details" : "Edit cadet"}
