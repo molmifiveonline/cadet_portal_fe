@@ -13,6 +13,7 @@ import {
   Loader2,
   FileText,
   Eye,
+  PenLine,
   Plus,
   Trash2,
 } from 'lucide-react';
@@ -31,6 +32,9 @@ import {
   errorTextClass,
   getInvalidFieldClass,
 } from '../../lib/utils/formStyles';
+import InterviewHandwritingEditor from './InterviewHandwritingEditor';
+import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
+import FileUploadPanel from '../../components/common/FileUploadPanel';
 
 const InterviewForm = () => {
   const { cadet_id } = useParams();
@@ -39,11 +43,14 @@ const InterviewForm = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cadet, setCadet] = useState(null);
-  const [interviewSheetFile, setInterviewSheetFile] = useState(null);
-  const [existingSheetName, setExistingSheetName] = useState('');
-  const [existingSheetMimeType, setExistingSheetMimeType] = useState('');
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [interviewAttachments, setInterviewAttachments] = useState([]);
+  const [uploadingSheets, setUploadingSheets] = useState(false);
+  const [deleteAttachment, setDeleteAttachment] = useState(null);
+  const [deletingAttachment, setDeletingAttachment] = useState(false);
+  const [handwrittenDocuments, setHandwrittenDocuments] = useState([]);
+  const [deleteHandwrittenDocument, setDeleteHandwrittenDocument] = useState(null);
+  const [deletingHandwritten, setDeletingHandwritten] = useState(false);
+  const [isHandwritingOpen, setIsHandwritingOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const isViewMode = new URLSearchParams(location.search).get('view') === 'true';
 
@@ -189,11 +196,29 @@ const InterviewForm = () => {
             comments: data.comments || '',
             final_decision: data.final_decision ? data.final_decision.toLowerCase() : 'selected',
           });
-          setExistingSheetName(data.interview_sheet_name || '');
-          setExistingSheetMimeType(data.interview_sheet_mime_type || '');
         }
       } catch (err) {
         console.log('No existing interview found');
+      }
+
+      try {
+        const attachmentsRes = await api.get(
+          `/interviews/${cadet_id}/attachments`,
+        );
+        setInterviewAttachments(attachmentsRes.data?.data || []);
+      } catch (err) {
+        console.error('Error loading interview sheets:', err);
+        setInterviewAttachments([]);
+      }
+
+      try {
+        const handwrittenRes = await api.get(
+          `/interviews/${cadet_id}/handwritten-sheets`,
+        );
+        setHandwrittenDocuments(handwrittenRes.data?.data || []);
+      } catch (err) {
+        console.error('Error loading handwritten interview notes:', err);
+        setHandwrittenDocuments([]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -207,32 +232,6 @@ const InterviewForm = () => {
     fetchData();
   }, [fetchData]);
 
-  // Load preview if it's an image
-  useEffect(() => {
-    let objectUrl = null;
-
-    const loadPreview = async () => {
-      if (existingSheetName && existingSheetMimeType?.startsWith('image/')) {
-        try {
-          setPreviewLoading(true);
-          const response = await api.get(`/interviews/${cadet_id}/sheet`, {
-            responseType: 'blob',
-          });
-          objectUrl = URL.createObjectURL(response.data);
-          setPreviewUrl(objectUrl);
-        } catch (error) {
-          console.error('Error loading preview:', error);
-        } finally {
-          setPreviewLoading(false);
-        }
-      }
-    };
-    loadPreview();
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [existingSheetName, existingSheetMimeType, cadet_id]);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -241,16 +240,74 @@ const InterviewForm = () => {
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error('File is too large. Maximum size is 10MB.');
-        e.target.value = '';
-        setInterviewSheetFile(null);
-        return;
-      }
-      setInterviewSheetFile(file);
+  const handleUploadInterviewSheets = async (files) => {
+    setUploadingSheets(true);
+    try {
+      const data = new FormData();
+      files.forEach((file) => {
+        data.append('interview_sheets', file);
+      });
+      const response = await api.post(
+        `/interviews/${cadet_id}/attachments`,
+        data,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      setInterviewAttachments(response.data?.data || []);
+      toast.success(response.data?.message || 'Interview sheets uploaded');
+      return true;
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || 'Failed to upload interview sheets',
+      );
+      return false;
+    } finally {
+      setUploadingSheets(false);
+    }
+  };
+
+  const handleDeleteInterviewSheet = async () => {
+    if (!deleteAttachment) return;
+
+    setDeletingAttachment(true);
+    try {
+      await api.delete(
+        `/interviews/${cadet_id}/attachments/${deleteAttachment.id}`,
+      );
+      setInterviewAttachments((current) =>
+        current.filter((attachment) => attachment.id !== deleteAttachment.id),
+      );
+      setDeleteAttachment(null);
+      toast.success('Interview sheet deleted successfully');
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || 'Failed to delete interview sheet',
+      );
+    } finally {
+      setDeletingAttachment(false);
+    }
+  };
+
+  const handleDeleteHandwrittenSheet = async () => {
+    if (!deleteHandwrittenDocument) return;
+    setDeletingHandwritten(true);
+    try {
+      await api.delete(
+        `/interviews/${cadet_id}/handwritten-sheets/${deleteHandwrittenDocument.id}`,
+      );
+      setHandwrittenDocuments((current) =>
+        current.filter(
+          (document) => document.id !== deleteHandwrittenDocument.id,
+        ),
+      );
+      setDeleteHandwrittenDocument(null);
+      toast.success('Handwritten interview notes deleted successfully');
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          'Failed to delete handwritten interview notes',
+      );
+    } finally {
+      setDeletingHandwritten(false);
     }
   };
 
@@ -330,10 +387,6 @@ const InterviewForm = () => {
       data.append('comments', formData.comments);
       data.append('final_decision', formData.final_decision);
 
-      if (interviewSheetFile) {
-        data.append('interview_sheet', interviewSheetFile);
-      }
-
       await api.post(`/interviews/${cadet_id}`, data, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -348,9 +401,23 @@ const InterviewForm = () => {
     }
   };
 
-  const handleViewSheet = async () => {
+  const handleViewSheet = async (attachmentId) => {
+    await handleViewDocument(
+      `/interviews/${cadet_id}/attachments/${attachmentId}`,
+      'Failed to load interview sheet',
+    );
+  };
+
+  const handleViewHandwrittenSheet = async (documentId) => {
+    await handleViewDocument(
+      `/interviews/${cadet_id}/handwritten-sheets/${documentId}`,
+      'Failed to load handwritten interview notes',
+    );
+  };
+
+  const handleViewDocument = async (endpoint, errorMessage) => {
     try {
-      const response = await api.get(`/interviews/${cadet_id}/sheet`, {
+      const response = await api.get(endpoint, {
         responseType: 'blob',
       });
       const url = window.URL.createObjectURL(new Blob([response.data], { type: response.headers['content-type'] }));
@@ -358,8 +425,8 @@ const InterviewForm = () => {
       // Clean up the URL after a delay
       setTimeout(() => window.URL.revokeObjectURL(url), 100);
     } catch (error) {
-      console.error('Error viewing sheet:', error);
-      toast.error('Failed to load interview sheet');
+      console.error('Error viewing interview document:', error);
+      toast.error(errorMessage);
     }
   };
 
@@ -373,6 +440,40 @@ const InterviewForm = () => {
 
   return (
     <div className='py-6'>
+      {isHandwritingOpen && (
+        <InterviewHandwritingEditor
+          cadetId={cadet_id}
+          cadetName={cadet?.name_as_in_indos_cert}
+          onClose={() => setIsHandwritingOpen(false)}
+          onSaved={(document) => {
+            setHandwrittenDocuments((current) => [document, ...current]);
+            setIsHandwritingOpen(false);
+          }}
+        />
+      )}
+      <DeleteConfirmationModal
+        isOpen={Boolean(deleteAttachment)}
+        onClose={() => {
+          if (!deletingAttachment) setDeleteAttachment(null);
+        }}
+        onConfirm={handleDeleteInterviewSheet}
+        title='Delete Interview Sheet'
+        message={`Are you sure you want to delete ${
+          deleteAttachment?.original_name || 'this interview sheet'
+        }? This action cannot be undone.`}
+      />
+      <DeleteConfirmationModal
+        isOpen={Boolean(deleteHandwrittenDocument)}
+        onClose={() => {
+          if (!deletingHandwritten) setDeleteHandwrittenDocument(null);
+        }}
+        onConfirm={handleDeleteHandwrittenSheet}
+        title='Delete Handwritten Notes'
+        message={`Are you sure you want to delete ${
+          deleteHandwrittenDocument?.original_name ||
+          'this handwritten interview PDF'
+        }? This action cannot be undone.`}
+      />
       <PageHeader
         title="Interview Evaluation"
         subtitle={`Record outcome for ${cadet?.name_as_in_indos_cert}`}
@@ -652,77 +753,121 @@ const InterviewForm = () => {
             </div>
           </div>
 
-          <div className='space-y-4'>
-            {!isViewMode && (
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-700'>
-                  {existingSheetName ? 'Upload New Interview Sheet' : 'Upload Interview Sheet'}
-                </label>
-                <Input
-                  type='file'
-                  onChange={handleFileChange}
-                  className='cursor-pointer rounded-xl bg-gray-50'
-                  accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
-                />
-                <p className='text-xs text-gray-400 mt-1'>
-                  Supported: PDF, Word, Images (Up to 10MB)
+          <div className='grid grid-cols-1 gap-6 border-t border-slate-200 pt-6 lg:grid-cols-2'>
+            <div className='flex flex-wrap items-center justify-between gap-3 lg:col-start-1 lg:row-start-1'>
+              <div>
+                <h3 className='text-sm font-semibold text-slate-900'>
+                  Write Interview Notes
+                </h3>
+                <p className='mt-1 text-xs text-slate-500'>
+                  Write with S Pen, touch, or mouse and save as PDF.
                 </p>
               </div>
-            )}
+              {!isViewMode ? (
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => setIsHandwritingOpen(true)}
+                  className='h-10 gap-2 border-blue-200 bg-white text-blue-700 hover:bg-blue-50'
+                >
+                  <PenLine size={17} />
+                  Write Notes
+                </Button>
+              ) : null}
+            </div>
 
-            {existingSheetName && (
-              <div className='group relative p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-300'>
-                <div className='flex items-start gap-4'>
-                  {/* Preview Section */}
-                  <div 
-                    onClick={handleViewSheet}
-                    className='relative w-24 h-24 rounded-xl overflow-hidden border-2 border-white shadow-sm bg-white cursor-pointer group-hover:shadow-md transition-all'
-                  >
-                    {previewLoading ? (
-                      <div className='absolute inset-0 flex items-center justify-center bg-gray-50'>
-                        <Loader2 className='animate-spin text-blue-400' size={20} />
-                      </div>
-                    ) : previewUrl ? (
-                      <img src={previewUrl} alt='Preview' className='w-full h-full object-cover' />
-                    ) : existingSheetMimeType === 'application/pdf' ? (
-                      <div className='absolute inset-0 flex flex-col items-center justify-center bg-red-50 text-red-500'>
-                        <FileText size={24} />
-                        <span className='text-[10px] font-bold mt-1'>PDF</span>
-                      </div>
-                    ) : (
-                      <div className='absolute inset-0 flex flex-col items-center justify-center bg-gray-50 text-gray-400'>
-                        <FileText size={24} />
-                        <span className='text-[10px] font-bold mt-1'>FILE</span>
-                      </div>
-                    )}
-                    <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity'>
-                      <Eye className='text-white' size={20} />
-                    </div>
-                  </div>
+            <div className='lg:col-start-2 lg:row-span-2 lg:row-start-1'>
+            <FileUploadPanel
+              title='Upload Interview Sheet'
+              description='Upload supporting sheets separately from the interview result.'
+              files={interviewAttachments}
+              showFileList={interviewAttachments.length > 0}
+              multiple
+              maxFiles={10}
+              maxSizeMB={10}
+              canUpload={!isViewMode}
+              canDelete={!isViewMode}
+              uploadLocked={interviewAttachments.length > 0}
+              uploading={uploadingSheets}
+              lockMessage='Upload is disabled after submission. Delete all uploaded sheets to upload a new set.'
+              emptyMessage='No interview sheets uploaded.'
+              onUpload={handleUploadInterviewSheets}
+              onView={(attachment) => handleViewSheet(attachment.id)}
+              onDelete={setDeleteAttachment}
+              getFileMetadata={(attachment) => {
+                const details = [
+                  attachment.mime_type?.split('/').pop()?.toUpperCase() ||
+                    'FILE',
+                ];
+                if (Number(attachment.file_size) > 0) {
+                  details.push(
+                    `${(Number(attachment.file_size) / 1024 / 1024).toFixed(2)} MB`,
+                  );
+                }
+                if (attachment.created_at) {
+                  details.push(
+                    new Date(attachment.created_at).toLocaleString(),
+                  );
+                }
+                return details.join(' | ');
+              }}
+            />
+            </div>
 
-                  {/* Info Section */}
-                  <div className='flex-1 py-1'>
-                    <div className='flex items-center gap-2 mb-1'>
-                      <span className='px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold uppercase rounded tracking-wider'>
-                        Current Attachment
-                      </span>
-                    </div>
-                    <p className='text-sm text-gray-700 font-bold truncate max-w-[180px]' title={existingSheetName}>
-                      {existingSheetName}
-                    </p>
-                    <p className='text-[11px] text-gray-400 mt-1 uppercase font-medium'>
-                      {existingSheetMimeType.split('/')[1] || 'Document'}
-                    </p>
-                    
-                    <button
-                      type='button'
-                      onClick={handleViewSheet}
-                      className='mt-2 flex items-center gap-1.5 text-blue-600 text-xs font-bold hover:text-blue-700 hover:underline transition-all'
+            {handwrittenDocuments.length > 0 && (
+              <div className='flex h-full flex-col overflow-hidden rounded-xl border border-emerald-100 bg-white lg:col-start-1 lg:row-start-2'>
+                <div className='flex items-center justify-between border-b border-emerald-100 bg-emerald-50/60 px-3 py-2'>
+                  <span className='text-xs font-semibold uppercase tracking-wide text-emerald-700'>
+                    Handwritten Notes
+                  </span>
+                  <span className='rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700'>
+                    {handwrittenDocuments.length}
+                  </span>
+                </div>
+                <div className='flex-1 divide-y divide-slate-100'>
+                  {handwrittenDocuments.map((document) => (
+                    <div
+                      key={document.id}
+                      className='flex items-center gap-3 p-3 hover:bg-slate-50'
                     >
-                      <Eye size={14} />
-                      Open Full Document
-                    </button>
-                  </div>
+                      <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-500'>
+                        <FileText size={20} />
+                      </div>
+                      <div className='min-w-0 flex-1'>
+                        <p
+                          className='truncate text-sm font-medium text-slate-800'
+                          title={document.original_name}
+                        >
+                          {document.original_name}
+                        </p>
+                        {document.created_at ? (
+                          <p className='mt-0.5 text-xs text-slate-500'>
+                            {new Date(document.created_at).toLocaleString()}
+                          </p>
+                        ) : null}
+                      </div>
+                      <button
+                        type='button'
+                        onClick={() => handleViewHandwrittenSheet(document.id)}
+                        className='rounded-lg p-2 text-blue-600 hover:bg-blue-50'
+                        title='View handwritten notes'
+                        aria-label={`View ${document.original_name}`}
+                      >
+                        <Eye size={18} />
+                      </button>
+                      {!isViewMode ? (
+                        <button
+                          type='button'
+                          onClick={() => setDeleteHandwrittenDocument(document)}
+                          className='rounded-lg p-2 text-red-600 hover:bg-red-50'
+                          title='Delete handwritten notes'
+                          aria-label={`Delete ${document.original_name}`}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

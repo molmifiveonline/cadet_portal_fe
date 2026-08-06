@@ -21,9 +21,10 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
+import FileUploadPanel from "../../components/common/FileUploadPanel";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 import DocumentRequestModal from "./DocumentRequestModal";
-import { STATUS_BADGES } from "../../lib/constant";
+import { DOCUMENT_TYPES, STATUS_BADGES } from "../../lib/constant";
 
 const getStatusBadge = (status = "pending") => {
   const badge = STATUS_BADGES[status] || STATUS_BADGES.pending;
@@ -44,11 +45,7 @@ const DocumentsTab = ({ drive }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedCadets, setExpandedCadets] = useState({});
   const [uploadingFor, setUploadingFor] = useState(null);
-  const [uploadForm, setUploadForm] = useState({
-    document_name: "",
-    document_type: "CV",
-    file: null,
-  });
+  const [uploadTypes, setUploadTypes] = useState({});
   const [reviewingDoc, setReviewingDoc] = useState(null);
   const [reviewRemarks, setReviewRemarks] = useState("");
   const [deleteModal, setDeleteModal] = useState({
@@ -95,29 +92,35 @@ const DocumentsTab = ({ drive }) => {
     setExpandedCadets((prev) => ({ ...prev, [cadetId]: !prev[cadetId] }));
   };
 
-  const handleUpload = async (cadetId) => {
-    if (!uploadForm.file || !uploadForm.document_name || !uploadForm.document_type) {
-      toast.error("Please select a file and complete the document details");
+  const handleUpload = async (cadetId, files) => {
+    const file = files?.[0];
+    const documentType = uploadTypes[cadetId] || "CV";
+    if (!file || !documentType) {
+      toast.error("Please select a file and document type");
       return;
     }
 
     try {
+      setUploadingFor(cadetId);
       const formData = new FormData();
-      formData.append("document", uploadForm.file);
-      formData.append("document_name", uploadForm.document_name);
-      formData.append("document_type", uploadForm.document_type);
+      formData.append("document", file);
+      formData.append("document_name", file.name);
+      formData.append("document_type", documentType);
 
       await api.post(`/documents/cadet/${cadetId}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       toast.success("Document uploaded successfully");
-      setUploadingFor(null);
-      setUploadForm({ document_name: "", document_type: "CV", file: null });
+      setUploadTypes((current) => ({ ...current, [cadetId]: "CV" }));
       await fetchDocuments();
+      return true;
     } catch (error) {
       console.error("Error uploading document:", error);
       toast.error(error.response?.data?.message || "Failed to upload document");
+      return false;
+    } finally {
+      setUploadingFor(null);
     }
   };
 
@@ -231,8 +234,10 @@ const DocumentsTab = ({ drive }) => {
       field: "document_name",
       headerName: "Document Name",
       width: "180px",
-      renderCell: ({ value }) => (
-        <span className="font-medium text-slate-900">{value}</span>
+      renderCell: ({ row }) => (
+        <span className="font-medium text-slate-900">
+          {row.original_filename || row.document_name}
+        </span>
       ),
     },
     {
@@ -509,91 +514,50 @@ const DocumentsTab = ({ drive }) => {
 
                 {isExpanded ? (
                   <div className="border-t border-slate-200 bg-slate-50/60 p-4">
-                    {/* Documents are managed via OneDrive only - portal upload disabled
-                    {uploadingFor !== cadet.cadet_id ? (
-                      canUpload ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setUploadingFor(cadet.cadet_id);
-                          setUploadForm((prev) => ({
-                            ...prev,
-                            document_type: isInstituteUser ? "CV" : prev.document_type,
-                            document_name: isInstituteUser ? "Cadet CV" : prev.document_name,
-                          }));
-                        }}
-                        className="mb-4 gap-2"
-                      >
-                        <Upload size={14} />
-                        {isInstituteUser ? "Upload CV / Document" : "Upload Document"}
-                      </Button>
-                      ) : null
-                    ) : (
-                      <div className="mb-4 space-y-3 rounded-lg border border-blue-200 bg-white p-4">
-                        <h4 className="text-sm font-medium text-slate-700">
-                          Upload New Document
-                        </h4>
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                          <Input
-                            placeholder="Document name"
-                            value={uploadForm.document_name}
-                            onChange={(event) =>
-                              setUploadForm((prev) => ({
-                                ...prev,
-                                document_name: event.target.value,
-                              }))
-                            }
-                          />
-                          <select
-                            value={uploadForm.document_type}
-                            onChange={(event) =>
-                              setUploadForm((prev) => ({
-                                ...prev,
-                                document_type: event.target.value,
-                              }))
-                            }
-                            className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                          >
-                            {DOCUMENT_TYPES.map((type) => (
-                              <option key={type} value={type}>
-                                {type}
-                              </option>
-                            ))}
-                          </select>
-                          <Input
-                            type="file"
-                            onChange={(event) =>
-                              setUploadForm((prev) => ({
-                                ...prev,
-                                file: event.target.files?.[0] || null,
-                              }))
-                            }
-                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" onClick={() => handleUpload(cadet.cadet_id)}>
-                            Upload
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setUploadingFor(null);
-                              setUploadForm({
-                                document_name: "",
-                                document_type: "CV",
-                                file: null,
-                              });
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
+                    {canUpload ? (
+                      <div className="mb-4">
+                        <FileUploadPanel
+                          title={
+                            isInstituteUser
+                              ? "Upload CV / Document"
+                              : "Upload New Document"
+                          }
+                          description="Choose the document type and upload the candidate file."
+                          maxFiles={1}
+                          maxSizeMB={5}
+                          uploading={uploadingFor === cadet.cadet_id}
+                          showFileList={false}
+                          uploadButtonLabel="Upload Document"
+                          onUpload={(files) =>
+                            handleUpload(cadet.cadet_id, files)
+                          }
+                          uploadFields={
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-slate-700">
+                                Document Type
+                              </label>
+                              <select
+                                value={uploadTypes[cadet.cadet_id] || "CV"}
+                                onChange={(event) =>
+                                  setUploadTypes((current) => ({
+                                    ...current,
+                                    [cadet.cadet_id]: event.target.value,
+                                  }))
+                                }
+                                disabled={uploadingFor === cadet.cadet_id}
+                                className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 md:max-w-sm"
+                              >
+                                {DOCUMENT_TYPES.map((type) => (
+                                  <option key={type} value={type}>
+                                    {type}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          }
+                        />
                       </div>
-                    )}
-                    */}
+                    ) : null}
 
                     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                       <ReusableDataTable

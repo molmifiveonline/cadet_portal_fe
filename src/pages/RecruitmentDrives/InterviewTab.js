@@ -25,6 +25,11 @@ const DECISION_COLORS = {
   fail: "bg-red-100 text-red-700",
 };
 
+const getInterviewRowClassName = (cadet = {}) =>
+  String(cadet.interview_final_decision || "").trim().toLowerCase() === "selected"
+    ? "bg-emerald-50/50 hover:bg-emerald-50/80 [&>td:not(:last-child)]:!bg-emerald-50/50 [&:hover>td:not(:last-child)]:!bg-emerald-50/80 [&>td:last-child]:!bg-white"
+    : "";
+
 const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
   const navigate = useNavigate();
   const [cadets, setCadets] = useState([]);
@@ -263,9 +268,9 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
               )
             }
             className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-            title={row.interview_id ? "Edit interview" : "Start interview"}
+            title={row.interview_final_decision ? "Edit interview" : "Start interview"}
           >
-            {row.interview_id ? <Edit size={16} /> : <Plus size={16} />}
+            {row.interview_final_decision ? <Edit size={16} /> : <Plus size={16} />}
           </Button>
           <Button
             variant="ghost"
@@ -334,6 +339,7 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
           checkboxSelection={!readOnly}
           rowSelectionModel={!readOnly ? selectedCadets : []}
           onRowSelectionModelChange={!readOnly ? setSelectedCadets : undefined}
+          getRowClassName={getInterviewRowClassName}
           emptyMessage={
             searchTerm
               ? `No cadets found matching "${searchTerm}"`
