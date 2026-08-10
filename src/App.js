@@ -50,6 +50,10 @@ const RecruitmentDrives = lazy(() => import('./pages/RecruitmentDrives'));
 const DriveForm = lazy(() => import('./pages/RecruitmentDrives/DriveForm'));
 const DriveDetails = lazy(() => import('./pages/RecruitmentDrives/DriveDetails'));
 const NotificationHistory = lazy(() => import('./pages/Notifications/NotificationHistory'));
+const Allocations = lazy(() => import('./pages/Allocations'));
+const AllocationDetail = lazy(() => import('./pages/Allocations/AllocationDetail'));
+const AllocationMasters = lazy(() => import('./pages/AllocationMasters'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 function App() {
   return (
@@ -461,6 +465,58 @@ function App() {
             />
 
             {/* Vessel Master Routes */}
+            <Route
+              path='/allocations'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='allocations' action='view'>
+                      <Allocations />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/allocations/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='allocations' action='view'>
+                      <AllocationDetail />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/allocation-masters'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='allocation-masters' action='view'>
+                      <AllocationMasters />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/onboarding'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='onboarding' action='view'>
+                      <Onboarding />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path='/vessels'
               element={

@@ -11,7 +11,6 @@ import {
   MapPin,
   Users,
   FileText,
-  Calendar,
   MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -34,41 +33,36 @@ const VesselForm = () => {
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     name: '',
     imo_number: '',
     vessel_type: '',
+    vessel_type_id: '',
+    department: 'Both',
     flag: '',
     status: 'Active',
     location: '',
-    total_seats: 0,
+    total_seats: '',
     voyage_ref: '',
     reporting_port: '',
-    joining_date: '',
     communication_details: '',
+    contact_person_name: '',
+    contact_person_email: '',
+    contact_person_phone: '',
   });
-
-  const VESSEL_TYPES = [
-    'Bulk Carrier',
-    'Oil Tanker',
-    'Chemical Tanker',
-    'Container Ship',
-    'Ro-Ro Ship',
-    'LNG Carrier',
-    'LPG Carrier',
-    'Offshore Supply Vessel',
-    'General Cargo',
-    'Passenger Ship',
-    'Other',
-  ];
 
   useEffect(() => {
     const fetchVessel = async () => {
       try {
         const response = await api.get(`/vessels/${id}`);
         if (response.data.success) {
-          setFormData(response.data.data);
+          const vessel = response.data.data;
+          const editableVessel = { ...vessel };
+          delete editableVessel.joining_date;
+          delete editableVessel.required_documents;
+          setFormData({ ...editableVessel, vessel_type_id: vessel.vessel_type_id || '' });
         }
       } catch (error) {
         toast.error('Failed to fetch vessel details');
@@ -86,17 +80,31 @@ const VesselForm = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const handleSelectChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+    if (!formData.name?.trim()) nextErrors.name = 'Vessel Name is required.';
+    if (!formData.imo_number?.trim()) nextErrors.imo_number = 'IMO Number is required.';
+    if (!formData.vessel_type?.trim()) nextErrors.vessel_type = 'Vessel Type is required.';
+    if (!['Deck', 'Engine', 'Both'].includes(formData.department)) nextErrors.department = 'Department Compatibility is required.';
+    return nextErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.imo_number) {
-      toast.error('Please fill in all required fields');
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      const firstInvalidField = Object.keys(validationErrors)[0];
+      requestAnimationFrame(() => document.querySelector(`[name="${firstInvalidField}"]`)?.focus());
       return;
     }
 
@@ -112,9 +120,9 @@ const VesselForm = () => {
       }
       navigate('/vessels');
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Failed to save vessel details',
-      );
+      const apiErrors = error.response?.data?.errors;
+      if (apiErrors && typeof apiErrors === 'object') setErrors(apiErrors);
+      toast.error(error.response?.data?.message || 'Failed to save vessel details');
     } finally {
       setLoading(false);
     }
@@ -127,6 +135,9 @@ const VesselForm = () => {
       </div>
     );
   }
+
+  const fieldClass = (field, className) => `${className} ${errors[field] ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`;
+  const FieldError = ({ field }) => errors[field] ? <p className='text-sm text-red-600' role='alert'>{errors[field]}</p> : null;
 
   return (
     <div className='py-6 mx-auto'>
@@ -160,10 +171,11 @@ const VesselForm = () => {
                   placeholder='e.g., MOL Truth'
                   value={formData.name}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={fieldClass('name', 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none')}
+                  aria-invalid={Boolean(errors.name)}
                 />
               </div>
+              <FieldError field='name' />
             </div>
 
             {/* IMO Number */}
@@ -179,37 +191,46 @@ const VesselForm = () => {
                   placeholder='e.g., 9773210'
                   value={formData.imo_number}
                   onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                  required
+                  className={fieldClass('imo_number', 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none')}
+                  aria-invalid={Boolean(errors.imo_number)}
                 />
               </div>
+              <FieldError field='imo_number' />
             </div>
 
             {/* Vessel Type */}
             <div className='space-y-2'>
               <label className='text-sm font-medium text-gray-700'>
-                Vessel Type
+                Vessel Type <span className='text-red-500 ml-1'>*</span>
               </label>
               <div className='relative'>
                 <Anchor className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10' />
-                <Select
-                  onValueChange={(val) =>
-                    handleSelectChange('vessel_type', val)
-                  }
-                  value={formData.vessel_type}
-                >
-                  <SelectTrigger className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
-                    <SelectValue placeholder='Select Type' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {VESSEL_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  name='vessel_type'
+                  value={formData.vessel_type || ''}
+                  onChange={handleInputChange}
+                  placeholder='Example: Bulk Carrier'
+                  className={fieldClass('vessel_type', 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none')}
+                  aria-invalid={Boolean(errors.vessel_type)}
+                />
               </div>
+              <FieldError field='vessel_type' />
+            </div>
+
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>Department Compatibility <span className='text-red-500 ml-1'>*</span></label>
+              <select
+                name='department'
+                value={formData.department || 'Both'}
+                onChange={handleInputChange}
+                className={fieldClass('department', 'w-full px-3 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white outline-none')}
+                aria-invalid={Boolean(errors.department)}
+              >
+                <option value='Both'>Both</option>
+                <option value='Deck'>Deck</option>
+                <option value='Engine'>Engine</option>
+              </select>
+              <FieldError field='department' />
             </div>
 
             {/* Flag */}
@@ -324,21 +345,20 @@ const VesselForm = () => {
               </div>
             </div>
 
-            {/* Joining Date */}
+          </div>
+
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
-                Joining Date
-              </label>
-              <div className='relative'>
-                <Input
-                  name='joining_date'
-                  type='date'
-                  value={formData.joining_date}
-                  onChange={handleInputChange}
-                  className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'
-                />
-                <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
-              </div>
+              <label className='text-sm font-medium text-gray-700'>Contact Person</label>
+              <Input name='contact_person_name' value={formData.contact_person_name || ''} onChange={handleInputChange} placeholder='Full name' />
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>Contact Email</label>
+              <Input name='contact_person_email' type='email' value={formData.contact_person_email || ''} onChange={handleInputChange} placeholder='Email address' />
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium text-gray-700'>Contact Phone</label>
+              <Input name='contact_person_phone' value={formData.contact_person_phone || ''} onChange={handleInputChange} placeholder='Phone / WhatsApp' />
             </div>
           </div>
 
