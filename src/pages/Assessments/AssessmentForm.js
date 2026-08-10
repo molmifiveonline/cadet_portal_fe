@@ -30,11 +30,15 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import { errorTextClass } from '../../lib/utils/formStyles';
+import FileUploadPanel from '../../components/common/FileUploadPanel';
 
 const AssessmentForm = () => {
   const { cadet_id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const isViewMode =
+    location.pathname.endsWith('/view') ||
+    new URLSearchParams(location.search).get('view') === 'true';
 
   const handleBack = () => {
     const returnPath = location.state?.returnPath;
@@ -128,19 +132,6 @@ const AssessmentForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('File is too large. Maximum size is 5MB.');
-        e.target.value = '';
-        setEssayFile(null);
-        return;
-      }
-      setEssayFile(file);
     }
   };
 
@@ -269,8 +260,8 @@ const AssessmentForm = () => {
   return (
     <div className='py-6'>
       <PageHeader
-        title="Cadet Assessment"
-        subtitle={`Evaluate and record test results for ${cadet?.name_as_in_indos_cert}`}
+        title={isViewMode ? 'Assessment Details' : 'Cadet Assessment'}
+        subtitle={`${isViewMode ? 'View recorded assessment for' : 'Evaluate and record test results for'} ${cadet?.name_as_in_indos_cert}`}
         icon={ClipboardList}
         backButton={
           <button
@@ -282,7 +273,7 @@ const AssessmentForm = () => {
         }
       />
 
-      {cadet && !Number(cadet.institute_detail_filled || 0) && (
+      {!isViewMode && cadet && !Number(cadet.institute_detail_filled || 0) && (
         <div className='mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 text-amber-800 animate-in fade-in slide-in-from-top-2 duration-300'>
           <AlertCircle className='shrink-0 mt-0.5' size={20} />
           <div>
@@ -296,7 +287,10 @@ const AssessmentForm = () => {
       )}
 
       <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500'>
-        <form onSubmit={handleSubmit} className='space-y-8'>
+        <form
+          onSubmit={isViewMode ? (event) => event.preventDefault() : handleSubmit}
+          className='space-y-8'
+        >
           {/* Test Scores Section */}
           <div>
             <h2 className='text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2'>
@@ -314,6 +308,7 @@ const AssessmentForm = () => {
                     type='date'
                     value={formData.assessment_date}
                     onChange={handleInputChange}
+                    disabled={isViewMode}
                     invalid={!!errors.assessment_date}
                     className={inputClass}
                   />
@@ -333,6 +328,7 @@ const AssessmentForm = () => {
                     type='time'
                     value={formData.assessment_time}
                     onChange={handleInputChange}
+                    disabled={isViewMode}
                     invalid={!!errors.assessment_time}
                     className={inputClass}
                   />
@@ -350,6 +346,7 @@ const AssessmentForm = () => {
                     name='ces_test'
                     value={formData.ces_test}
                     onChange={handleInputChange}
+                    disabled={isViewMode}
                     placeholder='Score 1'
                     invalid={!!errors.ces_test}
                     className={inputClass}
@@ -368,6 +365,7 @@ const AssessmentForm = () => {
                     name='ces_test_2'
                     value={formData.ces_test_2}
                     onChange={handleInputChange}
+                    disabled={isViewMode}
                     placeholder='Score 2'
                     className={inputClass}
                   />
@@ -389,6 +387,7 @@ const AssessmentForm = () => {
                     name='english_test'
                     value={formData.english_test}
                     onChange={handleInputChange}
+                    disabled={isViewMode}
                     placeholder='Enter score'
                     invalid={!!errors.english_test}
                     className={inputClass}
@@ -409,6 +408,7 @@ const AssessmentForm = () => {
                     step='0.01'
                     value={formData.essay_writing_mark}
                     onChange={handleInputChange}
+                    disabled={isViewMode}
                     placeholder='Enter mark'
                     invalid={!!errors.essay_writing_mark}
                     className={inputClass}
@@ -425,42 +425,37 @@ const AssessmentForm = () => {
               Essay & Final Evaluation
             </h2>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-700'>
-                  Upload Essay Document
-                </label>
-                <div className='flex items-center gap-3'>
-                  <Input
-                    type='file'
-                    onChange={handleFileChange}
-                    className='cursor-pointer rounded-xl bg-gray-50'
-                    accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
-                  />
-                  {(essayFile || existingEssay) && (
-                    <Button
-                      type='button'
-                      variant='outline'
-                      onClick={downloadEssay}
-                      className='shrink-0 h-10 gap-2 bg-blue-50/30 text-blue-700 border-blue-200'
-                      title='Download current essay'
-                    >
-                      <FileText size={18} />
-                      <span className='hidden sm:inline'>
-                        {essayFile ? 'Preview' : 'Current Essay'}
-                      </span>
-                    </Button>
-                  )}
-                </div>
-                {existingEssay && !essayFile && (
-                  <p className='text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1'>
-                    <CheckCircle size={10} />
-                    Existing File: {existingEssay}
-                  </p>
-                )}
-                <p className='text-xs text-gray-400 mt-1'>
-                  Supported: PDF, Word, Images (Up to 5MB)
-                </p>
-              </div>
+              <FileUploadPanel
+                title='Upload Essay Document'
+                description='PDF, Word, JPG or PNG.'
+                files={
+                  essayFile
+                    ? [essayFile]
+                    : existingEssay
+                      ? [{ id: 'existing-essay', name: existingEssay }]
+                      : []
+                }
+                showFileList={isViewMode || Boolean(essayFile || existingEssay)}
+                emptyMessage='No essay document uploaded.'
+                maxFiles={1}
+                maxSizeMB={5}
+                canUpload={!isViewMode}
+                uploadLocked={Boolean(essayFile || existingEssay)}
+                uploadButtonLabel='Upload Essay'
+                lockMessage='Delete the selected essay document before uploading another file.'
+                onUpload={(files) => {
+                  setEssayFile(files[0]);
+                  return true;
+                }}
+                onView={downloadEssay}
+                canDelete={(file) => !isViewMode && file instanceof File}
+                onDelete={() => setEssayFile(null)}
+                getFileMetadata={(file) =>
+                  file instanceof File
+                    ? `${file.type?.split('/').pop()?.toUpperCase() || 'FILE'} | ${(file.size / 1024 / 1024).toFixed(2)} MB`
+                    : 'Saved essay document'
+                }
+              />
 
               <div className='space-y-4'>
                 <div className='space-y-2'>
@@ -469,6 +464,7 @@ const AssessmentForm = () => {
                   </label>
                   <Select
                     value={formData.status}
+                    disabled={isViewMode}
                     onValueChange={(val) => {
                       setFormData((prev) => ({ ...prev, status: val }));
                       if (errors.status) {
@@ -509,6 +505,7 @@ const AssessmentForm = () => {
                   </label>
                   <Select
                     value={formData.mark_for_interview ? 'yes' : 'no'}
+                    disabled={isViewMode}
                     onValueChange={(val) =>
                       setFormData((prev) => ({ ...prev, mark_for_interview: val === 'yes' }))
                     }
@@ -569,6 +566,7 @@ const AssessmentForm = () => {
                 name='remarks'
                 value={formData.remarks}
                 onChange={handleInputChange}
+                disabled={isViewMode}
                 rows={4}
                 className='w-full rounded-xl border border-gray-300 bg-gray-50/50 p-4 text-sm focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 outline-none resize-none'
                 placeholder='Add detailed assessment remarks here...'
@@ -582,25 +580,27 @@ const AssessmentForm = () => {
               onClick={handleBack}
               className='px-6 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors'
             >
-              Cancel
+              {isViewMode ? 'Close' : 'Cancel'}
             </button>
-            <Button
-              type='submit'
-              className='bg-[#3a5f9e] hover:bg-[#325186] text-white px-8 py-2.5 h-auto rounded-lg shadow-sm font-medium transition-all active:scale-95'
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className='w-4 h-4 mr-2' />
-                  Save Assessment
-                </>
-              )}
-            </Button>
+            {!isViewMode ? (
+              <Button
+                type='submit'
+                className='bg-[#3a5f9e] hover:bg-[#325186] text-white px-8 py-2.5 h-auto rounded-lg shadow-sm font-medium transition-all active:scale-95'
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className='w-4 h-4 mr-2' />
+                    Save Assessment
+                  </>
+                )}
+              </Button>
+            ) : null}
           </div>
         </form>
       </div>

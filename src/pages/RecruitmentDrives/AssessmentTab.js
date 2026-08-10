@@ -2,13 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  CheckCircle,
   Edit,
   Eye,
   Plus,
   Search,
   Send,
-  XCircle,
 } from "lucide-react";
 import PageLoader from "../../components/common/PageLoader";
 import api from "../../lib/utils/apiConfig";
@@ -25,12 +23,6 @@ const hasAssessmentValue = (value) => {
   return String(value).trim() !== "";
 };
 
-const isAssessmentPassed = (cadet = {}) =>
-  String(cadet.assessment_status || cadet.status || "")
-    .trim()
-    .toLowerCase() === "pass" ||
-  String(cadet.status || "").trim().toLowerCase() === "assessment passed";
-
 const hasTwoCompletedAttempts = (cadet = {}) =>
   hasAssessmentValue(cadet.ces_test) && hasAssessmentValue(cadet.ces_test_2);
 
@@ -44,6 +36,11 @@ const isAssessmentCompletedStatus = (cadet = {}) =>
 const isAssessmentLocked = (cadet = {}) =>
   hasTwoCompletedAttempts(cadet) ||
   isAssessmentCompletedStatus(cadet);
+
+const getAssessmentRowClassName = (cadet = {}) =>
+  String(cadet.assessment_status || "").trim().toLowerCase() === "pass"
+    ? "bg-emerald-50/50 hover:bg-emerald-50/80 [&>td:not(:last-child)]:!bg-emerald-50/50 [&:hover>td:not(:last-child)]:!bg-emerald-50/80 [&>td:last-child]:!bg-white"
+    : "";
 
 const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
   const navigate = useNavigate();
@@ -277,20 +274,21 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
         </span>
       ),
     },
-    !readOnly
-      ? {
+    {
       field: "actions",
       headerName: "Actions",
-      width: "120px",
+      width: readOnly ? "80px" : "120px",
       sortable: false,
       sticky: "right",
       cellClassName: "bg-white",
       align: "right",
       renderCell: ({ row }) => {
-        const disableStartAssessment = isAssessmentLocked(row);
+        const disableStartAssessment =
+          isAssessmentLocked(row) && !row.assessment_id;
         
         return (
           <div className="flex items-center justify-end gap-2">
+            {!readOnly ? (
             <Button
               variant="ghost"
               size="sm"
@@ -305,20 +303,27 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
             >
               {row.assessment_id ? <Edit size={16} /> : <Plus size={16} />}
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open(`/cadets/assess/${row.id}`, "_blank")}
-              className="h-8 w-8 p-0 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-              title="View assessment"
-            >
-              <Eye size={16} />
-            </Button>
+            ) : null}
+            {row.assessment_id ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  window.open(
+                    `/cadets/assess/${row.id}/view`,
+                    "_blank",
+                  )
+                }
+                className="h-8 w-8 p-0 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                title="View assessment"
+              >
+                <Eye size={16} />
+              </Button>
+            ) : null}
           </div>
         );
       },
-    }
-      : null,
+    },
   ].filter(Boolean);
 
   if (loading && cadets.length === 0) {
@@ -369,6 +374,7 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
           isRowSelectable={!readOnly ? (row) => !isAssessmentLocked(row) : undefined}
           rowSelectionModel={!readOnly ? selectedCadets : []}
           onRowSelectionModelChange={!readOnly ? setSelectedCadets : undefined}
+          getRowClassName={getAssessmentRowClassName}
           emptyMessage={
             searchTerm
               ? `No cadets found matching "${searchTerm}"`

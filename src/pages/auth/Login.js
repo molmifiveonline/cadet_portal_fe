@@ -143,7 +143,7 @@ const Login = () => {
                     onChange={handleChange}
                     aria-invalid={formErrors.email ? true : undefined}
                     className={`w-full pl-10 pr-4 py-3 rounded-xl bg-white/80 border border-gray-300 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none shadow-sm ${getInvalidFieldClass(formErrors.email)}`}
-                    placeholder=""
+                    placeholder="Enter your email"
                   />
                 </div>
                 {formErrors.email && (

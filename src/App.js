@@ -331,6 +331,18 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path='/cadets/assess/:cadet_id/view'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='view'>
+                      <AssessmentForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path='/cadets/interview/:cadet_id'
@@ -344,7 +356,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path='/interviews'
               element={
