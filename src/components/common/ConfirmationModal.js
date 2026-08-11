@@ -11,6 +11,8 @@ const ConfirmationModal = ({
   cancelText = 'Cancel',
   confirmButtonClass = 'bg-[#3a5f9e] hover:bg-[#325186] shadow-[#3a5f9e]/20',
   isLoading = false,
+  confirmDisabled = false,
+  children,
 }) => {
   if (!isOpen) return null;
 
@@ -31,7 +33,8 @@ const ConfirmationModal = ({
           <X className='w-5 h-5' />
         </button>
         <h3 className='text-lg font-bold text-gray-900 mb-2'>{title}</h3>
-        <p className='text-gray-500 mb-6'>{message}</p>
+        {message && <p className='text-gray-500 mb-4'>{message}</p>}
+        {children && <div className='mb-6'>{children}</div>}
         <div className='flex justify-end gap-3'>
           <button
             onClick={onClose}
@@ -42,7 +45,7 @@ const ConfirmationModal = ({
           </button>
           <button
             onClick={onConfirm}
-            disabled={isLoading}
+            disabled={isLoading || confirmDisabled}
             className={`px-4 py-2 rounded-lg text-white font-medium transition-colors shadow-lg disabled:opacity-50 ${confirmButtonClass}`}
           >
             {isLoading ? 'Processing...' : confirmText}

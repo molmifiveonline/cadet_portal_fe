@@ -25,6 +25,13 @@ import api from "../lib/utils/apiConfig";
 import { formatDateForDisplay } from "../lib/utils/dateUtils";
 import PageLoader from "../components/common/PageLoader";
 import { STAGE_CONFIG } from "../lib/constant";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 // ─── Stage label + color mapping ────────────────────────────────────────────
 
 const getStageInfo = (stage) => {
@@ -425,18 +432,31 @@ const Dashboard = () => {
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Filter by Recruitment Drive
             </span>
-            <select
-              value={selectedDriveId}
-              onChange={(e) => setSelectedDriveId(e.target.value)}
-              className="w-full sm:w-72 rounded-xl border border-slate-200 bg-white/80 px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-md transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            >
-              <option value="all">All Recruitment Drives</option>
-              {drives.map((drive) => (
-                <option key={drive.id} value={drive.id}>
-                  {drive.drive_name} ({drive.institute_name})
-                </option>
-              ))}
-            </select>
+            <Select value={selectedDriveId} onValueChange={setSelectedDriveId}>
+              <SelectTrigger
+                aria-label="Filter by Recruitment Drive"
+                className="h-11 w-full rounded-xl border-slate-200 bg-white/90 px-3.5 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-md transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 sm:w-[22rem]"
+              >
+                <SelectValue placeholder="Select Recruitment Drive" />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                sideOffset={6}
+                className="max-h-80 w-[calc(100vw-2rem)] rounded-xl border-slate-200 shadow-xl sm:w-[min(42rem,calc(100vw-2rem))]"
+              >
+                <SelectItem value="all" className="py-2.5 font-semibold">
+                  All Recruitment Drives
+                </SelectItem>
+                {drives.map((drive) => {
+                  const label = `${drive.drive_name}${drive.institute_name ? ` (${drive.institute_name})` : ""}`;
+                  return (
+                    <SelectItem key={drive.id} value={drive.id} className="max-w-full py-2.5 pr-3" title={label}>
+                      <span className="block max-w-[calc(100vw-5rem)] truncate sm:max-w-[37rem]">{label}</span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
 
           {!stats?.stageWiseCounts?.length ? (

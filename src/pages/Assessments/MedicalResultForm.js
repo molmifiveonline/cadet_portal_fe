@@ -10,8 +10,6 @@ import {
   Loader2,
   X,
   Plus,
-  Eye,
-  FileText
 } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
@@ -26,6 +24,7 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import StageInviteModal from '../RecruitmentDrives/StageInviteModal';
+import FileUploadPanel from '../../components/common/FileUploadPanel';
 
 
 const MultiSelectDropdown = ({ options, value, onChange, placeholder }) => {
@@ -215,20 +214,25 @@ const MedicalResultForm = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    const validFiles = [];
-    let hasError = false;
-    for (const file of files) {
-      if (file.size > 10 * 1024 * 1024) {
-        hasError = true;
-      } else {
-        validFiles.push(file);
-      }
+  const handleMedicalReportSelection = (files) => {
+    if (reportFiles.length + files.length > 10) {
+      toast.error('You can add a maximum of 10 new medical reports.');
+      return false;
     }
-    if (hasError) toast.error('Some files are too large. Maximum size is 10MB.');
-    setReportFiles(prev => [...prev, ...validFiles]);
-    e.target.value = '';
+    setReportFiles((current) => [...current, ...files]);
+    return true;
+  };
+
+  const handleViewMedicalReport = (file) => {
+    if (file instanceof File) {
+      const fileUrl = URL.createObjectURL(file);
+      window.open(fileUrl, '_blank');
+      setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+      return;
+    }
+
+    const fileUrl = `${process.env.REACT_APP_API_URL?.replace('/api', '') || ''}${file.file_path}`;
+    window.open(fileUrl, '_blank');
   };
 
   const handleSubmit = async (e) => {
@@ -519,108 +523,37 @@ const MedicalResultForm = () => {
             </div>
           )}
 
-          <div className='space-y-2'>
-            {' '}
-            <label className='text-sm font-medium text-gray-700'>
-              Upload Medical Report
-            </label>
-            <Input
-              type='file'
-              multiple
-              onChange={handleFileChange}
-              className='cursor-pointer rounded-xl bg-gray-50'
-              accept='.pdf,.doc,.docx,.jpg,.jpeg,.png'
-            />
-            {reportFiles.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <p className="text-sm font-medium text-gray-700">New Reports to Upload:</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {reportFiles.map((file, i) => {
-                    const isImage = file.type.startsWith('image/');
-                    const fileUrl = isImage ? URL.createObjectURL(file) : null;
-                    return (
-                      <div key={i} className="group relative flex flex-col items-center justify-between p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all h-36">
-                        {isImage ? (
-                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
-                            <img src={fileUrl} alt={file.name} className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-16 h-16 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-500">
-                            <FileText size={32} />
-                          </div>
-                        )}
-                        <span className="text-xs text-gray-600 truncate w-full text-center mt-2" title={file.name}>
-                          {file.name}
-                        </span>
-                        <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200">
-                          {isImage && (
-                            <a
-                              href={fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-2 bg-white rounded-full text-blue-600 hover:bg-blue-50 transition-colors shadow-sm"
-                              title="View File"
-                            >
-                              <Eye size={18} />
-                            </a>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setReportFiles(p => p.filter((_, idx) => idx !== i))}
-                            className="p-2 bg-white rounded-full text-red-600 hover:bg-red-50 transition-colors shadow-sm"
-                            title="Remove File"
-                          >
-                            <X size={18} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {existingFiles.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <p className="text-sm font-medium text-gray-700">Previously Uploaded Reports:</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {existingFiles.map((file, i) => {
-                    const isImage = /\.(jpg|jpeg|png|gif)$/i.test(file.file_name);
-                    const fileUrl = `${process.env.REACT_APP_API_URL?.replace('/api', '') || ''}${file.file_path}`;
-                    return (
-                      <div key={i} className="group relative flex flex-col items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-md transition-all h-36">
-                        {isImage ? (
-                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
-                            <img src={fileUrl} alt={file.file_name} className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
-                          <div className="w-16 h-16 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500">
-                            <FileText size={32} />
-                          </div>
-                        )}
-                        <span className="text-xs text-gray-600 truncate w-full text-center mt-2" title={file.file_name}>
-                          {file.file_name}
-                        </span>
-                        <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200">
-                          <a
-                            href={fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 bg-white rounded-full text-blue-600 hover:bg-blue-50 transition-colors shadow-sm"
-                            title="View File"
-                          >
-                            <Eye size={18} />
-                          </a>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            <p className='text-xs text-gray-400 mt-1'>
-              Supported: PDF, Word, Images (Up to 10MB)
-            </p>
-          </div>
+          <FileUploadPanel
+            title='Upload Medical Report'
+            description='PDF, Word, JPG or PNG.'
+            files={[...reportFiles, ...existingFiles]}
+            showFileList={reportFiles.length + existingFiles.length > 0}
+            multiple
+            maxFiles={10}
+            maxSizeMB={10}
+            uploadButtonLabel='Upload Reports'
+            onUpload={handleMedicalReportSelection}
+            onView={handleViewMedicalReport}
+            canDelete={(file) => file instanceof File}
+            onDelete={(file) =>
+              setReportFiles((current) =>
+                current.filter((currentFile) => currentFile !== file),
+              )
+            }
+            getFileKey={(file, index) =>
+              file instanceof File
+                ? `${file.name}-${file.lastModified}-${index}`
+                : file.id || file.file_path || index
+            }
+            getFileName={(file) =>
+              file instanceof File ? file.name : file.file_name
+            }
+            getFileMetadata={(file) =>
+              file instanceof File
+                ? `New | ${(file.size / 1024 / 1024).toFixed(2)} MB`
+                : 'Previously uploaded report'
+            }
+          />
 
           <div className='space-y-2'>
             {' '}

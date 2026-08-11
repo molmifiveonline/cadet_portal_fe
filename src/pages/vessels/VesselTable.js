@@ -10,14 +10,12 @@ import {
   MapPin,
   Users,
   FileText,
-  Calendar,
   MessageSquare,
 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import Permission from '../../components/common/Permission';
 import { Button } from '../../components/ui/button';
-import { formatDateForDisplay } from '../../lib/utils/dateUtils';
 
 const VesselTable = ({
   vessels,
@@ -87,6 +85,17 @@ const VesselTable = ({
           <Anchor size={14} className='flex-shrink-0 text-gray-400' />
           <span>{row.vessel_type || '-'}</span>
         </div>
+      ),
+    },
+    {
+      field: 'department',
+      headerName: 'Department',
+      width: '120px',
+      sortable: true,
+      renderCell: ({ value }) => (
+        <span className='rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700'>
+          {value || 'Both'}
+        </span>
       ),
     },
     {
@@ -164,18 +173,6 @@ const VesselTable = ({
         <div className='flex items-center gap-2 text-sm text-gray-600'>
           <MapPin size={14} className='flex-shrink-0 text-gray-400' />
           <span>{row.reporting_port || '-'}</span>
-        </div>
-      ),
-    },
-    {
-      field: 'joining_date',
-      headerName: 'Joining Date',
-      width: '130px',
-      sortable: true,
-      renderCell: ({ row }) => (
-        <div className='flex items-center gap-2 text-sm text-gray-600'>
-          <Calendar size={14} className='flex-shrink-0 text-gray-400' />
-          <span>{formatDateForDisplay(row.joining_date)}</span>
         </div>
       ),
     },
