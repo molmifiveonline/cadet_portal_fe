@@ -21,6 +21,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 import DocumentRequestModal from "./DocumentRequestModal";
 import { STATUS_BADGES } from "../../lib/constant";
@@ -57,6 +58,9 @@ const DocumentsTab = ({ drive }) => {
   });
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [requestLoading, setRequestLoading] = useState(false);
+  const [candidateApproval, setCandidateApproval] = useState(null);
+  const [candidateApprovalRemarks, setCandidateApprovalRemarks] = useState("");
+  const [candidateApprovalLoading, setCandidateApprovalLoading] = useState(false);
 
   const isInstituteUser = user?.role === "Institute";
 
@@ -152,6 +156,46 @@ const DocumentsTab = ({ drive }) => {
     } catch (error) {
       console.error("Error reviewing document:", error);
       toast.error(error.response?.data?.message || "Failed to review document");
+    }
+  };
+
+  const openCandidateApproval = (cadet, status) => {
+    setCandidateApproval({ cadet, status });
+    setCandidateApprovalRemarks("");
+  };
+
+  const closeCandidateApproval = () => {
+    if (candidateApprovalLoading) return;
+    setCandidateApproval(null);
+    setCandidateApprovalRemarks("");
+  };
+
+  const handleCandidateApproval = async () => {
+    if (!candidateApproval || !candidateApprovalRemarks.trim()) return;
+    try {
+      setCandidateApprovalLoading(true);
+      await api.put(
+        `/documents/cadet/${candidateApproval.cadet.cadet_id}/verification`,
+        {
+          status: candidateApproval.status,
+          remarks: candidateApprovalRemarks.trim(),
+        },
+      );
+      toast.success(
+        candidateApproval.status === "Verified"
+          ? "Candidate approved for CTV Allocation"
+          : "CTV document approval revoked",
+      );
+      setCandidateApproval(null);
+      setCandidateApprovalRemarks("");
+      await fetchDocuments();
+    } catch (error) {
+      console.error("Error updating candidate document approval:", error);
+      toast.error(
+        error.response?.data?.message || "Failed to update document approval",
+      );
+    } finally {
+      setCandidateApprovalLoading(false);
     }
   };
 
@@ -454,6 +498,11 @@ const DocumentsTab = ({ drive }) => {
             const isExpanded = !!expandedCadets[cadet.cadet_id];
             const summary = getCadetSummary(cadet.documents || []);
             const canUpload = canUploadForCadet(cadet, summary);
+            const allDocumentsAccepted =
+              summary.total > 0 && summary.acceptedCount === summary.total;
+            const isCtvApproved =
+              cadet.document_verification_status === "Verified" &&
+              allDocumentsAccepted;
 
             return (
               <div
@@ -475,6 +524,15 @@ const DocumentsTab = ({ drive }) => {
                     </div>
                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                       {cadet.status}
+                    </span>
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                        isCtvApproved
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {isCtvApproved ? "CTV Approved" : "CTV Approval Pending"}
                     </span>
                   </div>
 
@@ -509,6 +567,65 @@ const DocumentsTab = ({ drive }) => {
 
                 {isExpanded ? (
                   <div className="border-t border-slate-200 bg-slate-50/60 p-4">
+                    {!isInstituteUser ? (
+                      <div
+                        className={`mb-4 flex flex-col justify-between gap-3 rounded-lg border p-4 sm:flex-row sm:items-center ${
+                          isCtvApproved
+                            ? "border-emerald-200 bg-emerald-50"
+                            : "border-amber-200 bg-amber-50"
+                        }`}
+                      >
+                        <div>
+                          <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                            <CheckCircle
+                              size={17}
+                              className={isCtvApproved ? "text-emerald-600" : "text-amber-600"}
+                            />
+                            {isCtvApproved
+                              ? "Approved for CTV Vessel Allocation"
+                              : "Complete document approval for CTV Allocation"}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-600">
+                            {isCtvApproved
+                              ? `Approved by ${cadet.document_verified_by || "Admin"}${
+                                  cadet.document_verified_at
+                                    ? ` on ${formatDateForDisplay(cadet.document_verified_at)}`
+                                    : ""
+                                }.`
+                              : summary.total === 0
+                                ? "At least one document is required before approval."
+                                : allDocumentsAccepted
+                                  ? "All documents are accepted. Admin can now approve this cadet."
+                                  : `${summary.total - summary.acceptedCount} document(s) must be accepted before approval.`}
+                          </p>
+                          {isCtvApproved && cadet.document_verification_remarks ? (
+                            <p className="mt-1 text-xs text-slate-500">
+                              Remarks: {cadet.document_verification_remarks}
+                            </p>
+                          ) : null}
+                        </div>
+                        {isCtvApproved ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openCandidateApproval(cadet, "Revoked")}
+                          >
+                            Revoke Approval
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={!allDocumentsAccepted}
+                            onClick={() => openCandidateApproval(cadet, "Verified")}
+                          >
+                            <CheckCircle size={15} className="mr-2" />
+                            Approve for CTV Allocation
+                          </Button>
+                        )}
+                      </div>
+                    ) : null}
                     {/* Documents are managed via OneDrive only - portal upload disabled
                     {uploadingFor !== cadet.cadet_id ? (
                       canUpload ? (
@@ -627,6 +744,40 @@ const DocumentsTab = ({ drive }) => {
         cadets={filteredCadets}
         loading={requestLoading}
       />
+
+      <ConfirmationModal
+        isOpen={Boolean(candidateApproval)}
+        onClose={closeCandidateApproval}
+        onConfirm={handleCandidateApproval}
+        title={
+          candidateApproval?.status === "Verified"
+            ? "Approve Documents for CTV Allocation"
+            : "Revoke CTV Document Approval"
+        }
+        message={
+          candidateApproval?.status === "Verified"
+            ? `Confirm that every document for ${candidateApproval?.cadet?.name_as_in_indos_cert || "this cadet"} was manually checked and accepted.`
+            : `This cadet will no longer appear in CTV Vessel Allocation candidate selection.`
+        }
+        confirmText={candidateApproval?.status === "Verified" ? "Approve Cadet" : "Revoke Approval"}
+        confirmButtonClass={
+          candidateApproval?.status === "Revoked"
+            ? "bg-red-600 hover:bg-red-700 shadow-red-600/20"
+            : undefined
+        }
+        isLoading={candidateApprovalLoading}
+        confirmDisabled={!candidateApprovalRemarks.trim()}
+      >
+        <label className="block text-sm font-medium text-slate-700">
+          Admin remarks
+          <textarea
+            className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 p-2 text-sm outline-none focus:border-blue-500"
+            value={candidateApprovalRemarks}
+            onChange={(event) => setCandidateApprovalRemarks(event.target.value)}
+            placeholder="Required"
+          />
+        </label>
+      </ConfirmationModal>
     </div>
   );
 };
