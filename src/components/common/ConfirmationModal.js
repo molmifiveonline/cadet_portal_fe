@@ -12,6 +12,7 @@ const ConfirmationModal = ({
   confirmButtonClass = 'bg-[#3a5f9e] hover:bg-[#325186] shadow-[#3a5f9e]/20',
   isLoading = false,
   confirmDisabled = false,
+  maxWidthClass = 'max-w-sm',
   children,
 }) => {
   if (!isOpen) return null;
@@ -22,7 +23,7 @@ const ConfirmationModal = ({
       onClick={!isLoading ? onClose : undefined}
     >
       <div
-        className='bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl transform transition-all scale-100 relative'
+        className={`bg-white rounded-2xl p-6 w-full ${maxWidthClass} shadow-xl transform transition-all scale-100 relative`}
         onClick={(e) => e.stopPropagation()}
       >
         <button

@@ -781,7 +781,7 @@ const InterviewForm = () => {
               title='Upload Interview Sheet'
               description='Upload supporting sheets separately from the interview result.'
               files={interviewAttachments}
-              showFileList={interviewAttachments.length > 0}
+              showFileList={isViewMode || interviewAttachments.length > 0}
               multiple
               maxFiles={10}
               maxSizeMB={10}
@@ -790,7 +790,7 @@ const InterviewForm = () => {
               uploadLocked={interviewAttachments.length > 0}
               uploading={uploadingSheets}
               lockMessage='Upload is disabled after submission. Delete all uploaded sheets to upload a new set.'
-              emptyMessage='No interview sheets uploaded.'
+              emptyMessage='No file uploaded.'
               onUpload={handleUploadInterviewSheets}
               onView={(attachment) => handleViewSheet(attachment.id)}
               onDelete={setDeleteAttachment}
@@ -814,7 +814,7 @@ const InterviewForm = () => {
             />
             </div>
 
-            {handwrittenDocuments.length > 0 && (
+            {(isViewMode || handwrittenDocuments.length > 0) && (
               <div className='flex h-full flex-col overflow-hidden rounded-xl border border-emerald-100 bg-white lg:col-start-1 lg:row-start-2'>
                 <div className='flex items-center justify-between border-b border-emerald-100 bg-emerald-50/60 px-3 py-2'>
                   <span className='text-xs font-semibold uppercase tracking-wide text-emerald-700'>
@@ -825,7 +825,7 @@ const InterviewForm = () => {
                   </span>
                 </div>
                 <div className='flex-1 divide-y divide-slate-100'>
-                  {handwrittenDocuments.map((document) => (
+                  {handwrittenDocuments.length > 0 ? handwrittenDocuments.map((document) => (
                     <div
                       key={document.id}
                       className='flex items-center gap-3 p-3 hover:bg-slate-50'
@@ -867,7 +867,11 @@ const InterviewForm = () => {
                         </button>
                       ) : null}
                     </div>
-                  ))}
+                  )) : (
+                    <div className='px-4 py-8 text-center text-sm text-slate-500'>
+                      No file uploaded.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
