@@ -291,7 +291,7 @@ const Allocations = () => {
         onClose={closeCreateModal}
         onConfirm={create}
         title="Create CTV Allocation"
-        message="Create the annual Deck and Engine allocation workspace."
+        message="Create the annual Deck and Engine allocation workspace. Assessment Types can be added and selected later for each cadet."
         confirmText="Create Allocation"
         isLoading={creating}
         confirmDisabled={!String(year).trim()}
@@ -316,10 +316,6 @@ const Allocations = () => {
             </span>
           )}
         </label>
-        <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900">
-          Active Assessment Types will be available for the Admin to select
-          separately for each cadet.
-        </div>
       </ConfirmationModal>
 
       <ConfirmationModal
@@ -529,7 +525,7 @@ const EmptyState = ({ filtered, canCreate, onClear, onCreate }) => (
     <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
       {filtered
         ? 'Try another allocation ID, year, or list status.'
-        : 'Create the first annual cycle after adding active Assessment Types.'}
+        : 'Create the first annual Deck and Engine allocation cycle.'}
     </p>
     <div className="mt-5 flex justify-center gap-2">
       {filtered ? (

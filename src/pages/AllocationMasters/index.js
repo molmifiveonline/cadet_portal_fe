@@ -6,6 +6,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../lib/utils/apiConfig";
@@ -43,6 +44,8 @@ const AssessmentTypes = () => {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [statusAction, setStatusAction] = useState(null);
+  const [deleteAction, setDeleteAction] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -221,6 +224,27 @@ const AssessmentTypes = () => {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!deleteAction) return;
+    try {
+      setDeleting(true);
+      const response = await api.delete(
+        `/allocations/masters/courses/${deleteAction.id}`,
+      );
+      toast.success(
+        response.data?.message || 'Assessment Type deleted successfully',
+      );
+      setDeleteAction(null);
+      await load();
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || 'Failed to delete Assessment Type',
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const columns = [
     {
       field: "name",
@@ -276,7 +300,7 @@ const AssessmentTypes = () => {
           {
             field: "actions",
             headerName: "Actions",
-            width: "250px",
+            width: "340px",
             align: "right",
             sortable: false,
             sticky: "right",
@@ -310,6 +334,16 @@ const AssessmentTypes = () => {
                     <CheckCircle2 size={14} className="mr-1.5" />
                   )}
                   {row.status === "Active" ? "Deactivate" : "Activate"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                  onClick={() => setDeleteAction(row)}
+                >
+                  <Trash2 size={14} className="mr-1.5" />
+                  Delete
                 </Button>
               </div>
             ),
@@ -467,6 +501,19 @@ const AssessmentTypes = () => {
             : undefined
         }
         isLoading={saving}
+      />
+
+      <ConfirmationModal
+        isOpen={Boolean(deleteAction)}
+        onClose={() => {
+          if (!deleting) setDeleteAction(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Assessment Type"
+        message={`Delete ${deleteAction?.name || 'this Assessment Type'}? This action cannot be undone. Assessment Types already used in a formula or cadet score cannot be deleted.`}
+        confirmText="Delete Assessment Type"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 shadow-red-600/20"
+        isLoading={deleting}
       />
     </div>
   );
