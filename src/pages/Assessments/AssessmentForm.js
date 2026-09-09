@@ -71,13 +71,20 @@ const AssessmentForm = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
-    // Calculate preview score: CES1 + English + Essay
-    const ces1 = parseFloat(formData.ces_test) || 0;
+    // Attempt 2 replaces Attempt 1 in the score when provided.
+    const hasCesAttempt2 = String(formData.ces_test_2 ?? '').trim() !== '';
+    const ces =
+      parseFloat(hasCesAttempt2 ? formData.ces_test_2 : formData.ces_test) || 0;
     const eng = parseFloat(formData.english_test) || 0;
     const essay = parseFloat(formData.essay_writing_mark) || 0;
-    const total = ces1 + eng + essay;
+    const total = ces + eng + essay;
     setPreviewScore(total > 0 ? total : null);
-  }, [formData.ces_test, formData.english_test, formData.essay_writing_mark]);
+  }, [
+    formData.ces_test,
+    formData.ces_test_2,
+    formData.english_test,
+    formData.essay_writing_mark,
+  ]);
 
   useEffect(() => {
     fetchData();
@@ -102,7 +109,7 @@ const AssessmentForm = () => {
               : '',
             assessment_time: data.assessment_time || '',
             ces_test: data.ces_test || '',
-            ces_test_2: data.ces_test_2 || '',
+            ces_test_2: data.ces_test_2 ?? '',
             english_test: data.english_test || '',
             essay_writing_mark: data.essay_writing_mark || '',
             remarks: data.remarks || '',
