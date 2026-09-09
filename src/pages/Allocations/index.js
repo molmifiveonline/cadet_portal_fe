@@ -297,25 +297,39 @@ const Allocations = () => {
         confirmDisabled={!String(year).trim()}
         maxWidthClass="max-w-md"
       >
-        <label className="block text-sm font-semibold text-slate-700">
-          Allocation Year <span className="text-red-500">*</span>
-          <Input
-            autoFocus
-            className="mt-1"
-            type="number"
-            min="2000"
-            max="2100"
-            value={year}
-            invalid={Boolean(yearError)}
-            onChange={(event) => updateYear(event.target.value)}
-            placeholder="Example: 2026"
-          />
-          {yearError && (
-            <span className="mt-1 block text-xs font-normal text-red-600">
-              {yearError}
+        <div className="space-y-4">
+          <label className="block text-sm font-semibold text-slate-700">
+            Allocation Year <span className="text-red-500">*</span>
+            <Input
+              autoFocus
+              className="mt-1"
+              type="number"
+              min="2000"
+              max="2100"
+              value={year}
+              invalid={Boolean(yearError)}
+              onChange={(event) => updateYear(event.target.value)}
+              placeholder="Example: 2026"
+            />
+            {yearError && (
+              <span className="mt-1 block text-xs font-normal text-red-600">
+                {yearError}
+              </span>
+            )}
+          </label>
+          <label className="block text-sm font-semibold text-slate-700">
+            Allocation ID
+            <Input
+              className="mt-1 bg-slate-50 font-mono"
+              value={`CTV-${year || 'YEAR'}-AUTO`}
+              disabled
+              readOnly
+            />
+            <span className="mt-1 block text-xs font-normal text-slate-500">
+              The system assigns the next four-digit number for this year, for example CTV-{year || currentYear}-0001.
             </span>
-          )}
-        </label>
+          </label>
+        </div>
       </ConfirmationModal>
 
       <ConfirmationModal

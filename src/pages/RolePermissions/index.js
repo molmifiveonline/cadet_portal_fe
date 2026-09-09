@@ -52,11 +52,13 @@ const RolePermissions = () => {
           (role) => !['SuperAdmin', 'Cadet', 'Institute'].includes(role.name),
         );
         setRoles(filteredRoles);
-        // Auto-select first role if none selected or if previously selected role no longer exists
-        if (filteredRoles.length > 0) {
-          if (!selectedRole || !filteredRoles.find(r => r.id === selectedRole.id)) {
-            setSelectedRole(filteredRoles[0]);
-          }
+        // Do not default to Administrator (or any other configurable role).
+        // SuperAdmin has all permissions by design and is intentionally not listed.
+        if (
+          selectedRole &&
+          !filteredRoles.find((role) => role.id === selectedRole.id)
+        ) {
+          setSelectedRole(null);
         }
       }
     } catch (err) {

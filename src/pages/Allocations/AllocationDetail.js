@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Anchor, Plus, Lock, Unlock, RotateCcw, Eye, Trash2, ListOrdered, Mail, Phone, MessageCircle, Pencil } from 'lucide-react';
+import {
+  ArrowLeft, ArrowRight, Anchor, Check, CheckCircle2, ClipboardCheck,
+  Eye, ListOrdered, Lock, Mail, MessageCircle, Pencil, Phone, Plus,
+  RotateCcw, Ship, Trash2, Unlock, UserCheck,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../../lib/utils/apiConfig';
 import PageHeader from '../../components/common/PageHeader';
@@ -26,6 +30,58 @@ const formatRankHistoryDate = (value) => {
   return date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 };
 const getRankHistoryAdmin = (event) => event.changed_by_name || event.changed_by_email || 'Unknown admin';
+
+const isVesselAllocated = (allocation) => (
+  allocation.allocation_status === 'Allocated'
+  || allocation.secondary_allocation_status === 'Allocated'
+);
+
+const getAllocatedSlotCount = (allocation) => (
+  Number(allocation.allocation_status === 'Allocated')
+  + Number(allocation.secondary_allocation_status === 'Allocated')
+);
+
+const isPlanIntimated = (plan) => (
+  Number(plan.successful_communication_count || 0) > 0
+  || plan.last_mode === 'Phone'
+  || plan.last_mode === 'WhatsApp'
+  || (plan.last_mode === 'Email' && plan.email_delivery_status === 'Sent')
+);
+
+const getCycleProgress = (cycle, joiningPlans = []) => {
+  const lists = cycle.rank_lists || [];
+  const allocations = lists.flatMap((list) => list.allocations || []);
+  const activeLists = lists.filter((list) => (list.allocations || []).length > 0);
+  const candidateCount = allocations.length;
+  const scoredCount = allocations.filter((item) => item.final_score !== null).length;
+  const rankedCount = allocations.filter((item) => item.current_rank !== null).length;
+  const allocatedCount = allocations.filter(isVesselAllocated).length;
+  const finalizedCount = activeLists.filter((list) => list.status === 'Finalized').length;
+  const allocatedSlots = allocations.reduce((total, item) => total + getAllocatedSlotCount(item), 0);
+  const joiningPlanCount = joiningPlans.length;
+  const intimatedCount = joiningPlans.filter(isPlanIntimated).length;
+  const onboardingReadyCount = allocations.filter((item) => Boolean(item.joining_intimation_complete)).length;
+  const onboardedCount = allocations.filter((item) => item.onboarding_status === 'Onboarded').length;
+  const hasCandidates = candidateCount > 0;
+
+  return {
+    candidateCount, scoredCount, rankedCount, allocatedCount, finalizedCount,
+    activeListCount: activeLists.length, allocatedSlots, joiningPlanCount,
+    intimatedCount, onboardingReadyCount, onboardedCount,
+    steps: [
+      { key: 'ready', label: 'CTV Ready', complete: true, detail: 'Eligibility gate' },
+      { key: 'cycle', label: 'Allocation Cycle', complete: true, detail: cycle.allocation_number },
+      { key: 'scores', label: 'Score Entry', complete: hasCandidates && scoredCount === candidateCount, detail: `${scoredCount}/${candidateCount}` },
+      { key: 'ranks', label: 'Rank List', complete: hasCandidates && rankedCount === candidateCount, detail: `${rankedCount}/${candidateCount}` },
+      { key: 'vessels', label: 'Vessel Allocation', complete: hasCandidates && allocatedCount === candidateCount, detail: `${allocatedCount}/${candidateCount}` },
+      { key: 'finalize', label: 'Finalize', complete: activeLists.length > 0 && finalizedCount === activeLists.length, detail: `${finalizedCount}/${activeLists.length}` },
+      { key: 'plans', label: 'Joining Plan', complete: allocatedSlots > 0 && joiningPlanCount >= allocatedSlots, detail: `${joiningPlanCount}/${allocatedSlots}` },
+      { key: 'intimation', label: 'Joining Intimation', complete: joiningPlanCount > 0 && intimatedCount === joiningPlanCount, detail: `${intimatedCount}/${joiningPlanCount}` },
+      { key: 'onboarding', label: 'Onboarding', complete: hasCandidates && onboardingReadyCount === candidateCount, detail: `${onboardingReadyCount}/${candidateCount} ready` },
+      { key: 'onboarded', label: 'Onboarded', complete: hasCandidates && onboardedCount === candidateCount, detail: `${onboardedCount}/${candidateCount}` },
+    ],
+  };
+};
 
 const AllocationDetail = () => {
   const { id } = useParams();
@@ -67,40 +123,131 @@ const AllocationDetail = () => {
   if (!cycle) return <div className="p-8 text-center">Allocation cycle not found.</div>;
   const deck = cycle.rank_lists.find((item) => item.department === 'Deck');
   const engine = cycle.rank_lists.find((item) => item.department === 'Engine');
+  const progress = getCycleProgress(cycle, joiningPlans);
 
   return <div className="py-6">
     <PageHeader title={cycle.allocation_number} subtitle={`Annual CTV vessel allocation · ${cycle.allocation_year}`} icon={Anchor} backButton={<button onClick={() => navigate('/allocations')} className="rounded-lg p-2 hover:bg-slate-100"><ArrowLeft /></button>} />
-    <div className="mb-6 flex flex-wrap gap-2 rounded-xl border bg-white p-2">{['Dashboard','Deck','Engine','Joining Plan'].map((value) => <button key={value} onClick={() => setTab(value)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${tab === value ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>{value}</button>)}</div>
-    {tab === 'Dashboard' && <Dashboard cycle={cycle} openCandidates={setCandidateList} />}
+    <WorkflowStepper steps={progress.steps} />
+    <div className="mb-6 flex flex-wrap gap-2 rounded-xl border bg-white p-2">{[
+      ['Dashboard', 'Overview'],
+      ['Deck', 'Deck Workflow'],
+      ['Engine', 'Engine Workflow'],
+      ['Joining Plan', 'Joining & Intimation'],
+    ].map(([value, label]) => <button key={value} onClick={() => setTab(value)} className={`rounded-lg px-4 py-2 text-sm font-semibold ${tab === value ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>{label}</button>)}</div>
+    {tab === 'Dashboard' && <Dashboard cycle={cycle} progress={progress} openCandidates={setCandidateList} setTab={setTab} openOnboarding={() => navigate(`/onboarding?allocation=${encodeURIComponent(cycle.allocation_number)}`)} />}
     {tab === 'Deck' && <RankList list={deck} assessmentTypes={assessmentTypes} reload={load} openCandidates={() => setCandidateList(deck)} openVessel={setVesselAllocation} openJoiningPlan={setJoiningPlanCandidate} isSuperAdmin={user?.role === 'SuperAdmin'} />}
     {tab === 'Engine' && <RankList list={engine} assessmentTypes={assessmentTypes} reload={load} openCandidates={() => setCandidateList(engine)} openVessel={setVesselAllocation} openJoiningPlan={setJoiningPlanCandidate} isSuperAdmin={user?.role === 'SuperAdmin'} />}
     {tab === 'Joining Plan' && <JoiningPlans cycle={cycle} plans={joiningPlans} openJoiningPlan={setJoiningPlanCandidate} openCommunication={setCommunicationPlan} />}
-    {candidateList && <CandidatePicker list={candidateList} onClose={() => setCandidateList(null)} onSaved={() => { setCandidateList(null); load(); }} />}
+    {candidateList && <CandidatePicker list={candidateList} assessmentTypes={assessmentTypes} vesselTypes={vesselTypes} onClose={() => setCandidateList(null)} onSaved={() => { setCandidateList(null); load(); }} />}
     {vesselAllocation && <VesselModal allocation={vesselAllocation.allocation} role={vesselAllocation.role} readOnly={vesselAllocation.readOnly} list={cycle.rank_lists.find((item) => item.id === vesselAllocation.allocation.rank_list_id)} types={vesselTypes} vessels={vessels} onClose={() => setVesselAllocation(null)} onSaved={() => { setVesselAllocation(null); load(); }} />}
     {joiningPlanCandidate && <JoiningPlanModal candidate={joiningPlanCandidate} vessels={vessels} onClose={() => setJoiningPlanCandidate(null)} onCreated={(plan) => { setJoiningPlanCandidate(null); setCommunicationPlan(plan); load(); }} />}
     {communicationPlan && <CommunicationModal plan={communicationPlan} admins={admins} currentUser={user} onClose={() => { setCommunicationPlan(null); load(); }} onSaved={() => { setCommunicationPlan(null); load(); }} />}
   </div>;
 };
 
-const Dashboard = ({ cycle, openCandidates }) => {
-  const all = cycle.rank_lists.flatMap((item) => item.allocations || []);
+const WorkflowStepper = ({ steps }) => {
+  const currentIndex = steps.findIndex((step) => !step.complete);
+  return <section aria-label="CTV allocation workflow" className="mb-5 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="flex min-w-[1120px] items-start">
+      {steps.map((step, index) => {
+        const complete = step.complete;
+        const current = index === currentIndex;
+        return <React.Fragment key={step.key}>
+          <div className="w-24 shrink-0 text-center">
+            <div className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full border-2 ${complete ? 'border-emerald-500 bg-emerald-500 text-white' : current ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-400'}`}>
+              {complete ? <Check size={16} strokeWidth={3} /> : <span className="text-xs font-bold">{index + 1}</span>}
+            </div>
+            <p className={`mt-2 text-xs font-bold ${current ? 'text-blue-700' : complete ? 'text-slate-800' : 'text-slate-400'}`}>{step.label}</p>
+            <p className="mt-0.5 truncate text-[10px] text-slate-500" title={step.detail}>{step.detail}</p>
+          </div>
+          {index < steps.length - 1 && <div className={`mt-4 h-0.5 min-w-4 flex-1 ${complete ? 'bg-emerald-400' : 'bg-slate-200'}`} />}
+        </React.Fragment>;
+      })}
+    </div>
+  </section>;
+};
+
+const Dashboard = ({ cycle, progress, openCandidates, setTab, openOnboarding }) => {
+  const nextAction = (() => {
+    if (!progress.candidateCount) return { title: 'Add CTV-ready candidates', description: 'Choose verified Deck or Engine candidates to start scoring.', label: 'Add Candidates', action: () => openCandidates(cycle.rank_lists[0]), icon: UserCheck };
+    if (progress.scoredCount < progress.candidateCount) {
+      const list = cycle.rank_lists.find((item) => (item.allocations || []).some((allocation) => allocation.final_score === null));
+      return { title: 'Complete assessment scores', description: `${progress.candidateCount - progress.scoredCount} candidate(s) still need assessment scores.`, label: `Open ${list?.department || 'Rank'} List`, action: () => setTab(list?.department || 'Deck'), icon: Pencil };
+    }
+    if (progress.rankedCount < progress.candidateCount) return { title: 'Complete the rank list', description: 'Ranks are generated after every candidate has a final score.', label: 'Review Rank Lists', action: () => setTab('Deck'), icon: ListOrdered };
+    if (progress.allocatedCount < progress.candidateCount) {
+      const list = cycle.rank_lists.find((item) => (item.allocations || []).some((allocation) => !isVesselAllocated(allocation)));
+      return { title: 'Allocate vessels', description: `${progress.candidateCount - progress.allocatedCount} candidate(s) need a compatible vessel.`, label: `Open ${list?.department || 'Rank'} List`, action: () => setTab(list?.department || 'Deck'), icon: Ship };
+    }
+    if (progress.finalizedCount < progress.activeListCount) {
+      const list = cycle.rank_lists.find((item) => (item.allocations || []).length && item.status !== 'Finalized');
+      return { title: 'Finalize the rank list', description: 'Review scores, ranks, and vessel assignments, then lock the department list.', label: `Finalize ${list?.department || ''} List`, action: () => setTab(list?.department || 'Deck'), icon: Lock };
+    }
+    if (progress.joiningPlanCount < progress.allocatedSlots) return { title: 'Create joining plans', description: `${progress.allocatedSlots - progress.joiningPlanCount} allocated vessel assignment(s) need joining details.`, label: 'Open Joining Plans', action: () => setTab('Joining Plan'), icon: ClipboardCheck };
+    if (progress.intimatedCount < progress.joiningPlanCount) return { title: 'Send joining intimations', description: `${progress.joiningPlanCount - progress.intimatedCount} plan(s) still need a successful Email, Phone, or WhatsApp record.`, label: 'Open Intimation Queue', action: () => setTab('Joining Plan'), icon: Mail };
+    if (progress.onboardedCount < progress.candidateCount) return { title: 'Complete onboarding', description: `${progress.candidateCount - progress.onboardedCount} informed candidate(s) need checklist clearance.`, label: 'Open Onboarding', action: openOnboarding, icon: ClipboardCheck };
+    return { title: 'Allocation cycle complete', description: 'Every candidate in this cycle has been onboarded.', label: 'View Onboarding', action: openOnboarding, icon: CheckCircle2 };
+  })();
+  const NextIcon = nextAction.icon;
   const cards = [
-    ['Candidates', all.length],
-    ['Deck', cycle.rank_lists.find((item) => item.department === 'Deck')?.allocations?.length || 0],
-    ['Engine', cycle.rank_lists.find((item) => item.department === 'Engine')?.allocations?.length || 0],
-    ['Allocated', all.filter((item) => item.allocation_status === 'Allocated' || item.secondary_allocation_status === 'Allocated').length],
+    ['Candidates', progress.candidateCount, UserCheck],
+    ['Scored & Ranked', `${progress.scoredCount}/${progress.candidateCount}`, ListOrdered],
+    ['Vessel Allocated', `${progress.allocatedCount}/${progress.candidateCount}`, Ship],
+    ['Onboarded', `${progress.onboardedCount}/${progress.candidateCount}`, CheckCircle2],
   ];
-  return <div className="space-y-6"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([label,value]) => <div key={label} className="rounded-xl border bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">{label}</p><p className="mt-2 text-3xl font-bold text-slate-900">{value}</p></div>)}</div><div className="grid gap-4 lg:grid-cols-2">{cycle.rank_lists.map((list) => <div key={list.id} className="rounded-xl border bg-white p-5"><div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold">{list.department} Allocation</h2><p className="text-sm text-slate-500">Assessment Type scores · {list.ranking_mode} ranking</p></div><Status status={list.status} /></div><p className="mt-5 text-sm text-slate-600">{list.allocations.length} candidates · {list.allocations.filter((item) => item.final_score !== null).length} fully scored · {list.allocations.filter((item) => item.allocation_status === 'Allocated' || item.secondary_allocation_status === 'Allocated').length} vessel allocated</p>{list.status === 'Draft' && <Button className="mt-4" onClick={() => openCandidates(list)}><Plus size={16} className="mr-2" />Add {list.department} Candidates</Button>}</div>)}</div></div>;
+
+  return <div className="space-y-6">
+    <section className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-5"><div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div className="flex items-start gap-3"><div className="rounded-xl bg-blue-600 p-2.5 text-white"><NextIcon size={21} /></div><div><p className="text-xs font-bold uppercase tracking-wider text-blue-600">Recommended next action</p><h2 className="mt-1 text-lg font-bold text-slate-900">{nextAction.title}</h2><p className="mt-1 text-sm text-slate-600">{nextAction.description}</p></div></div><Button onClick={nextAction.action} className="shrink-0">{nextAction.label}<ArrowRight size={16} className="ml-2" /></Button></div></section>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map(([label, value, Icon]) => <div key={label} className="rounded-xl border bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><p className="text-sm text-slate-500">{label}</p><Icon size={18} className="text-blue-600" /></div><p className="mt-2 text-3xl font-bold text-slate-900">{value}</p></div>)}</div>
+    <div className="grid gap-4 lg:grid-cols-2">{cycle.rank_lists.map((list) => { const allocations = list.allocations || []; const scored = allocations.filter((item) => item.final_score !== null).length; const allocated = allocations.filter(isVesselAllocated).length; return <article key={list.id} className="rounded-xl border bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-bold">{list.department} Workflow</h2><p className="text-sm text-slate-500">Assessment scoring · {list.ranking_mode} ranking</p></div><Status status={list.status} /></div><div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs"><Metric label="Candidates" value={allocations.length} /><Metric label="Scored" value={`${scored}/${allocations.length}`} /><Metric label="Allocated" value={`${allocated}/${allocations.length}`} /></div><div className="mt-4 flex flex-wrap gap-2">{list.status === 'Draft' && <Button variant="outline" onClick={() => openCandidates(list)}><Plus size={16} className="mr-2" />Add Candidates</Button>}<Button onClick={() => setTab(list.department)}>Continue {list.department}<ArrowRight size={16} className="ml-2" /></Button></div></article>; })}</div>
+  </div>;
+};
+
+const Metric = ({ label, value }) => <div className="rounded-lg bg-slate-50 p-3"><p className="text-slate-500">{label}</p><p className="mt-1 text-base font-bold text-slate-900">{value}</p></div>;
+
+const ReadinessItem = ({ label, complete, value }) => <div className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs ${complete ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-600'}`}><span className="flex items-center gap-2">{complete ? <CheckCircle2 size={15} /> : <span className="h-3.5 w-3.5 rounded-full border-2 border-slate-300" />}{label}</span><strong>{value}</strong></div>;
+
+const formatAcademicScore = (value) => {
+  if (value === null || value === undefined || value === '') return '—';
+  const number = Number(value);
+  return Number.isFinite(number) ? `${number.toFixed(2)}%` : '—';
+};
+
+const AcademicScoreCell = ({ allocation, onView }) => <div className="min-w-36"><p className="font-bold text-slate-900">{formatAcademicScore(allocation.academic_score)}</p><p className="text-[10px] text-slate-500">Profile snapshot used</p><button type="button" onClick={onView} className="mt-1 text-xs font-semibold text-blue-700 hover:underline">View academic scores</button></div>;
+
+const AcademicScoresModal = ({ allocation, onClose }) => {
+  const semesterScores = Array.from({ length: 8 }, (_, index) => ({
+    label: `IMU Semester ${index + 1}`,
+    value: allocation[`imu_sem_${index + 1}_percentage`],
+  }));
+  return <Modal title={`Previous Academic Scores — ${allocation.name_as_in_indos_cert}`} onClose={onClose} width="max-w-3xl"><div className="space-y-5">
+    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Academic score used in this allocation</p><p className="mt-1 text-3xl font-bold text-slate-900">{formatAcademicScore(allocation.academic_score)}</p><p className="mt-1 text-xs text-slate-600">Read-only snapshot taken from the candidate profile when the candidate was added to this allocation.</p></div>
+    <div className="grid gap-3 sm:grid-cols-3"><Metric label="10th Average" value={formatAcademicScore(allocation.tenth_avg_percentage)} /><Metric label="12th PCM Average" value={formatAcademicScore(allocation.twelfth_pcm_avg_percentage)} /><Metric label="Current IMU Average" value={formatAcademicScore(allocation.profile_academic_score)} /></div>
+    <div><h3 className="text-sm font-bold text-slate-800">IMU semester history</h3><div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{semesterScores.map((score) => <div key={score.label} className="rounded-lg border border-slate-200 bg-slate-50 p-3"><p className="text-xs text-slate-500">{score.label}</p><p className="mt-1 font-bold text-slate-900">{formatAcademicScore(score.value)}</p></div>)}</div></div>
+    <div className="flex justify-end"><Button type="button" onClick={onClose}>Close</Button></div>
+  </div></Modal>;
 };
 
 const RankList = ({ list, assessmentTypes, reload, openCandidates, openVessel, openJoiningPlan, isSuperAdmin }) => {
   const locked = list.status === 'Finalized';
+  const candidateCount = list.allocations.length;
+  const scoredCount = list.allocations.filter((item) => item.final_score !== null).length;
+  const rankedCount = list.allocations.filter((item) => item.current_rank !== null).length;
+  const allocatedCount = list.allocations.filter(isVesselAllocated).length;
+  const canFinalize = candidateCount > 0
+    && scoredCount === candidateCount
+    && rankedCount === candidateCount
+    && allocatedCount === candidateCount;
+  const formulaLabel = list.formula_snapshot?.scoring_method === 'AcademicAssessmentAverage'
+    ? 'Final = (IMU Academic % + Assessment Average %) ÷ 2'
+    : `${list.formula_name || 'Configured formula'} v${list.formula_version || 1}`;
   const [confirmation, setConfirmation] = useState(null);
   const [remarks, setRemarks] = useState('');
   const [targetRank, setTargetRank] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [rankHistoryAllocation, setRankHistoryAllocation] = useState(null);
   const [assessmentAllocation, setAssessmentAllocation] = useState(null);
+  const [academicAllocation, setAcademicAllocation] = useState(null);
   const act = async (action, message, body = {}) => {
     try { await api.post(`/allocations/rank-lists/${list.id}/${action}`, body); toast.success(message); reload(); return true; }
     catch (error) { toast.error(error.response?.data?.message || 'Action failed'); return false; }
@@ -150,10 +297,12 @@ const RankList = ({ list, assessmentTypes, reload, openCandidates, openVessel, o
     });
   };
   return <div className="space-y-4">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold">{list.department} Rank List</h2><p className="text-sm text-slate-500">Average of Academic Score and normalized Assessment Average · <span className="font-semibold">{list.ranking_mode}</span> ranking</p></div><div className="flex flex-wrap gap-2">{!locked && <Button variant="outline" onClick={openCandidates}><Plus size={16} className="mr-2" />Add Candidates</Button>}{!locked && list.ranking_mode === 'Manual' && <Button variant="outline" onClick={reset}><RotateCcw size={16} className="mr-2" />Reset Score Order</Button>}{!locked && <Button onClick={finalize}><Lock size={16} className="mr-2" />Finalize</Button>}{locked && isSuperAdmin && <Button variant="outline" onClick={unlock}><Unlock size={16} className="mr-2" />Unlock</Button>}<Status status={list.status} /></div></div>
+    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-bold">{list.department} Rank List</h2><p className="text-sm text-slate-500">{formulaLabel} · <span className="font-semibold">{list.ranking_mode}</span> ranking</p></div><div className="flex flex-wrap gap-2">{!locked && <Button variant="outline" onClick={openCandidates}><Plus size={16} className="mr-2" />Add Candidates</Button>}{!locked && list.ranking_mode === 'Manual' && <Button variant="outline" onClick={reset}><RotateCcw size={16} className="mr-2" />Reset Score Order</Button>}{!locked && <Button onClick={finalize} disabled={!canFinalize} title={!canFinalize ? 'Complete scores, ranks, and vessel allocations before finalizing' : 'Finalize and lock this rank list'}><Lock size={16} className="mr-2" />Finalize</Button>}{locked && isSuperAdmin && <Button variant="outline" onClick={unlock}><Unlock size={16} className="mr-2" />Unlock</Button>}<Status status={list.status} /></div></div>
+    <div className={`flex items-start gap-3 rounded-xl border p-3 text-sm ${locked ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-blue-200 bg-blue-50 text-blue-900'}`}><div className={`mt-0.5 rounded-full p-1 ${locked ? 'bg-amber-200' : 'bg-blue-200'}`}>{locked ? <Lock size={14} /> : <Pencil size={14} />}</div><div><p className="font-semibold">Assessment scores are {locked ? 'locked' : 'editable'}.</p><p className="mt-0.5 text-xs opacity-80">{locked ? `This ${list.department} Rank List is Finalized. Only a Super Admin can unlock it, and an unlock reason is mandatory.` : 'This Rank List is Draft. Saving assessment scores recalculates the Final Score and automatic rank immediately.'}</p></div></div>
+    {!locked && <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-4"><ReadinessItem label="Candidates" complete={candidateCount > 0} value={candidateCount} /><ReadinessItem label="Scores complete" complete={candidateCount > 0 && scoredCount === candidateCount} value={`${scoredCount}/${candidateCount}`} /><ReadinessItem label="Ranks ready" complete={candidateCount > 0 && rankedCount === candidateCount} value={`${rankedCount}/${candidateCount}`} /><ReadinessItem label="Vessels allocated" complete={candidateCount > 0 && allocatedCount === candidateCount} value={`${allocatedCount}/${candidateCount}`} /></div>}
     <div className="overflow-x-auto rounded-xl border bg-white shadow-sm"><table className="min-w-[1900px] w-full text-left text-sm"><thead className="bg-slate-50"><tr><Th>Rank</Th><Th>Candidate</Th><Th>Institute</Th><Th>Academic Score</Th><Th>Assessment</Th><Th>Final Score<span className="block text-[10px] font-normal">Out of 100</span></Th><Th>Vessel Type Allocation</Th><Th>CTV Vessel Allocation</Th><Th>Secondary Vessel Allocation</Th><Th>Admin Remarks</Th><Th>Status</Th><Th>Actions</Th></tr></thead><tbody>{list.allocations.map((allocation) => <tr key={allocation.id} className="border-t align-top">
       <Td><div className="flex items-center gap-2"><span className="min-w-7 rounded bg-blue-50 px-2 py-1 text-center font-bold text-blue-700">{allocation.current_rank || '—'}</span>{!locked && allocation.current_rank && <button title="Reorder rank" onClick={() => move(allocation)} className="inline-flex items-center gap-1 rounded-md border border-blue-200 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50"><ListOrdered size={14} />Reorder</button>}</div></Td>
-      <Td><p className="font-semibold text-slate-900">{allocation.name_as_in_indos_cert}</p><p className="text-xs text-slate-500">{allocation.cadet_unique_id}</p></Td><Td>{allocation.institute_name || '—'}</Td><Td><strong>{Number(allocation.academic_score).toFixed(2)}</strong></Td>
+      <Td><p className="font-semibold text-slate-900">{allocation.name_as_in_indos_cert}</p><p className="text-xs text-slate-500">{allocation.cadet_unique_id}</p></Td><Td>{allocation.institute_name || '—'}</Td><Td><AcademicScoreCell allocation={allocation} onView={() => setAcademicAllocation(allocation)} /></Td>
       <Td><AssessmentCell allocation={allocation} locked={locked} onEdit={() => setAssessmentAllocation(allocation)} /></Td>
       <Td><span className={`rounded-full px-2.5 py-1 font-bold ${allocation.final_score === null ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{allocation.final_score === null ? 'Incomplete' : Number(allocation.final_score).toFixed(2)}</span></Td>
       <Td><div className="min-w-40 space-y-1"><p><span className="text-xs text-slate-500">Primary:</span> <strong>{allocation.vessel_type_name || 'Not selected'}</strong></p><p><span className="text-xs text-slate-500">Secondary:</span> <strong>{allocation.secondary_vessel_type_name || 'Not selected'}</strong></p></div></Td>
@@ -168,6 +317,7 @@ const RankList = ({ list, assessmentTypes, reload, openCandidates, openVessel, o
       {confirmation?.showRemarks && <label className="block text-sm font-medium text-slate-700">{confirmation.remarksLabel}<textarea className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 p-2 text-sm outline-none focus:border-blue-500" value={remarks} onChange={(event) => setRemarks(event.target.value)} placeholder={confirmation.remarksRequired ? 'Required' : 'Optional'} /></label>}
     </ConfirmationModal>
     {rankHistoryAllocation && <RankHistoryModal allocation={rankHistoryAllocation} onClose={() => setRankHistoryAllocation(null)} />}
+    {academicAllocation && <AcademicScoresModal allocation={academicAllocation} onClose={() => setAcademicAllocation(null)} />}
     {assessmentAllocation && <AssessmentScoreModal allocation={assessmentAllocation} assessmentTypes={assessmentTypes} onClose={() => setAssessmentAllocation(null)} onSaved={() => { setAssessmentAllocation(null); reload(); }} />}
   </div>;
 };
@@ -196,6 +346,7 @@ const AssessmentCell = ({ allocation, locked, onEdit }) => {
         {scores.length ? 'Edit Assessment' : 'Add Assessment'}
       </Button>
     )}
+    {locked && <p className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600"><Lock size={11} />Read-only · Finalized</p>}
   </div>;
 };
 
@@ -315,6 +466,7 @@ const AssessmentScoreModal = ({ allocation, assessmentTypes, onClose, onSaved })
     confirmDisabled={!rows.length}
     maxWidthClass="max-w-2xl"
   >
+    <div className="mb-3 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800"><Pencil size={14} /><strong>Rank List Status: Draft</strong><span>· Assessment scores are editable and saving recalculates the final score.</span></div>
     <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 p-3">
       <div className="grid grid-cols-3 gap-3 text-center">
         <div>
@@ -330,7 +482,7 @@ const AssessmentScoreModal = ({ allocation, assessmentTypes, onClose, onSaved })
           <p className="mt-1 font-bold text-emerald-700">{finalScorePreview === null ? '—' : finalScorePreview.toFixed(2)} / 100</p>
         </div>
       </div>
-      <p className="mt-2 text-center text-[11px] text-slate-500">Final Score = (Academic % + Assessment Average %) ÷ 2</p>
+      <p className="mt-2 text-center text-[11px] text-slate-500">Formula: Final Score = (Profile IMU Academic % + normalized Assessment Average %) ÷ 2</p>
     </div>
     <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
       {rows.map((row, index) => {
@@ -449,35 +601,79 @@ const RankHistoryModal = ({ allocation, onClose }) => {
   </Modal>;
 };
 
-const CandidatePicker = ({ list, onClose, onSaved }) => {
-  const [rows, setRows] = useState([]); const [selected, setSelected] = useState([]); const [search, setSearch] = useState(''); const [batch, setBatch] = useState(''); const [institute, setInstitute] = useState(''); const [loading, setLoading] = useState(true);
+const CandidatePicker = ({ list, assessmentTypes, vesselTypes, onClose, onSaved }) => {
+  const [rows, setRows] = useState([]); const [selected, setSelected] = useState([]); const [drafts, setDrafts] = useState({}); const [search, setSearch] = useState(''); const [batch, setBatch] = useState(''); const [institute, setInstitute] = useState(''); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false);
   const load = useCallback(async () => { try { setLoading(true); const response = await api.get(`/allocations/rank-lists/${list.id}/eligible-candidates`); setRows(response.data.data || []); } catch (error) { toast.error(error.response?.data?.message || 'Failed to load candidates'); } finally { setLoading(false); } }, [list.id]);
   useEffect(() => { load(); }, [load]);
   const batches = [...new Set(rows.map((row) => row.batch_year).filter(Boolean))]; const institutes = [...new Set(rows.map((row) => row.institute_name).filter(Boolean))];
+  const compatibleTypes = vesselTypes.filter((item) => item.status === 'Active' && [list.department, 'Both'].includes(item.department));
   const filtered = rows.filter((row) => (!search || `${row.name_as_in_indos_cert} ${row.cadet_unique_id}`.toLowerCase().includes(search.toLowerCase())) && (!batch || String(row.batch_year) === batch) && (!institute || row.institute_name === institute));
-  const add = async () => { try { await api.post(`/allocations/rank-lists/${list.id}/candidates`, { cadet_ids: selected }); toast.success('Candidates added'); onSaved(); } catch (error) { toast.error(error.response?.data?.message || 'Failed to add candidates'); } };
+
+  const getPreviewScore = (row) => {
+    const scores = drafts[row.id]?.scores || [];
+    if (!scores.length || scores.some((item) => item.score === '' || !item.course_id)) return null;
+    const values = scores.map((item) => Number(item.score));
+    if (values.some((value) => !Number.isFinite(value) || value < 0 || value > 10)) return null;
+    const assessmentPercentage = (values.reduce((total, value) => total + value, 0) / values.length) * 10;
+    return (Number(row.academic_score) + assessmentPercentage) / 2;
+  };
+  const provisionalRanks = (() => {
+    const ranked = [
+      ...list.allocations.filter((item) => item.final_score !== null).map((item) => ({ key: `existing-${item.id}`, candidateId: item.cadet_unique_id, finalScore: Number(item.final_score), academicScore: Number(item.academic_score) })),
+      ...rows.filter((row) => selected.includes(row.id)).map((row) => ({ key: row.id, candidateId: row.cadet_unique_id, finalScore: getPreviewScore(row), academicScore: Number(row.academic_score) })).filter((item) => item.finalScore !== null),
+    ].sort((left, right) => right.finalScore - left.finalScore || right.academicScore - left.academicScore || String(left.candidateId).localeCompare(String(right.candidateId)));
+    return new Map(ranked.map((item, index) => [item.key, index + 1]));
+  })();
+  const toggleCandidate = (row, checked) => {
+    setSelected((current) => checked ? [...current, row.id] : current.filter((candidateId) => candidateId !== row.id));
+    setDrafts((current) => checked
+      ? { ...current, [row.id]: current[row.id] || { scores: [], vessel_type_id: '' } }
+      : current);
+  };
+  const updateDraft = (candidateId, updater) => setDrafts((current) => ({ ...current, [candidateId]: updater(current[candidateId] || { scores: [], vessel_type_id: '' }) }));
+  const updateScore = (candidateId, scoreIndex, field, value) => updateDraft(candidateId, (draft) => ({ ...draft, scores: draft.scores.map((score, index) => index === scoreIndex ? { ...score, [field]: value } : score) }));
+  const addScore = (candidateId) => updateDraft(candidateId, (draft) => ({ ...draft, scores: [...draft.scores, { course_id: '', score: '' }] }));
+  const removeScore = (candidateId, scoreIndex) => updateDraft(candidateId, (draft) => ({ ...draft, scores: draft.scores.filter((_, index) => index !== scoreIndex) }));
+  const hasInvalidDraft = selected.some((candidateId) => {
+    const scores = drafts[candidateId]?.scores || [];
+    const ids = scores.map((item) => item.course_id);
+    return scores.some((item) => !item.course_id || item.score === '' || !Number.isFinite(Number(item.score)) || Number(item.score) < 0 || Number(item.score) > 10)
+      || new Set(ids).size !== ids.length;
+  });
+  const add = async () => {
+    try {
+      setSaving(true);
+      await api.post(`/allocations/rank-lists/${list.id}/candidates`, {
+        candidates: selected.map((cadetId) => ({ cadet_id: cadetId, scores: drafts[cadetId]?.scores || [], vessel_type_id: drafts[cadetId]?.vessel_type_id || null })),
+      });
+      toast.success(`${selected.length} candidate${selected.length === 1 ? '' : 's'} added to ${list.department}`);
+      onSaved();
+    } catch (error) { toast.error(error.response?.data?.message || 'Failed to add candidates'); }
+    finally { setSaving(false); }
+  };
   return <Modal title={`Add ${list.department} Candidates`} onClose={onClose} width="max-w-[96vw]">
     <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
       Only cadets approved by Admin in <strong>Recruitment Drives → Documents</strong> are shown here.
     </div>
     <div className="mb-4 grid gap-3 md:grid-cols-4">
-      <input className={inputClass} placeholder="Search candidate…" value={search} onChange={(event) => setSearch(event.target.value)} />
-      <select className={inputClass} value={batch} onChange={(event) => setBatch(event.target.value)}><option value="">All batches/years</option>{batches.map((value) => <option key={value}>{value}</option>)}</select>
-      <select className={inputClass} value={institute} onChange={(event) => setInstitute(event.target.value)}><option value="">All institutes</option>{institutes.map((value) => <option key={value}>{value}</option>)}</select>
-      <select className={inputClass} value={list.department} disabled><option>{list.department}</option></select>
+      <Field label="Search"><input className={`${inputClass} w-full`} placeholder="Candidate ID or name…" value={search} onChange={(event) => setSearch(event.target.value)} /></Field>
+      <Field label="Batch / Year"><select className={`${inputClass} w-full`} value={batch} onChange={(event) => setBatch(event.target.value)}><option value="">All batches/years</option>{batches.map((value) => <option key={value}>{value}</option>)}</select></Field>
+      <Field label="Institute"><select className={`${inputClass} w-full`} value={institute} onChange={(event) => setInstitute(event.target.value)}><option value="">All institutes</option>{institutes.map((value) => <option key={value}>{value}</option>)}</select></Field>
+      <Field label="Department"><select className={`${inputClass} w-full bg-slate-50`} value={list.department} disabled><option>{list.department}</option></select></Field>
     </div>
     <div className="max-h-[55vh] overflow-auto rounded-lg border">
-      <table className="min-w-[1300px] w-full text-left text-sm">
+      <table className="min-w-[1850px] w-full text-left text-sm">
         <thead className="sticky top-0 bg-slate-50"><tr><Th>Select</Th><Th>Candidate ID</Th><Th>Name</Th><Th>Institute</Th><Th>Batch/Year</Th><Th>Academic Score</Th><Th>Assessment</Th><Th>Final Score<span className="block text-[10px] font-normal">Out of 100</span></Th><Th>Current Rank</Th><Th>Vessel Type</Th><Th>Allocation Status</Th><Th>Action</Th></tr></thead>
-        <tbody>{filtered.map((row) => <tr key={row.id} className="border-t">
-          <Td><input type="checkbox" disabled={!row.eligible} checked={selected.includes(row.id)} onChange={(event) => setSelected((current) => event.target.checked ? [...current, row.id] : current.filter((candidateId) => candidateId !== row.id))} /></Td>
+        <tbody>{filtered.map((row) => { const isSelected = selected.includes(row.id); const draft = drafts[row.id] || { scores: [], vessel_type_id: '' }; const previewScore = getPreviewScore(row); return <tr key={row.id} className={`border-t align-top ${isSelected ? 'bg-blue-50/30' : ''}`}>
+          <Td><input type="checkbox" disabled={!row.eligible || saving} checked={isSelected} onChange={(event) => toggleCandidate(row, event.target.checked)} /></Td>
           <Td>{row.cadet_unique_id}</Td><Td><span className="font-semibold">{row.name_as_in_indos_cert}</span>{!row.eligible && <p className="text-xs text-red-600">{row.ineligible_reasons.join(' · ')}</p>}</Td><Td>{row.institute_name}</Td><Td>{row.batch_year}</Td><Td>{row.academic_score ?? '—'}</Td>
-          <Td><span className="text-slate-400">Select after adding cadet</span></Td>
-          <Td>Auto after entry</Td><Td>Auto</Td><Td>Pending</Td><Td><Status status="Pending" /></Td><Td><button type="button" className="text-blue-700" title="View candidate" onClick={() => window.open(`/cadets/view/${row.id}`, '_blank')}><Eye size={16} /></button></Td>
-        </tr>)}{!filtered.length && <tr><td colSpan={12} className="p-8 text-center text-slate-500">{loading ? 'Loading…' : `No approved ${list.department} candidates found`}</td></tr>}</tbody>
+          <Td><div className="min-w-80 space-y-2">{isSelected ? <>{draft.scores.map((score, scoreIndex) => { const usedIds = new Set(draft.scores.filter((_, index) => index !== scoreIndex).map((item) => item.course_id)); return <div key={scoreIndex} className="grid grid-cols-[minmax(150px,1fr)_80px_28px] gap-1.5"><select className={`${inputClass} w-full`} value={score.course_id} onChange={(event) => updateScore(row.id, scoreIndex, 'course_id', event.target.value)}><option value="">Assessment type</option>{assessmentTypes.filter((item) => !usedIds.has(item.id)).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input className={`${inputClass} w-full`} type="number" min="0" max="10" step="0.01" placeholder="0-10" value={score.score} onChange={(event) => updateScore(row.id, scoreIndex, 'score', event.target.value)} /><button type="button" className="text-red-600" onClick={() => removeScore(row.id, scoreIndex)} title="Remove score">×</button></div>; })}<button type="button" className="text-xs font-semibold text-blue-700 hover:underline" disabled={draft.scores.length >= assessmentTypes.length} onClick={() => addScore(row.id)}>+ Add assessment score</button></> : <span className="text-slate-400">Select candidate to enter scores</span>}</div></Td>
+          <Td><strong className={previewScore === null ? 'text-slate-400' : 'text-emerald-700'}>{previewScore === null ? '—' : previewScore.toFixed(2)}</strong></Td><Td><strong className={provisionalRanks.has(row.id) ? 'text-blue-700' : 'text-slate-400'}>{provisionalRanks.has(row.id) ? `#${provisionalRanks.get(row.id)}` : '—'}</strong></Td>
+          <Td><select className={`${inputClass} min-w-48`} disabled={!isSelected || saving} value={draft.vessel_type_id} onChange={(event) => updateDraft(row.id, (current) => ({ ...current, vessel_type_id: event.target.value }))}><option value="">Select vessel type</option>{compatibleTypes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Td><Td><div title="An actual vessel and seat must be selected before status can become Allocated"><Status status="Pending" /><p className="mt-1 text-[10px] text-slate-400">Until vessel assignment</p></div></Td><Td><button type="button" className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline" title="View candidate" onClick={() => window.open(`/cadets/view/${row.id}`, '_blank')}><Eye size={15} />View Candidate</button></Td>
+        </tr>; })}{!filtered.length && <tr><td colSpan={12} className="p-8 text-center text-slate-500">{loading ? 'Loading…' : `No approved ${list.department} candidates found`}</td></tr>}</tbody>
       </table>
     </div>
-    <div className="mt-5 flex justify-end gap-2"><Button variant="outline" onClick={onClose}>Cancel</Button><Button disabled={!selected.length} onClick={add}>Add {selected.length || ''} Candidate{selected.length === 1 ? '' : 's'}</Button></div>
+    <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-slate-500">Assessment and vessel type are optional during selection and can be completed later while the rank list is Draft.</p><div className="flex justify-end gap-2"><Button variant="outline" disabled={saving} onClick={onClose}>Cancel</Button><Button disabled={!selected.length || hasInvalidDraft || saving} onClick={add}>{saving ? 'Adding…' : `Add ${selected.length || ''} Candidate${selected.length === 1 ? '' : 's'}`}</Button></div></div>
   </Modal>;
 };
 
@@ -535,7 +731,7 @@ const JoiningPlanModal = ({ candidate, vessels, onClose, onCreated }) => {
   const vessel = vessels.find((item) => item.id === vesselId) || {};
   const vesselType = secondary ? candidate.secondary_vessel_type_name : candidate.vessel_type_name;
   const [form, setForm] = useState({
-    joining_date: '',
+    joining_date: vessel.joining_date || (secondary ? candidate.secondary_joining_date : candidate.joining_date) || '',
     location: vessel.location || '',
     voyage_ref: vessel.voyage_ref || '',
     reporting_port: vessel.reporting_port || '',
