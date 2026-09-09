@@ -20,6 +20,7 @@ import { Input } from "../../components/ui/input";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import StageInviteModal from "./StageInviteModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
+import { getOverallMedicalReportStatus } from "../../lib/utils/medicalReportStatus";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 const getWorkflowStatusConfig = (cadet) => {
@@ -107,14 +108,6 @@ const formatPercentage = (value) => {
   return Number.isFinite(numericValue) ? `${numericValue.toFixed(2)}%` : "-";
 };
 
-const INTERVIEW_DECISION_COLORS = {
-  selected: "bg-green-100 text-green-700 border border-green-200",
-  rejected: "bg-red-100 text-red-700 border border-red-200",
-  waitlisted: "bg-amber-100 text-amber-700 border border-amber-200",
-  pass: "bg-green-100 text-green-700 border border-green-200",
-  fail: "bg-red-100 text-red-700 border border-red-200",
-};
-
 const MEDICAL_DECISION_COLORS = {
   pass: "bg-green-100 text-green-700 border border-green-200",
   fail: "bg-red-100 text-red-700 border border-red-200",
@@ -148,9 +141,14 @@ const hasPassedMedical = (cadet = {}) => {
   return (
     cadet.workflow_result === "medical_passed" ||
     medicalDecision === "pass" ||
-    medicalDecision === "fit"
+    medicalDecision === "fit" ||
+    medicalDecision === "retest"
   );
 };
+
+const canConfirmMedicalCadet = (cadet = {}) =>
+  hasPassedMedical(cadet) &&
+  getOverallMedicalReportStatus(cadet.medical_report_results) === "pass";
 
 const MedicalTab = ({ drive, onRefresh }) => {
   const navigate = useNavigate();
@@ -586,51 +584,49 @@ const MedicalTab = ({ drive, onRefresh }) => {
   const pendingOtherColumns = useMemo(
     () => [
       {
-        field: "assessment_score",
-        headerName: "Assessment Score",
+        field: "medical_final_decision",
+        headerName: "Medical Decision",
         width: "140px",
-        renderCell: ({ row, value }) => {
-          const score = value ?? row.calculated_score;
-          return score || score === 0 ? (
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-              {Number(score).toFixed(2)}
-            </span>
-          ) : (
-            "-"
-          );
-        },
-      },
-      {
-        field: "evaluation_score",
-        headerName: "Interview Score",
-        width: "130px",
-        renderCell: ({ value }) => value || "-",
-      },
-      {
-        field: "total_score",
-        headerName: "Total Interview Score",
-        width: "160px",
-        renderCell: ({ value }) =>
-          value || value === 0 ? (
-            <span className="font-semibold text-slate-700">{Number(value).toFixed(2)}</span>
-          ) : (
-            "-"
-          ),
-      },
-      {
-        field: "interview_final_decision",
-        headerName: "Interview Decision",
-        width: "155px",
         renderCell: ({ value }) => {
           if (!value) return "-";
           const normalized = value.toLowerCase();
-          const tone = INTERVIEW_DECISION_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+          const tone = MEDICAL_DECISION_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
           return (
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
               {value}
             </span>
           );
         },
+      },
+      {
+        field: "medical_report_results",
+        headerName: "Overall Report Status",
+        width: "175px",
+        renderCell: ({ value }) => {
+          const status = getOverallMedicalReportStatus(value);
+          const isPassed = status === "pass";
+          return (
+            <span
+              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                isPassed
+                  ? "border-green-200 bg-green-100 text-green-700"
+                  : "border-amber-200 bg-amber-100 text-amber-700"
+              }`}
+            >
+              {isPassed ? "Pass" : "Pending"}
+            </span>
+          );
+        },
+      },
+      {
+        field: "medical_remarks",
+        headerName: "Medical Remarks",
+        width: "180px",
+        renderCell: ({ value }) => (
+          <span className="block truncate text-slate-600" title={value}>
+            {value || "-"}
+          </span>
+        ),
       },
     ],
     []
@@ -654,48 +650,32 @@ const MedicalTab = ({ drive, onRefresh }) => {
         },
       },
       {
-        field: "fit_status",
-        headerName: "Fit Status",
-        width: "180px",
-        renderCell: ({ value }) => {
-          if (!value) return "-";
-          const normalized = value.toLowerCase();
-          const label = FIT_STATUS_LABELS[normalized] || value;
-          const tone = FIT_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
-          return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>
-              {label}
+        field: "assessment_score",
+        headerName: "Assessment Final Score",
+        width: "175px",
+        renderCell: ({ row, value }) => {
+          const score = value ?? row.calculated_score;
+          return score || score === 0 ? (
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              {Number(score).toFixed(2)}
             </span>
+          ) : (
+            "-"
           );
         },
       },
       {
-        field: "psychometric_status",
-        headerName: "Psychometric",
-        width: "125px",
-        renderCell: ({ value }) => {
-          if (!value) return "-";
-          const normalized = value.toLowerCase();
-          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
-          return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
-              {value}
+        field: "total_score",
+        headerName: "Interview Final Score",
+        width: "165px",
+        renderCell: ({ row, value }) => {
+          const score = value ?? row.evaluation_score;
+          return score || score === 0 ? (
+            <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
+              {Number(score).toFixed(2)}
             </span>
-          );
-        },
-      },
-      {
-        field: "profiling_status",
-        headerName: "Profiling",
-        width: "110px",
-        renderCell: ({ value }) => {
-          if (!value) return "-";
-          const normalized = value.toLowerCase();
-          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
-          return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
-              {value}
-            </span>
+          ) : (
+            "-"
           );
         },
       },
@@ -829,36 +809,36 @@ const MedicalTab = ({ drive, onRefresh }) => {
           );
         },
       },
-      {
-        field: "psychometric_status",
-        headerName: "Psychometric",
-        width: "125px",
-        renderCell: ({ value }) => {
-          if (!value) return "-";
-          const normalized = value.toLowerCase();
-          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
-          return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        field: "profiling_status",
-        headerName: "Profiling",
-        width: "110px",
-        renderCell: ({ value }) => {
-          if (!value) return "-";
-          const normalized = value.toLowerCase();
-          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
-          return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
-              {value}
-            </span>
-          );
-        },
-      },
+      // {
+      //   field: "psychometric_status",
+      //   headerName: "Psychometric",
+      //   width: "125px",
+      //   renderCell: ({ value }) => {
+      //     if (!value) return "-";
+      //     const normalized = value.toLowerCase();
+      //     const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+      //     return (
+      //       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+      //         {value}
+      //       </span>
+      //     );
+      //   },
+      // },
+      // {
+      //   field: "profiling_status",
+      //   headerName: "Profiling",
+      //   width: "110px",
+      //   renderCell: ({ value }) => {
+      //     if (!value) return "-";
+      //     const normalized = value.toLowerCase();
+      //     const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+      //     return (
+      //       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+      //         {value}
+      //       </span>
+      //     );
+      //   },
+      // },
       {
         field: "medical_remarks",
         headerName: "Remarks",
@@ -890,52 +870,52 @@ const MedicalTab = ({ drive, onRefresh }) => {
           );
         },
       },
-      {
-        field: "fit_status",
-        headerName: "Fit Status",
-        width: "180px",
-        renderCell: ({ value }) => {
-          if (!value) return "-";
-          const normalized = value.toLowerCase();
-          const label = FIT_STATUS_LABELS[normalized] || value;
-          const tone = FIT_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
-          return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>
-              {label}
-            </span>
-          );
-        },
-      },
-      {
-        field: "psychometric_status",
-        headerName: "Psychometric",
-        width: "125px",
-        renderCell: ({ value }) => {
-          if (!value) return "-";
-          const normalized = value.toLowerCase();
-          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
-          return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
-              {value}
-            </span>
-          );
-        },
-      },
-      {
-        field: "profiling_status",
-        headerName: "Profiling",
-        width: "110px",
-        renderCell: ({ value }) => {
-          if (!value) return "-";
-          const normalized = value.toLowerCase();
-          const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
-          return (
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
-              {value}
-            </span>
-          );
-        },
-      },
+      // {
+      //   field: "fit_status",
+      //   headerName: "Fit Status",
+      //   width: "180px",
+      //   renderCell: ({ value }) => {
+      //     if (!value) return "-";
+      //     const normalized = value.toLowerCase();
+      //     const label = FIT_STATUS_LABELS[normalized] || value;
+      //     const tone = FIT_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+      //     return (
+      //       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>
+      //         {label}
+      //       </span>
+      //     );
+      //   },
+      // },
+      // {
+      //   field: "psychometric_status",
+      //   headerName: "Psychometric",
+      //   width: "125px",
+      //   renderCell: ({ value }) => {
+      //     if (!value) return "-";
+      //     const normalized = value.toLowerCase();
+      //     const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+      //     return (
+      //       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+      //         {value}
+      //       </span>
+      //     );
+      //   },
+      // },
+      // {
+      //   field: "profiling_status",
+      //   headerName: "Profiling",
+      //   width: "110px",
+      //   renderCell: ({ value }) => {
+      //     if (!value) return "-";
+      //     const normalized = value.toLowerCase();
+      //     const tone = TEST_STATUS_COLORS[normalized] || "bg-slate-100 text-slate-700 border border-slate-200";
+      //     return (
+      //       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${tone}`}>
+      //         {value}
+      //       </span>
+      //     );
+      //   },
+      // },
     ],
     []
   );
@@ -1061,19 +1041,21 @@ const MedicalTab = ({ drive, onRefresh }) => {
 
           let actionButton = null;
           if (key === "pending_other") {
-            const hasNonPassed = groupSelectedRows.some(
-              (cadet) => !hasPassedMedical(cadet),
+            const hasIneligibleSelection = groupSelectedRows.some(
+              (cadet) => !canConfirmMedicalCadet(cadet),
             );
             actionButton = (
               <Button
                 size="sm"
                 onClick={() => handleConfirmCadetsClick(groupSelectedRows)}
                 disabled={
-                  actionLoading.confirm || groupSelectedRows.length === 0 || hasNonPassed
+                  actionLoading.confirm ||
+                  groupSelectedRows.length === 0 ||
+                  hasIneligibleSelection
                 }
                 title={
-                  hasNonPassed
-                    ? "Only cadets who have passed the medical exam can be confirmed"
+                  hasIneligibleSelection
+                    ? "Decision must be Pass or Retest, and every individual report must be Pass"
                     : ""
                 }
                 className="gap-2 bg-green-600 text-white hover:bg-green-700 shadow-sm"

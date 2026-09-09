@@ -112,7 +112,6 @@ const MedicalResultForm = () => {
   const [formData, setFormData] = useState({
     appointments: [{ medical_date: new Date().toISOString().split('T')[0], medical_time: '', medical_center_id: '', medical_reports: [] }],
     final_decision: 'pass',
-    retest_reports: [],
     remarks: '',
     report_results: [],
   });
@@ -249,10 +248,6 @@ const MedicalResultForm = () => {
   };
 
   const handleRetestClick = () => {
-    if (formData.retest_reports.length === 0) {
-      toast.error('Please select at least one medical report for retest.');
-      return;
-    }
     setShowRetestModal(true);
   };
 
@@ -596,28 +591,15 @@ const MedicalResultForm = () => {
               </Select>
             </div>
             {formData.final_decision === 'retest' && (
-              <div className='space-y-2'>
-                <label className='text-sm font-medium text-gray-700'>
-                  Medical Reports for Retest
-                </label>
-                <div className='flex items-center gap-3'>
-                  <div className='flex-1'>
-                    <MultiSelectDropdown
-                      options={medicalReports.map(r => ({ label: r.name, value: r.id }))}
-                      value={formData.retest_reports}
-                      onChange={(val) => setFormData(p => ({ ...p, retest_reports: val }))}
-                      placeholder="Select reports"
-                    />
-                  </div>
-                  <Button
-                    type='button'
-                    className='bg-orange-600 hover:bg-orange-700 text-white shrink-0 h-[40px]'
-                    onClick={handleRetestClick}
-                  >
-                    <MessageSquare className='w-4 h-4 mr-2' />
-                    Retest Action
-                  </Button>
-                </div>
+              <div className='flex items-end'>
+                <Button
+                  type='button'
+                  className='bg-orange-600 hover:bg-orange-700 text-white h-[40px]'
+                  onClick={handleRetestClick}
+                >
+                  <MessageSquare className='w-4 h-4 mr-2' />
+                  Retest Action
+                </Button>
               </div>
             )}
           </div>

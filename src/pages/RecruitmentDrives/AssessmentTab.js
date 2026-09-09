@@ -249,6 +249,35 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
       },
     },
     {
+      field: "mark_for_interview",
+      headerName: "Interview Status",
+      width: "150px",
+      align: "center",
+      renderCell: ({ row, value }) => {
+        const assessmentResult = String(row.assessment_status || "")
+          .trim()
+          .toLowerCase();
+
+        if (assessmentResult !== "pass") {
+          return (
+            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+              Not decided
+            </span>
+          );
+        }
+
+        return Number(value) ? (
+          <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
+            For Interview
+          </span>
+        ) : (
+          <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
+            Not for Interview
+          </span>
+        );
+      },
+    },
+    {
       field: "institute_detail_filled",
       headerName: "Inst. Details",
       width: "120px",

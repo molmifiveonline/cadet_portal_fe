@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle,
@@ -8,6 +8,7 @@ import {
   Eye,
   ExternalLink,
   FileText,
+  Loader2,
   RotateCcw,
   Search,
   Trash2,
@@ -52,6 +53,8 @@ const DocumentsTab = ({ drive }) => {
   });
   const [reviewingDoc, setReviewingDoc] = useState(null);
   const [reviewRemarks, setReviewRemarks] = useState("");
+  const [reviewAction, setReviewAction] = useState(null);
+  const reviewActionRef = useRef(null);
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     documentId: null,
@@ -144,7 +147,12 @@ const DocumentsTab = ({ drive }) => {
   };
 
   const handleReview = async (documentId, status) => {
+    if (reviewActionRef.current) return;
+
     try {
+      const activeAction = { documentId, status };
+      reviewActionRef.current = activeAction;
+      setReviewAction(activeAction);
       await api.put(`/documents/${documentId}/review`, {
         status,
         admin_remarks: reviewRemarks,
@@ -156,6 +164,9 @@ const DocumentsTab = ({ drive }) => {
     } catch (error) {
       console.error("Error reviewing document:", error);
       toast.error(error.response?.data?.message || "Failed to review document");
+    } finally {
+      reviewActionRef.current = null;
+      setReviewAction(null);
     }
   };
 
@@ -310,16 +321,6 @@ const DocumentsTab = ({ drive }) => {
       ),
     },
     {
-      field: "original_filename",
-      headerName: "File / Reference",
-      width: "180px",
-      renderCell: ({ row }) => (
-        <span className="block truncate text-slate-600" title={row.original_filename || row.external_reference}>
-          {row.original_filename || row.external_reference || "-"}
-        </span>
-      ),
-    },
-    {
       field: "requested_at",
       headerName: "Requested",
       width: "130px",
@@ -371,6 +372,7 @@ const DocumentsTab = ({ drive }) => {
                   placeholder="Remarks (optional)..."
                   value={reviewRemarks}
                   onChange={(event) => setReviewRemarks(event.target.value)}
+                  disabled={reviewAction?.documentId === document.id}
                   className="h-9 w-full bg-white text-xs sm:w-40"
                 />
                 <div className="flex items-center justify-end gap-1.5">
@@ -378,33 +380,67 @@ const DocumentsTab = ({ drive }) => {
                     size="sm"
                     className="h-9 bg-emerald-600 px-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 sm:h-8"
                     onClick={() => handleReview(document.id, "accepted")}
+                    disabled={reviewAction?.documentId === document.id}
                     title="Accept Document"
                   >
-                    <CheckCircle className="sm:mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                    <span className="hidden sm:inline">Accept</span>
+                    {reviewAction?.documentId === document.id &&
+                    reviewAction?.status === "accepted" ? (
+                      <Loader2 className="sm:mr-1.5 h-4 w-4 animate-spin sm:h-3.5 sm:w-3.5" />
+                    ) : (
+                      <CheckCircle className="sm:mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {reviewAction?.documentId === document.id &&
+                      reviewAction?.status === "accepted"
+                        ? "Accepting..."
+                        : "Accept"}
+                    </span>
                   </Button>
                   <Button
                     size="sm"
                     className="h-9 bg-rose-600 px-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-rose-700 sm:h-8"
                     onClick={() => handleReview(document.id, "rejected")}
+                    disabled={reviewAction?.documentId === document.id}
                     title="Reject Document"
                   >
-                    <XCircle className="sm:mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                    <span className="hidden sm:inline">Reject</span>
+                    {reviewAction?.documentId === document.id &&
+                    reviewAction?.status === "rejected" ? (
+                      <Loader2 className="sm:mr-1.5 h-4 w-4 animate-spin sm:h-3.5 sm:w-3.5" />
+                    ) : (
+                      <XCircle className="sm:mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {reviewAction?.documentId === document.id &&
+                      reviewAction?.status === "rejected"
+                        ? "Rejecting..."
+                        : "Reject"}
+                    </span>
                   </Button>
                   <Button
                     size="sm"
                     className="h-9 bg-amber-500 px-3 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-600 sm:h-8"
                     onClick={() => handleReview(document.id, "reupload_requested")}
+                    disabled={reviewAction?.documentId === document.id}
                     title="Request Re-upload"
                   >
-                    <RotateCcw className="sm:mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                    <span className="hidden sm:inline">Re-upload</span>
+                    {reviewAction?.documentId === document.id &&
+                    reviewAction?.status === "reupload_requested" ? (
+                      <Loader2 className="sm:mr-1.5 h-4 w-4 animate-spin sm:h-3.5 sm:w-3.5" />
+                    ) : (
+                      <RotateCcw className="sm:mr-1.5 h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {reviewAction?.documentId === document.id &&
+                      reviewAction?.status === "reupload_requested"
+                        ? "Requesting..."
+                        : "Re-upload"}
+                    </span>
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
                     className="h-9 w-9 p-0 text-slate-400 hover:bg-white hover:text-slate-700 sm:h-8 sm:w-8"
+                    disabled={reviewAction?.documentId === document.id}
                     onClick={() => {
                       setReviewingDoc(null);
                       setReviewRemarks("");
