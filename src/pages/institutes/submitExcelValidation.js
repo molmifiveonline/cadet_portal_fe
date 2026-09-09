@@ -3,6 +3,7 @@ import { getPhoneValidationMessage } from '../../lib/utils/validationUtils';
 // Date column keywords (case-insensitive match) for validation
 const DATE_COLUMN_KEYWORDS = ['date of birth', 'dob', 'birth date'];
 const PHONE_COLUMN_KEYWORDS = ['mobile', 'phone', 'whatsapp', 'contact'];
+const GENDER_COLUMN_KEYWORDS = ['gender', 'sex'];
 
 const getPhoneFieldName = (header = '') => {
   const lower = String(header).toLowerCase();
@@ -73,6 +74,14 @@ export const isDateColumn = (header) => {
 
 export const isPhoneColumn = (header) => !!getPhoneFieldName(header);
 
+export const isGenderColumn = (header) => {
+  if (!header) return false;
+  const lower = String(header).toLowerCase().trim();
+  return GENDER_COLUMN_KEYWORDS.some(
+    (keyword) => lower === keyword || lower.includes(keyword),
+  );
+};
+
 // Check if a value is a valid day-first date in DD-MM-YYYY or DD/MM/YYYY format.
 export const isValidDate = (value) => {
   if (!value) return false;
@@ -118,6 +127,23 @@ export const validateExcelData = (rows, headers) => {
       if (!header) return;
 
       const value = row[header];
+
+      if (isGenderColumn(header)) {
+        const normalizedValue = String(value ?? '').trim().toLowerCase();
+        let message = '';
+
+        if (!normalizedValue) {
+          message = 'Gender is a mandatory field and cannot be empty.';
+        } else if (!['male', 'female'].includes(normalizedValue)) {
+          message = `Gender must be either "Male" or "Female" (found: "${value}").`;
+        }
+
+        if (message) {
+          const key = `${rowIdx}-${header}`;
+          errors[key] = message;
+          errorCount++;
+        }
+      }
 
       if (isDateColumn(header)) {
         // Allow empty dates, but if present must be day-first.

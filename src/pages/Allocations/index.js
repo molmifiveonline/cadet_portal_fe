@@ -291,34 +291,44 @@ const Allocations = () => {
         onClose={closeCreateModal}
         onConfirm={create}
         title="Create CTV Allocation"
-        message="Create the annual Deck and Engine allocation workspace."
+        message="Create the annual Deck and Engine allocation workspace. Assessment Types can be added and selected later for each cadet."
         confirmText="Create Allocation"
         isLoading={creating}
         confirmDisabled={!String(year).trim()}
         maxWidthClass="max-w-md"
       >
-        <label className="block text-sm font-semibold text-slate-700">
-          Allocation Year <span className="text-red-500">*</span>
-          <Input
-            autoFocus
-            className="mt-1"
-            type="number"
-            min="2000"
-            max="2100"
-            value={year}
-            invalid={Boolean(yearError)}
-            onChange={(event) => updateYear(event.target.value)}
-            placeholder="Example: 2026"
-          />
-          {yearError && (
-            <span className="mt-1 block text-xs font-normal text-red-600">
-              {yearError}
+        <div className="space-y-4">
+          <label className="block text-sm font-semibold text-slate-700">
+            Allocation Year <span className="text-red-500">*</span>
+            <Input
+              autoFocus
+              className="mt-1"
+              type="number"
+              min="2000"
+              max="2100"
+              value={year}
+              invalid={Boolean(yearError)}
+              onChange={(event) => updateYear(event.target.value)}
+              placeholder="Example: 2026"
+            />
+            {yearError && (
+              <span className="mt-1 block text-xs font-normal text-red-600">
+                {yearError}
+              </span>
+            )}
+          </label>
+          <label className="block text-sm font-semibold text-slate-700">
+            Allocation ID
+            <Input
+              className="mt-1 bg-slate-50 font-mono"
+              value={`CTV-${year || 'YEAR'}-AUTO`}
+              disabled
+              readOnly
+            />
+            <span className="mt-1 block text-xs font-normal text-slate-500">
+              The system assigns the next four-digit number for this year, for example CTV-{year || currentYear}-0001.
             </span>
-          )}
-        </label>
-        <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-900">
-          Active Assessment Types will be available for the Admin to select
-          separately for each cadet.
+          </label>
         </div>
       </ConfirmationModal>
 
@@ -529,7 +539,7 @@ const EmptyState = ({ filtered, canCreate, onClear, onCreate }) => (
     <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
       {filtered
         ? 'Try another allocation ID, year, or list status.'
-        : 'Create the first annual cycle after adding active Assessment Types.'}
+        : 'Create the first annual Deck and Engine allocation cycle.'}
     </p>
     <div className="mt-5 flex justify-center gap-2">
       {filtered ? (

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -139,6 +139,17 @@ const TEST_STATUS_COLORS = {
   pass: "bg-green-100 text-green-700 border border-green-200",
   fail: "bg-red-100 text-red-700 border border-red-200",
   pending: "bg-slate-100 text-slate-700 border border-slate-200",
+};
+
+const hasPassedMedical = (cadet = {}) => {
+  const medicalDecision = String(
+    cadet.medical_final_decision || "",
+  ).toLowerCase();
+  return (
+    cadet.workflow_result === "medical_passed" ||
+    medicalDecision === "pass" ||
+    medicalDecision === "fit"
+  );
 };
 
 const MedicalTab = ({ drive, onRefresh }) => {
@@ -433,6 +444,31 @@ const MedicalTab = ({ drive, onRefresh }) => {
     } else {
       runAction();
     }
+  };
+
+  const handleConfirmCadetsClick = (groupSelectedRows) => {
+    const selectedIds = groupSelectedRows.map((cadet) => cadet.id);
+    const runAction = () => {
+      runBulkAction("confirm", async () => {
+        await api.post("/medical-results/bulk/confirm", {
+          drive_id: drive.id,
+          cadet_ids: selectedIds,
+        });
+        setSelectedCadets((current) =>
+          current.filter((id) => !selectedIds.includes(id)),
+        );
+        toast.success(
+          `${selectedIds.length} medically passed cadet${selectedIds.length === 1 ? "" : "s"} moved to Confirmed Cadets`,
+        );
+      });
+    };
+
+    setConfirmTitle("Confirm Medically Passed Cadets");
+    setConfirmMessage(
+      `Move ${selectedIds.length} selected cadet${selectedIds.length === 1 ? "" : "s"} to Confirmed Cadets?`,
+    );
+    setConfirmAction({ execute: runAction });
+    setShowConfirmModal(true);
   };
 
   const handleCollectAcademicData = async () => {
@@ -1025,21 +1061,13 @@ const MedicalTab = ({ drive, onRefresh }) => {
 
           let actionButton = null;
           if (key === "pending_other") {
-            const hasNonPassed = groupSelectedRows.some((c) => c.workflow_result !== "medical_passed");
+            const hasNonPassed = groupSelectedRows.some(
+              (cadet) => !hasPassedMedical(cadet),
+            );
             actionButton = (
               <Button
                 size="sm"
-                onClick={() =>
-                  runBulkAction("confirm", async () => {
-                    await api.post("/medical-results/bulk/confirm", {
-                      drive_id: drive.id,
-                      cadet_ids: groupSelectedRows.map((c) => c.id),
-                    });
-                    toast.success(
-                      "Selected-candidate confirmation sent to institute",
-                    );
-                  })
-                }
+                onClick={() => handleConfirmCadetsClick(groupSelectedRows)}
                 disabled={
                   actionLoading.confirm || groupSelectedRows.length === 0 || hasNonPassed
                 }

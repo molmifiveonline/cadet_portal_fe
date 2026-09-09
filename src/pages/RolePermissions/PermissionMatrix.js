@@ -3,7 +3,16 @@ import PageLoader from '../../components/common/PageLoader';
 import PermissionCard from './PermissionCard';
 
 // Modules to hide from the Role Permissions UI
-const HIDDEN_MODULES = ['cadets', 'screening', 'tests'];
+const HIDDEN_MODULES = [
+  'cadets',
+  'screening',
+  'tests',
+  // Temporarily hidden until these modules are ready for role configuration.
+  'onboarding',
+  'vessel-master',
+  'allocations',
+  'allocation-masters',
+];
 
 const PermissionMatrix = ({
   roleId,

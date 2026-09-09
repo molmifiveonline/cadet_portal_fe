@@ -36,6 +36,8 @@ import InterviewHandwritingEditor from './InterviewHandwritingEditor';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import FileUploadPanel from '../../components/common/FileUploadPanel';
 
+const MAX_INTERVIEW_SHEETS = 10;
+
 const InterviewForm = () => {
   const { cadet_id } = useParams();
   const navigate = useNavigate();
@@ -783,13 +785,18 @@ const InterviewForm = () => {
               files={interviewAttachments}
               showFileList={isViewMode || interviewAttachments.length > 0}
               multiple
-              maxFiles={10}
+              maxFiles={Math.max(
+                1,
+                MAX_INTERVIEW_SHEETS - interviewAttachments.length,
+              )}
               maxSizeMB={10}
               canUpload={!isViewMode}
               canDelete={!isViewMode}
-              uploadLocked={interviewAttachments.length > 0}
+              uploadLocked={
+                interviewAttachments.length >= MAX_INTERVIEW_SHEETS
+              }
               uploading={uploadingSheets}
-              lockMessage='Upload is disabled after submission. Delete all uploaded sheets to upload a new set.'
+              lockMessage='Maximum of 10 interview sheets reached. Delete a sheet to upload another.'
               emptyMessage='No file uploaded.'
               onUpload={handleUploadInterviewSheets}
               onView={(attachment) => handleViewSheet(attachment.id)}
