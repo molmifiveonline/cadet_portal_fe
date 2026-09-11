@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import CcRecipientsEditor from "../../components/common/CcRecipientsEditor";
 
 const buildInitialBlock = (subFields) => {
   const block = {};
@@ -100,11 +101,15 @@ const StageInviteModal = ({
 }) => {
   const [entries, setEntries] = useState([]);
   const [globalValues, setGlobalValues] = useState({});
+  const [includeCc, setIncludeCc] = useState(false);
+  const [ccRecipients, setCcRecipients] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
       setEntries(buildInitialEntries(cadets, fields));
       setGlobalValues(buildInitialGlobalValues(fields));
+      setIncludeCc(false);
+      setCcRecipients([]);
     }
   }, [isOpen, cadets, fields]);
 
@@ -176,6 +181,12 @@ const StageInviteModal = ({
     }));
     
     formData.append('cadets', JSON.stringify(submissions));
+    const cc = includeCc
+      ? ccRecipients.map((recipient) => ({
+          email: recipient.email.trim(),
+        }))
+      : [];
+    if (cc.length > 0) formData.append('cc', JSON.stringify(cc));
 
     // Add global files
     Object.entries(globalValues).forEach(([key, value]) => {
@@ -184,7 +195,7 @@ const StageInviteModal = ({
       }
     });
 
-    await onSubmit(formData, submissions);
+    await onSubmit(formData, submissions, { cc: cc.length > 0 ? cc : undefined });
   };
 
   const renderField = (field, value, onChange, entryBlock = {}) => {
@@ -315,7 +326,7 @@ const StageInviteModal = ({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+        className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
@@ -334,6 +345,14 @@ const StageInviteModal = ({
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="space-y-6 overflow-y-auto px-6 py-5">
+            <CcRecipientsEditor
+              enabled={includeCc}
+              onEnabledChange={setIncludeCc}
+              recipients={ccRecipients}
+              onChange={setCcRecipients}
+              disabled={loading}
+            />
+
             {globalFields.length > 0 && (
               <div className="rounded-xl border border-blue-100 bg-blue-50/30 p-5 shadow-sm">
                 <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-blue-600">Global Settings (Applies to all selected)</h3>

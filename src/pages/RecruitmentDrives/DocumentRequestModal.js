@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Loader2, X, Link as LinkIcon, AlertCircle, ChevronDown, Check } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import CcRecipientsEditor from "../../components/common/CcRecipientsEditor";
 import { DOCUMENT_TYPES } from "../../lib/constant";
 
 const DocumentRequestModal = ({
@@ -17,6 +18,8 @@ const DocumentRequestModal = ({
   const [documentTypes, setDocumentTypes] = useState(["CV"]);
   const [remarks, setRemarks] = useState("");
   const [isOpenDropdown, setIsOpenDropdown] = useState(false);
+  const [includeCc, setIncludeCc] = useState(false);
+  const [ccRecipients, setCcRecipients] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -25,6 +28,8 @@ const DocumentRequestModal = ({
       setDocumentTypes(["CV"]);
       setRemarks("");
       setIsOpenDropdown(false);
+      setIncludeCc(false);
+      setCcRecipients([]);
     }
   }, [isOpen]);
 
@@ -56,6 +61,7 @@ const DocumentRequestModal = ({
       cadet_links: cadetLinksPayload,
       remarks: remarks.trim(),
       document_types: documentTypes,
+      cc: includeCc ? ccRecipients : undefined,
     });
   };
 
@@ -73,7 +79,7 @@ const DocumentRequestModal = ({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
+        className="flex max-h-[95vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
@@ -94,6 +100,14 @@ const DocumentRequestModal = ({
 
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="space-y-6 overflow-y-auto px-6 py-5">
+            <CcRecipientsEditor
+              enabled={includeCc}
+              onEnabledChange={setIncludeCc}
+              recipients={ccRecipients}
+              onChange={setCcRecipients}
+              disabled={loading}
+            />
+
             {/* Info banner */}
             <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
               <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
