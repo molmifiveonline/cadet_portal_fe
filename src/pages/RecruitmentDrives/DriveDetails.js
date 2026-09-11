@@ -161,7 +161,7 @@ const DriveDetails = () => {
     }
   };
 
-  const handleSendShortlistEmail = async (cadetIds) => {
+  const handleSendShortlistEmail = async (cadetIds, cc) => {
     if (!drive?.institute_id) {
       toast.error("Institute information is missing for this drive");
       return;
@@ -177,6 +177,7 @@ const DriveDetails = () => {
       const response = await api.post("/institutes/send-shortlist-email", {
         instituteIds: [drive.institute_id],
         cadetIds,
+        cc: Array.isArray(cc) ? cc : cc?.trim() || undefined,
       });
 
       const result = response.data?.results?.[0];

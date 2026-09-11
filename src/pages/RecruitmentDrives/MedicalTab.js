@@ -22,6 +22,7 @@ import StageInviteModal from "./StageInviteModal";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 import { getOverallMedicalReportStatus } from "../../lib/utils/medicalReportStatus";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
+import CcRecipientsEditor from "../../components/common/CcRecipientsEditor";
 
 const getWorkflowStatusConfig = (cadet) => {
   if (cadet.workflow_phase === "selected") {
@@ -176,6 +177,8 @@ const MedicalTab = ({ drive, onRefresh }) => {
 
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [academicModalData, setAcademicModalData] = useState(null);
+  const [academicIncludeCc, setAcademicIncludeCc] = useState(false);
+  const [academicCcRecipients, setAcademicCcRecipients] = useState([]);
   const [sendingInvites, setSendingInvites] = useState(false);
   const [actionLoading, setActionLoading] = useState({
     confirm: false,
@@ -328,7 +331,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
 
   const hasSelection = selectedRows.length > 0;
 
-  const handleSendInvites = async (formData, submissions) => {
+  const handleSendInvites = async (formData, submissions, emailOptions) => {
     try {
       setSendingInvites(true);
       const cadetPayload = submissions.map((entry) => {
@@ -345,6 +348,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
 
       await api.post(`/recruitment-drives/${drive.id}/send-medical-invites`, {
         cadets: cadetPayload,
+        cc: emailOptions?.cc,
       });
       toast.success("Medical invites sent successfully");
       setIsInviteOpen(false);
@@ -470,17 +474,31 @@ const MedicalTab = ({ drive, onRefresh }) => {
   };
 
   const handleCollectAcademicData = async () => {
+    const cc = academicIncludeCc
+      ? academicCcRecipients.map((recipient) => ({
+          email: recipient.email.trim(),
+        }))
+      : [];
+
+    if (academicIncludeCc && cc.some((recipient) => !recipient.email)) {
+      toast.error("Enter an email address for every CC recipient");
+      return;
+    }
+
     try {
       setActionLoading((prev) => ({ ...prev, academic: true }));
       
       const payload = {
         drive_id: drive.id,
         cadet_ids: academicModalData.map((c) => c.id),
+        cc,
       };
 
       await api.post("/medical-results/bulk/collect-academic", payload);
       toast.success("Pending academic data request sent");
       setAcademicModalData(null);
+      setAcademicIncludeCc(false);
+      setAcademicCcRecipients([]);
       setExpandedGroups((prev) => ({
         ...prev,
         confirmed: false,
@@ -1073,7 +1091,11 @@ const MedicalTab = ({ drive, onRefresh }) => {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setAcademicModalData(groupSelectedRows)}
+                onClick={() => {
+                  setAcademicIncludeCc(false);
+                  setAcademicCcRecipients([]);
+                  setAcademicModalData(groupSelectedRows);
+                }}
                 disabled={
                   actionLoading.academic || groupSelectedRows.length === 0
                 }
@@ -1252,29 +1274,44 @@ const MedicalTab = ({ drive, onRefresh }) => {
       />
 
       {academicModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="text-xl font-semibold text-slate-900">
-              Collect Academic Data
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Are you sure you want to request academic data for the following {academicModalData.length} cadet(s)?
-            </p>
-            <div className="mt-4 max-h-40 overflow-y-auto rounded-lg border border-slate-100 bg-slate-50 p-3">
-              <ul className="space-y-1.5 text-sm text-slate-700">
-                {academicModalData.map((cadet) => (
-                  <li key={cadet.id} className="flex justify-between">
-                    <span className="font-medium">{cadet.name_as_in_indos_cert}</span>
-                    <span className="text-xs text-slate-500">{cadet.cadet_unique_id}</span>
-                  </li>
-                ))}
-              </ul>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm sm:items-center">
+          <div className="flex max-h-[95vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-xl">
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              <h2 className="text-xl font-semibold text-slate-900">
+                Collect Academic Data
+              </h2>
+              <p className="mt-2 text-sm text-slate-500">
+                Are you sure you want to request academic data for the following {academicModalData.length} cadet(s)?
+              </p>
+              <div className="mt-4 max-h-40 overflow-y-auto rounded-lg border border-slate-100 bg-slate-50 p-3">
+                <ul className="space-y-1.5 text-sm text-slate-700">
+                  {academicModalData.map((cadet) => (
+                    <li key={cadet.id} className="flex justify-between">
+                      <span className="font-medium">{cadet.name_as_in_indos_cert}</span>
+                      <span className="text-xs text-slate-500">{cadet.cadet_unique_id}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-4">
+                <CcRecipientsEditor
+                  enabled={academicIncludeCc}
+                  onEnabledChange={setAcademicIncludeCc}
+                  recipients={academicCcRecipients}
+                  onChange={setAcademicCcRecipients}
+                  disabled={actionLoading.academic}
+                />
+              </div>
             </div>
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="flex shrink-0 justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setAcademicModalData(null)}
+                onClick={() => {
+                  setAcademicModalData(null);
+                  setAcademicIncludeCc(false);
+                  setAcademicCcRecipients([]);
+                }}
                 disabled={actionLoading.academic}
               >
                 Cancel

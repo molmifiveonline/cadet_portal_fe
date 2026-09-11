@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { Button } from "../../components/ui/button";
+import CcRecipientsEditor from "../../components/common/CcRecipientsEditor";
 import { toast } from "sonner";
 import api from "../../lib/utils/apiConfig";
 
@@ -14,6 +15,8 @@ const SendEmailModal = ({
   defaultCourseType,
 }) => {
   const [loading, setLoading] = useState(false);
+  const [includeCc, setIncludeCc] = useState(false);
+  const [ccRecipients, setCcRecipients] = useState([]);
 
   if (!isOpen) return null;
 
@@ -36,10 +39,13 @@ const SendEmailModal = ({
         instituteIds: selectedInstitutes,
         batch_year: defaultBatchYear,
         course_type: defaultCourseType,
+        cc: includeCc ? ccRecipients : undefined,
       });
 
       toast.success("Email sent successfully");
       onSuccess?.();
+      setIncludeCc(false);
+      setCcRecipients([]);
       onClose();
     } catch (error) {
       console.error("Error sending email:", error);
@@ -55,20 +61,22 @@ const SendEmailModal = ({
 
   const handleClose = () => {
     if (!loading) {
+      setIncludeCc(false);
+      setCcRecipients([]);
       onClose();
     }
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm sm:items-center"
       onClick={handleClose}
     >
       <div
-        className="animate-in fade-in zoom-in w-full max-w-md rounded-xl bg-white p-6 shadow-xl duration-200"
+        className="animate-in fade-in zoom-in flex max-h-[95vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-xl duration-200"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
           <div>
             <h2 className="text-xl font-semibold text-gray-800">
               Send Email to Institute
@@ -85,8 +93,8 @@ const SendEmailModal = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Institute Name
@@ -104,9 +112,17 @@ const SendEmailModal = ({
                 {defaultCourseType || "-"}
               </p>
             </div>
+
+            <CcRecipientsEditor
+              enabled={includeCc}
+              onEnabledChange={setIncludeCc}
+              recipients={ccRecipients}
+              onChange={setCcRecipients}
+              disabled={loading}
+            />
           </div>
 
-          <div className="mt-6 flex justify-end gap-3 border-t border-gray-100 pt-4">
+          <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4">
             <Button
               type="button"
               variant="outline"

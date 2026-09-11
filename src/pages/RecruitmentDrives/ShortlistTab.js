@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../lib/utils/apiConfig";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import CcRecipientsEditor from "../../components/common/CcRecipientsEditor";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import { getShortlistCriteriaStatus } from "../../lib/utils/shortlistCriteria";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
@@ -37,6 +38,9 @@ const ShortlistTab = ({
   const debouncedSearchTerm = useDebouncedValue(searchTerm);
   const [selectedCadets, setSelectedCadets] = useState([]);
   const [submittingShortlist, setSubmittingShortlist] = useState(false);
+  const [includeCc, setIncludeCc] = useState(false);
+  const [ccRecipients, setCcRecipients] = useState([]);
+  const [confirmationMode, setConfirmationMode] = useState("shortlist");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -107,22 +111,42 @@ const ShortlistTab = ({
       toast.error("Select at least one uploaded cadet to shortlist");
       return;
     }
+    setConfirmationMode("shortlist");
+    setIncludeCc(false);
+    setCcRecipients([]);
     setShowConfirmModal(true);
   };
 
   const executeShortlist = async () => {
+    const cc = includeCc
+      ? ccRecipients.map((recipient) => ({
+          email: recipient.email.trim(),
+        }))
+      : [];
+
+    if (includeCc && cc.some((recipient) => !recipient.email)) {
+      toast.error("Enter an email address for every CC person");
+      return;
+    }
+
     setShowConfirmModal(false);
     try {
       setSubmittingShortlist(true);
-      const cadetIds = selectedForShortlist.map((cadet) => cadet.id);
+      const isPendingEmail = confirmationMode === "pending";
+      const cadetIds = (isPendingEmail
+        ? shortlistedPendingEmail
+        : selectedForShortlist
+      ).map((cadet) => cadet.id);
 
-      await api.post(`/recruitment-drives/${drive.id}/shortlist`, {
-        cadet_ids: cadetIds,
-      });
-      toast.success(`${selectedForShortlist.length} cadet(s) shortlisted`);
+      if (!isPendingEmail) {
+        await api.post(`/recruitment-drives/${drive.id}/shortlist`, {
+          cadet_ids: cadetIds,
+        });
+        toast.success(`${selectedForShortlist.length} cadet(s) shortlisted`);
+      }
 
       if (canSendShortlistEmail && onSendShortlistEmail) {
-        await onSendShortlistEmail(cadetIds);
+        await onSendShortlistEmail(cadetIds, cc);
       }
 
       await fetchCadets();
@@ -134,13 +158,22 @@ const ShortlistTab = ({
       );
     } finally {
       setSubmittingShortlist(false);
+      setIncludeCc(false);
+      setCcRecipients([]);
     }
   };
 
-  const handleSendEmail = async () => {
-    await onSendShortlistEmail(
-      shortlistedPendingEmail.map((cadet) => cadet.id),
-    );
+  const handleSendEmail = () => {
+    setConfirmationMode("pending");
+    setIncludeCc(false);
+    setCcRecipients([]);
+    setShowConfirmModal(true);
+  };
+
+  const closeConfirmation = () => {
+    setShowConfirmModal(false);
+    setIncludeCc(false);
+    setCcRecipients([]);
   };
 
   const getWorkflowBadge = (cadet) => {
@@ -418,33 +451,53 @@ const ShortlistTab = ({
       </div>
 
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm sm:items-center">
+          <div className="flex max-h-[95vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
               <h3 className="text-lg font-bold text-slate-900">
-                {canSendShortlistEmail ? "Confirm Shortlist & Email" : "Confirm Shortlist"}
+                {confirmationMode === "pending"
+                  ? "Confirm Pending Emails"
+                  : canSendShortlistEmail
+                    ? "Confirm Shortlist & Email"
+                    : "Confirm Shortlist"}
               </h3>
               <button
-                onClick={() => setShowConfirmModal(false)}
+                onClick={closeConfirmation}
                 className="text-slate-400 hover:text-slate-600 transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
               <p className="text-sm text-slate-600 leading-relaxed">
-                {canSendShortlistEmail
+                {confirmationMode === "pending"
+                  ? `Send the shortlist notification for ${shortlistedPendingEmail.length} pending cadet(s).`
+                  : canSendShortlistEmail
                   ? "This will shortlist the selected cadets and send an email to the institute. The email will also request the institute to update any pending details for these cadets."
                   : "This will shortlist the selected cadets."}
               </p>
 
+              {canSendShortlistEmail ? (
+                <CcRecipientsEditor
+                  enabled={includeCc}
+                  onEnabledChange={setIncludeCc}
+                  recipients={ccRecipients}
+                  onChange={setCcRecipients}
+                  disabled={submittingShortlist || sendingShortlist}
+                />
+              ) : null}
+
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  Selected Cadets ({selectedForShortlist.length})
+                  {confirmationMode === "pending" ? "Pending Cadets" : "Selected Cadets"} ({
+                    confirmationMode === "pending"
+                      ? shortlistedPendingEmail.length
+                      : selectedForShortlist.length
+                  })
                 </label>
                 <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-lg p-3 bg-slate-50 space-y-2">
-                  {selectedForShortlist.map((cadet) => (
+                  {(confirmationMode === "pending" ? shortlistedPendingEmail : selectedForShortlist).map((cadet) => (
                     <div key={cadet.id} className="flex justify-between items-center bg-white p-2.5 rounded border border-slate-100 shadow-sm text-sm">
                       <span className="font-semibold text-slate-800">{cadet.name_as_in_indos_cert}</span>
                       <span className="text-xs text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded font-bold uppercase">
@@ -456,10 +509,10 @@ const ShortlistTab = ({
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
+            <div className="flex shrink-0 justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
               <Button
                 variant="outline"
-                onClick={() => setShowConfirmModal(false)}
+                onClick={closeConfirmation}
               >
                 Cancel
               </Button>
@@ -467,7 +520,11 @@ const ShortlistTab = ({
                 onClick={executeShortlist}
                 className="bg-purple-600 text-white hover:bg-purple-700"
               >
-                {canSendShortlistEmail ? "Confirm & Send" : "Confirm Shortlist"}
+                {confirmationMode === "pending"
+                  ? "Send Pending Emails"
+                  : canSendShortlistEmail
+                    ? "Confirm & Send"
+                    : "Confirm Shortlist"}
               </Button>
             </div>
           </div>

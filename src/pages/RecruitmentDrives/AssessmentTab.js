@@ -93,10 +93,10 @@ const AssessmentTab = ({ drive, onRefresh, readOnly = false }) => {
     [cadets, selectedCadets],
   );
 
-  const handleSendInvites = async (entries) => {
+  const handleSendInvites = async (formData) => {
     try {
       setSendingInvites(true);
-      await api.post(`/recruitment-drives/${drive.id}/send-assessment-invites`, entries, {
+      await api.post(`/recruitment-drives/${drive.id}/send-assessment-invites`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

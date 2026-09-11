@@ -79,11 +79,12 @@ const InterviewTab = ({ drive, onRefresh, readOnly = false }) => {
 
   const returnTo = `/drives/${drive.id}?tab=interview`;
 
-  const handleSendInvites = async (formData, submissions) => {
+  const handleSendInvites = async (formData, submissions, emailOptions) => {
     try {
       setSendingInvites(true);
       await api.post(`/recruitment-drives/${drive.id}/send-interview-invites`, {
         cadets: submissions,
+        cc: emailOptions?.cc,
       });
       toast.success("Interview invites sent successfully");
       setIsInviteOpen(false);
