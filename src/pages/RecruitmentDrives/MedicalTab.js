@@ -431,7 +431,7 @@ const MedicalTab = ({ drive, onRefresh }) => {
           drive_id: drive.id,
           cadet_ids: groupSelectedRows.map((c) => c.id),
         });
-        toast.success("Candidate document request sent");
+        toast.success("Candidates moved to the document process");
       });
     };
     if (hasPending) {
