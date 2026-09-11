@@ -106,7 +106,7 @@ const Login = () => {
               <img src="mol-logo.png" alt="mol.logo" width={150} height={150} />
             </div>
             <p className="text-white/90 mt-6 text-lg font-medium px-4">
-              MOLMI NAVIS Software
+              MOLMI NAVIS Cadet Software
             </p>
             <p className="text-blue-100 mt-2 text-sm">
               Secure access to your dashboard
