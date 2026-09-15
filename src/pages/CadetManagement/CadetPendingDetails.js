@@ -70,11 +70,12 @@ const CadetPendingDetails = () => {
             ? 'Female'
             : formData.gender;
         }
-        ['date_of_birth', 'passing_out_date'].forEach((field) => {
-          if (formData[field]) {
-            formData[field] = formatDateForInput(formData[field]);
-          }
-        });
+        if (formData.date_of_birth) {
+          formData.date_of_birth = formatDateForInput(formData.date_of_birth);
+        }
+        formData.passing_out_date = formData.passing_out_date
+          ? String(formData.passing_out_date).slice(0, 4)
+          : '';
 
         reset(formData);
       } catch (error) {

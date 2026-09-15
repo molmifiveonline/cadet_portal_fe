@@ -2254,6 +2254,7 @@ const VesselModal = ({
           setForm={setForm}
           types={compatibleTypes}
           vessels={vessels}
+          department={list.department}
           otherVesselId={otherVesselId}
           readOnly={readOnly}
         />
@@ -2291,6 +2292,7 @@ const VesselSlot = ({
   setForm,
   types,
   vessels,
+  department,
   otherVesselId,
   readOnly,
 }) => {
@@ -2298,6 +2300,7 @@ const VesselSlot = ({
   const available = vessels.filter(
     (item) =>
       item.status === "Active" &&
+      [department, "Both"].includes(item.department || "Both") &&
       item.vessel_type_id === form[typeField] &&
       item.id !== otherVesselId,
   );

@@ -113,7 +113,9 @@ const CadetDetails = () => {
               : data.gender)
             : null,
           date_of_birth: formatDateForInput(data.date_of_birth),
-          passing_out_date: formatDateForInput(data.passing_out_date)
+          passing_out_date: data.passing_out_date
+            ? String(data.passing_out_date).slice(0, 4)
+            : ''
         };
 
         reset(formData);

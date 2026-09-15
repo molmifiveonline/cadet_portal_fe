@@ -8,10 +8,10 @@ const HIDDEN_MODULES = [
   'screening',
   'tests',
   // Temporarily hidden until these modules are ready for role configuration.
-  'onboarding',
-  'vessel-master',
-  'allocations',
-  'allocation-masters',
+  // 'onboarding',
+  // 'vessel-master',
+  // 'allocations',
+  // 'allocation-masters',
 ];
 
 const PermissionMatrix = ({
