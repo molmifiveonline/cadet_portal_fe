@@ -146,6 +146,14 @@ export const MenuItems = [
     allowedRoles: ["SuperAdmin", "Admin"],
   },
   {
+    title: "Vessel Type Master",
+    icon: Anchor,
+    url: "/vessel-types",
+    module: "vessel-master",
+    action: "view",
+    allowedRoles: ["SuperAdmin", "Admin"],
+  },
+  {
     title: "Vessel Master",
     icon: Ship,
     url: "/vessels",

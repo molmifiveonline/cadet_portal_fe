@@ -36,6 +36,7 @@ const InstituteSubmissions = lazy(() => import('pages/institutes/InstituteSubmis
 const RolePermissions = lazy(() => import('./pages/RolePermissions'));
 const VesselList = lazy(() => import('./pages/vessels'));
 const VesselForm = lazy(() => import('./pages/vessels/VesselForm'));
+const VesselTypeMaster = lazy(() => import('./pages/vessels/VesselTypeMaster'));
 const MedicalCenterList = lazy(() => import('./pages/medical-centers'));
 const MedicalCenterForm = lazy(() => import('./pages/medical-centers/MedicalCenterForm'));
 const MedicalReportList = lazy(() => import('./pages/medical-reports'));
@@ -511,6 +512,19 @@ function App() {
                   <MainLayout>
                     <PermissionRoute module='onboarding' action='view'>
                       <Onboarding />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/vessel-types'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='view'>
+                      <VesselTypeMaster />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>

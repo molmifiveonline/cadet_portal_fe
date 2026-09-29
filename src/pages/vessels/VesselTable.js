@@ -10,7 +10,6 @@ import {
   MapPin,
   Users,
   FileText,
-  MessageSquare,
 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
@@ -173,20 +172,6 @@ const VesselTable = ({
         <div className='flex items-center gap-2 text-sm text-gray-600'>
           <MapPin size={14} className='flex-shrink-0 text-gray-400' />
           <span>{row.reporting_port || '-'}</span>
-        </div>
-      ),
-    },
-    {
-      field: 'communication_details',
-      headerName: 'Communication',
-      width: '200px',
-      sortable: false,
-      renderCell: ({ row }) => (
-        <div className='flex items-start gap-2 text-sm text-gray-600'>
-          <MessageSquare size={14} className='flex-shrink-0 text-gray-400 mt-0.5' />
-          <span className='truncate' title={row.communication_details || '-'}>
-            {row.communication_details || '-'}
-          </span>
         </div>
       ),
     },

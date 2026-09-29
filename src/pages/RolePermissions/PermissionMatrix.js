@@ -35,7 +35,7 @@ const PermissionMatrix = ({
       medical: 'Medical & Documents',
       'medical-centers': 'Medical Centers',
       'activity-logs': 'Activity Logs',
-      'role-permissions': 'Role Permissions',
+      'role-permissions': 'Role Permissions',  
       assessments: 'Assessments',
       candidates: 'Candidates',
       certificates: 'Certificates',

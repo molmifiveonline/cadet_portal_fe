@@ -385,7 +385,7 @@ const AssessmentTypes = () => {
 
       <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
         Every Assessment Type is general, applies to both departments, and has a
-        fixed maximum score of <strong>10</strong>. Only active types are copied
+        fixed maximum score of <strong>100</strong>. Only active types are copied
         into newly created allocation cycles; existing cycles keep their saved
         snapshot.
       </div>
@@ -475,7 +475,7 @@ const AssessmentTypes = () => {
             <strong>Applies to:</strong> Deck and Engine
           </p>
           <p>
-            <strong>Maximum score:</strong> 10
+            <strong>Maximum score:</strong> 100
           </p>
         </div>
       </ConfirmationModal>

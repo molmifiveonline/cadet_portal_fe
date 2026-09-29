@@ -4,11 +4,14 @@ import {
   Anchor,
   ArrowRight,
   CalendarDays,
+  Calculator,
   CheckCircle2,
+  ClipboardCheck,
   Layers3,
   ListChecks,
   Plus,
   Search,
+  Send,
   Ship,
   Trash2,
   Users,
@@ -33,12 +36,66 @@ const currentYear = new Date().getFullYear();
 const toNumber = (value) => Number(value || 0);
 
 const getCycleStage = (cycle) => {
-  const finalizedCount = [cycle.deck_status, cycle.engine_status].filter(
-    (status) => status === 'Finalized',
-  ).length;
-  if (finalizedCount === 2) return 'Finalized';
-  if (finalizedCount === 1) return 'In Progress';
+  if (cycle.rank_list_status === 'Finalized') return 'Finalized';
+  if (toNumber(cycle.candidate_count) > 0) return 'In Progress';
   return 'Draft';
+};
+
+const getCyclePipeline = (cycle) => [
+  {
+    label: 'Scored',
+    value: toNumber(cycle.scored_count),
+    icon: Calculator,
+    color: 'text-blue-700',
+    background: 'bg-blue-50',
+  },
+  {
+    label: 'Allocated',
+    value: toNumber(cycle.allocated_count),
+    icon: Ship,
+    color: 'text-indigo-700',
+    background: 'bg-indigo-50',
+  },
+  {
+    label: 'Rank Final',
+    value: toNumber(cycle.finalized_candidate_count),
+    icon: ListChecks,
+    color: 'text-violet-700',
+    background: 'bg-violet-50',
+  },
+  {
+    label: 'Joining Plan',
+    value: toNumber(cycle.joining_plan_count),
+    icon: ClipboardCheck,
+    color: 'text-amber-700',
+    background: 'bg-amber-50',
+  },
+  {
+    label: 'Informed',
+    value: toNumber(cycle.informed_count),
+    icon: Send,
+    color: 'text-cyan-700',
+    background: 'bg-cyan-50',
+  },
+  {
+    label: 'Onboarded',
+    value: toNumber(cycle.onboarded_count),
+    icon: CheckCircle2,
+    color: 'text-emerald-700',
+    background: 'bg-emerald-50',
+  },
+];
+
+const calculateCycleProgress = (cycle) => {
+  const candidates = toNumber(cycle.candidate_count);
+  if (!candidates) return 0;
+  const completedMilestones = getCyclePipeline(cycle).reduce(
+    (total, item) => total + Math.min(candidates, item.value),
+    0,
+  );
+  return Math.round(
+    (completedMilestones / (candidates * getCyclePipeline(cycle).length)) * 100,
+  );
 };
 
 const Allocations = () => {
@@ -49,12 +106,15 @@ const Allocations = () => {
   const [loading, setLoading] = useState(true);
   const [year, setYear] = useState(currentYear);
   const [yearError, setYearError] = useState('');
+  const [department, setDepartment] = useState('');
+  const [departmentError, setDepartmentError] = useState('');
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [deleteCycle, setDeleteCycle] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [departmentFilter, setDepartmentFilter] = useState('All');
 
   const load = useCallback(async () => {
     try {
@@ -83,14 +143,7 @@ const Allocations = () => {
       (total, cycle) => total + toNumber(cycle.allocated_count),
       0,
     );
-    const finalizedLists = cycles.reduce(
-      (total, cycle) =>
-        total +
-        [cycle.deck_status, cycle.engine_status].filter(
-          (status) => status === 'Finalized',
-        ).length,
-      0,
-    );
+    const finalizedLists = cycles.filter((cycle) => cycle.rank_list_status === 'Finalized').length;
     return { candidates, allocated, finalizedLists };
   }, [cycles]);
 
@@ -100,16 +153,20 @@ const Allocations = () => {
       const matchesSearch =
         !term ||
         String(cycle.allocation_number || '').toLowerCase().includes(term) ||
-        String(cycle.allocation_year || '').includes(term);
+        String(cycle.allocation_year || '').includes(term) ||
+        String(cycle.department || '').toLowerCase().includes(term);
       const matchesStatus =
         statusFilter === 'All' || getCycleStage(cycle) === statusFilter;
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus &&
+        (departmentFilter === 'All' || cycle.department === departmentFilter);
     });
-  }, [cycles, search, statusFilter]);
+  }, [cycles, search, statusFilter, departmentFilter]);
 
   const openCreateModal = () => {
     setYear(currentYear);
     setYearError('');
+    setDepartment(departmentFilter === 'All' ? '' : departmentFilter);
+    setDepartmentError('');
     setShowCreate(true);
   };
 
@@ -125,6 +182,10 @@ const Allocations = () => {
   };
 
   const create = async () => {
+    if (!['Deck', 'Engine'].includes(department)) {
+      setDepartmentError('Select Deck or Engine for this allocation.');
+      return;
+    }
     const allocationYear = Number(year);
     if (
       !Number.isInteger(allocationYear) ||
@@ -139,9 +200,12 @@ const Allocations = () => {
       setCreating(true);
       const response = await api.post('/allocations', {
         year: allocationYear,
+        department,
       });
       toast.success(`${response.data.data.allocation_number} created`);
-      navigate(`/allocations/${response.data.data.id}`);
+      navigate(
+        `/allocations/${response.data.data.id}${canEdit ? '?action=add-candidates' : ''}`,
+      );
     } catch (error) {
       toast.error(
         error.response?.data?.message || 'Failed to create allocation cycle',
@@ -171,13 +235,14 @@ const Allocations = () => {
   const clearFilters = () => {
     setSearch('');
     setStatusFilter('All');
+    setDepartmentFilter('All');
   };
 
   return (
     <div className="py-6">
       <PageHeader
         title="CTV Vessel Allocation"
-        subtitle="Create, monitor, and finalize annual Deck and Engine allocation cycles"
+        subtitle="Manage separate annual allocation workflows for Deck and Engine"
         icon={Anchor}
       >
         {canCreate && (
@@ -195,7 +260,7 @@ const Allocations = () => {
         <SummaryCard
           label="Allocation Cycles"
           value={cycles.length}
-          helper="Annual allocation records"
+          helper="Separate department allocations"
           icon={Layers3}
           tone="blue"
         />
@@ -215,32 +280,42 @@ const Allocations = () => {
         />
         <SummaryCard
           label="Finalized Lists"
-          value={`${summary.finalizedLists}/${cycles.length * 2}`}
-          helper="Deck and Engine lists"
+          value={`${summary.finalizedLists}/${cycles.length}`}
+          helper="Department rank lists"
           icon={ListChecks}
           tone="amber"
         />
       </section>
 
       <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <h2 className="font-bold text-slate-900">Allocation Cycles</h2>
             <p className="text-sm text-slate-500">
               Open a cycle to manage candidates, assessments, ranks, and vessels.
             </p>
           </div>
-          <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap xl:w-auto">
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 className="pl-9"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search ID or year..."
+                placeholder="Search ID, year or department..."
                 aria-label="Search allocation cycles"
               />
             </div>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-full bg-white sm:w-44" aria-label="Filter allocations by department">
+                <SelectValue placeholder="All departments" />
+              </SelectTrigger>
+              <SelectContent align="end" className="z-[100] bg-white">
+                <SelectItem value="All">All departments</SelectItem>
+                <SelectItem value="Deck">Deck</SelectItem>
+                <SelectItem value="Engine">Engine</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger
                 className="w-full bg-white sm:w-44"
@@ -279,7 +354,7 @@ const Allocations = () => {
         </div>
       ) : (
         <EmptyState
-          filtered={Boolean(search || statusFilter !== 'All')}
+          filtered={Boolean(search || statusFilter !== 'All' || departmentFilter !== 'All')}
           canCreate={canCreate}
           onClear={clearFilters}
           onCreate={openCreateModal}
@@ -291,13 +366,31 @@ const Allocations = () => {
         onClose={closeCreateModal}
         onConfirm={create}
         title="Create CTV Allocation"
-        message="Create the annual Deck and Engine allocation workspace. Assessment Types can be added and selected later for each cadet."
-        confirmText="Create Allocation"
+        message="Choose the department for this allocation. Candidates, scores, ranks, and vessel assignments are managed separately for each department."
+        confirmText={canEdit ? "Create & Select Candidates" : "Create Allocation"}
         isLoading={creating}
-        confirmDisabled={!String(year).trim()}
+        confirmDisabled={!String(year).trim() || !department}
         maxWidthClass="max-w-md"
       >
         <div className="space-y-4">
+          <div>
+            <label htmlFor="allocation-department" className="block text-sm font-semibold text-slate-700">
+              Department <span className="text-red-500">*</span>
+            </label>
+            <Select value={department} onValueChange={(value) => {
+              setDepartment(value);
+              setDepartmentError('');
+            }}>
+              <SelectTrigger id="allocation-department" className="mt-1 w-full bg-white" invalid={Boolean(departmentError)}>
+                <SelectValue placeholder="Select Deck or Engine" />
+              </SelectTrigger>
+              <SelectContent className="z-[100] bg-white">
+                <SelectItem value="Deck">Deck</SelectItem>
+                <SelectItem value="Engine">Engine</SelectItem>
+              </SelectContent>
+            </Select>
+            {departmentError && <p role="alert" className="mt-1 text-xs text-red-600">{departmentError}</p>}
+          </div>
           <label className="block text-sm font-semibold text-slate-700">
             Allocation Year <span className="text-red-500">*</span>
             <Input
@@ -377,12 +470,10 @@ const SummaryCard = ({ label, value, helper, icon: Icon, tone }) => {
 const CycleCard = ({ cycle, canEdit, onOpen, onDelete }) => {
   const candidates = toNumber(cycle.candidate_count);
   const allocated = toNumber(cycle.allocated_count);
-  const progress = candidates
-    ? Math.min(100, Math.round((allocated / candidates) * 100))
-    : 0;
+  const progress = calculateCycleProgress(cycle);
+  const pipeline = getCyclePipeline(cycle);
   const stage = getCycleStage(cycle);
-  const deletionBlocked =
-    cycle.deck_status === 'Finalized' || cycle.engine_status === 'Finalized';
+  const deletionBlocked = cycle.rank_list_status === 'Finalized';
 
   return (
     <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg">
@@ -391,13 +482,16 @@ const CycleCard = ({ cycle, canEdit, onOpen, onDelete }) => {
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-blue-600">
               <Anchor size={14} />
-              Allocation Cycle
+              {cycle.department} Allocation
             </div>
             <h3 className="mt-1 truncate text-xl font-bold text-slate-900">
               {cycle.allocation_number}
             </h3>
           </div>
-          <CycleStageBadge stage={stage} />
+          <div className="flex shrink-0 items-center gap-2">
+            <CycleStageBadge stage={stage} />
+            <ProgressCircle progress={progress} />
+          </div>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-600">
@@ -415,25 +509,28 @@ const CycleCard = ({ cycle, canEdit, onOpen, onDelete }) => {
           </span>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <DepartmentStatus label="Deck" status={cycle.deck_status} />
-          <DepartmentStatus label="Engine" status={cycle.engine_status} />
+        <div className="mt-5">
+          <DepartmentStatus label={`${cycle.department} Rank List`} status={cycle.rank_list_status} />
         </div>
 
         <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-medium text-slate-500">Vessel allocation</span>
-            <span className="font-bold text-slate-700">{progress}%</span>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+              Overall Workflow
+            </p>
+            <p className="text-[11px] text-slate-400">
+              {allocated}/{candidates} vessel allocated
+            </p>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
+          <div className="grid grid-cols-3 gap-2">
+            {pipeline.map((item) => (
+              <PipelineMetric
+                key={item.label}
+                item={item}
+                total={candidates}
+              />
+            ))}
           </div>
-          <p className="mt-2 text-xs text-slate-400">
-            {allocated} of {candidates} cadets have an allocated vessel
-          </p>
         </div>
       </div>
 
@@ -464,6 +561,65 @@ const CycleCard = ({ cycle, canEdit, onOpen, onDelete }) => {
         </Button>
       </div>
     </article>
+  );
+};
+
+const ProgressCircle = ({ progress }) => (
+  <div
+    className="relative flex h-12 w-12 shrink-0 items-center justify-center"
+    aria-label={`${progress}% overall workflow complete`}
+    title={`${progress}% overall workflow complete`}
+  >
+    <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
+      <circle
+        cx="18"
+        cy="18"
+        r="15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        className="text-slate-100"
+      />
+      <circle
+        cx="18"
+        cy="18"
+        r="15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        pathLength="100"
+        strokeDasharray={`${progress} 100`}
+        className={
+          progress === 100
+            ? 'text-emerald-500'
+            : progress >= 50
+              ? 'text-amber-500'
+              : 'text-[#3a5f9e]'
+        }
+      />
+    </svg>
+    <span className="absolute text-[10px] font-extrabold text-slate-700">
+      {progress}%
+    </span>
+  </div>
+);
+
+const PipelineMetric = ({ item, total }) => {
+  const Icon = item.icon;
+  return (
+    <div
+      className={`flex min-w-0 flex-col items-center rounded-lg border border-slate-100 px-1 py-2 ${item.background}`}
+      title={`${item.label}: ${item.value} of ${total} cadets`}
+    >
+      <Icon size={14} className={`mb-1 ${item.color}`} />
+      <span className={`text-sm font-extrabold leading-none ${item.color}`}>
+        {item.value}
+      </span>
+      <span className="mt-1 max-w-full truncate text-[9px] font-bold uppercase tracking-tight text-slate-500">
+        {item.label}
+      </span>
+    </div>
   );
 };
 
@@ -538,8 +694,8 @@ const EmptyState = ({ filtered, canCreate, onClear, onCreate }) => (
     </h3>
     <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
       {filtered
-        ? 'Try another allocation ID, year, or list status.'
-        : 'Create the first annual Deck and Engine allocation cycle.'}
+        ? 'Try another allocation ID, year, department, or list status.'
+        : 'Create an annual allocation cycle for Deck or Engine.'}
     </p>
     <div className="mt-5 flex justify-center gap-2">
       {filtered ? (

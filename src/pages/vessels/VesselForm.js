@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -11,7 +11,6 @@ import {
   MapPin,
   Users,
   FileText,
-  MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/button';
@@ -34,6 +33,9 @@ const VesselForm = () => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [errors, setErrors] = useState({});
+  const [vesselTypes, setVesselTypes] = useState([]);
+  const [typesLoading, setTypesLoading] = useState(true);
+  const [typesError, setTypesError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -47,11 +49,27 @@ const VesselForm = () => {
     total_seats: '',
     voyage_ref: '',
     reporting_port: '',
-    communication_details: '',
     contact_person_name: '',
     contact_person_email: '',
     contact_person_phone: '',
   });
+
+  const loadVesselTypes = useCallback(async () => {
+    setTypesLoading(true);
+    setTypesError('');
+    try {
+      const response = await api.get('/vessels/master-types');
+      setVesselTypes(response.data.data || []);
+    } catch (error) {
+      setTypesError(error.response?.data?.message || 'Failed to load vessel types.');
+    } finally {
+      setTypesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadVesselTypes();
+  }, [loadVesselTypes]);
 
   useEffect(() => {
     const fetchVessel = async () => {
@@ -62,6 +80,7 @@ const VesselForm = () => {
           const editableVessel = { ...vessel };
           delete editableVessel.joining_date;
           delete editableVessel.required_documents;
+          delete editableVessel.communication_details;
           setFormData({ ...editableVessel, vessel_type_id: vessel.vessel_type_id || '' });
         }
       } catch (error) {
@@ -79,7 +98,16 @@ const VesselForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === 'vessel_type_id') {
+      const selectedType = vesselTypes.find((type) => type.id === value);
+      setFormData((prev) => ({ ...prev, vessel_type_id: value, vessel_type: selectedType?.name || '' }));
+      setErrors((prev) => ({ ...prev, vessel_type: undefined }));
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
@@ -92,7 +120,8 @@ const VesselForm = () => {
     const nextErrors = {};
     if (!formData.name?.trim()) nextErrors.name = 'Vessel Name is required.';
     if (!formData.imo_number?.trim()) nextErrors.imo_number = 'IMO Number is required.';
-    if (!formData.vessel_type?.trim()) nextErrors.vessel_type = 'Vessel Type is required.';
+    const selectedType = vesselTypes.find((type) => type.id === formData.vessel_type_id);
+    if (!selectedType || (selectedType.status !== 'Active' && !isEditMode)) nextErrors.vessel_type = 'Choose an active Vessel Type.';
     if (!['Deck', 'Engine', 'Both'].includes(formData.department)) nextErrors.department = 'Department Compatibility is required.';
     return nextErrors;
   };
@@ -104,7 +133,7 @@ const VesselForm = () => {
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
       const firstInvalidField = Object.keys(validationErrors)[0];
-      requestAnimationFrame(() => document.querySelector(`[name="${firstInvalidField}"]`)?.focus());
+      requestAnimationFrame(() => document.querySelector(`[name="${firstInvalidField === 'vessel_type' ? 'vessel_type_id' : firstInvalidField}"]`)?.focus());
       return;
     }
 
@@ -128,7 +157,7 @@ const VesselForm = () => {
     }
   };
 
-  if (initialLoading) {
+  if (initialLoading || typesLoading) {
     return (
       <div className='flex items-center justify-center p-20'>
         <Loader2 className='animate-spin text-blue-600' size={40} />
@@ -138,6 +167,10 @@ const VesselForm = () => {
 
   const fieldClass = (field, className) => `${className} ${errors[field] ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}`;
   const FieldError = ({ field }) => errors[field] ? <p className='text-sm text-red-600' role='alert'>{errors[field]}</p> : null;
+  const selectedMasterType = vesselTypes.find((type) => type.id === formData.vessel_type_id);
+  const legacyVesselType = isEditMode && formData.vessel_type && !selectedMasterType
+    ? formData.vessel_type
+    : '';
 
   return (
     <div className='py-6 mx-auto'>
@@ -200,21 +233,34 @@ const VesselForm = () => {
 
             {/* Vessel Type */}
             <div className='space-y-2'>
-              <label className='text-sm font-medium text-gray-700'>
+              <label htmlFor='vessel_type' className='text-sm font-medium text-gray-700'>
                 Vessel Type <span className='text-red-500 ml-1'>*</span>
               </label>
               <div className='relative'>
                 <Anchor className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10' />
-                <Input
-                  name='vessel_type'
-                  value={formData.vessel_type || ''}
+                <select
+                  id='vessel_type'
+                  name='vessel_type_id'
+                  value={selectedMasterType?.id || ''}
                   onChange={handleInputChange}
-                  placeholder='Example: Bulk Carrier'
-                  className={fieldClass('vessel_type', 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none')}
+                  className={fieldClass('vessel_type', 'w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 outline-none')}
                   aria-invalid={Boolean(errors.vessel_type)}
-                />
+                  required
+                >
+                  <option value=''>Select vessel type</option>
+                  {vesselTypes.filter((type) => type.status === 'Active' || type.id === selectedMasterType?.id).map((type) => (
+                    <option key={type.id} value={type.id}>{type.name}{type.status === 'Inactive' ? ' (Inactive)' : ''}</option>
+                  ))}
+                </select>
               </div>
               <FieldError field='vessel_type' />
+              {legacyVesselType && <p className='text-sm text-amber-700'>Current type: {legacyVesselType}. Choose a master type before saving.</p>}
+              {typesError && (
+                <div className='text-sm text-red-600' role='alert'>
+                  {typesError}{' '}
+                  <button type='button' onClick={loadVesselTypes} className='underline'>Try again</button>
+                </div>
+              )}
             </div>
 
             <div className='space-y-2'>
@@ -362,24 +408,6 @@ const VesselForm = () => {
             </div>
           </div>
 
-          {/* Communication Details */}
-          <div className='space-y-2'>
-            <label className='text-sm font-medium text-gray-700'>
-              Communication Details
-            </label>
-            <div className='relative'>
-              <MessageSquare className='absolute left-3 top-3 text-gray-400 h-4 w-4' />
-              <textarea
-                name='communication_details'
-                placeholder='Enter communication details, contact information, etc.'
-                value={formData.communication_details}
-                onChange={handleInputChange}
-                rows={4}
-                className='w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 outline-none resize-vertical'
-              />
-            </div>
-          </div>
-
           <div className='pt-6 flex justify-end gap-3 border-t border-gray-200 mt-8'>
             <button
               type='button'
@@ -391,7 +419,7 @@ const VesselForm = () => {
             <Button
               type='submit'
               className='bg-[#3a5f9e] hover:bg-[#325186] text-white px-6 py-2.5 h-auto'
-              disabled={loading}
+              disabled={loading || Boolean(typesError)}
             >
               {loading ? (
                 <>
