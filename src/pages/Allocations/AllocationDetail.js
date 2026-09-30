@@ -13,7 +13,6 @@ import {
   ChevronUp,
   ClipboardCheck,
   Eye,
-  ListOrdered,
   Lock,
   Mail,
   MessageCircle,
@@ -22,10 +21,8 @@ import {
   Plus,
   RotateCcw,
   Search,
-  Ship,
   Trash2,
   Unlock,
-  UserCheck,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -44,6 +41,9 @@ import {
 } from "../../components/ui/select";
 import { useAuth } from "../../context/AuthContext";
 import { usePermission } from "../../hooks/usePermission";
+import OverviewTab from "./tabs/OverviewTab";
+import { getJoiningEmailActionLabel } from "./communicationUtils";
+import CommunicationReview from "./CommunicationReview";
 
 const inputClass =
   "h-9 rounded-md border border-slate-300 bg-white px-2 text-sm outline-none focus:border-[#3a5f9e] focus:ring-2 focus:ring-[#3a5f9e]/20";
@@ -195,6 +195,7 @@ const AllocationDetail = () => {
     "allocations",
     "finalize",
   );
+  const { hasPermission: canViewOnboarding } = usePermission("onboarding", "view");
   const [cycle, setCycle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("Dashboard");
@@ -305,12 +306,16 @@ const AllocationDetail = () => {
         ))}
       </div>
       {tab === "Dashboard" && (
-        <Dashboard
+        <OverviewTab
           cycle={cycle}
           progress={progress}
+          joiningPlans={joiningPlans}
+          vessels={vessels}
           openCandidates={setCandidateList}
           setTab={setTab}
           canEdit={canEditAllocations}
+          canFinalize={canFinalizeAllocations}
+          canViewOnboarding={canViewOnboarding}
           openOnboarding={() =>
             navigate(
               `/onboarding?allocation=${encodeURIComponent(cycle.allocation_number)}`,
@@ -468,231 +473,6 @@ const WorkflowStepper = ({ steps }) => {
         })}
       </div>
     </section>
-  );
-};
-
-const Dashboard = ({
-  cycle,
-  progress,
-  openCandidates,
-  setTab,
-  openOnboarding,
-  canEdit,
-}) => {
-  const department = cycle.department || cycle.rank_lists[0]?.department;
-  const nextAction = (() => {
-    if (!canEdit)
-      return {
-        title: "Review this allocation cycle",
-        description:
-          `You have read-only access. Open the ${department} list to review candidates and progress.`,
-        label: `View ${department} List`,
-        action: () => setTab(department),
-        icon: Eye,
-      };
-    if (!progress.candidateCount)
-      return {
-        title: "Add CTV-ready candidates",
-        description:
-          `Choose verified ${department} candidates to start scoring.`,
-        label: "Add Candidates",
-        action: () => openCandidates(cycle.rank_lists[0]),
-        icon: UserCheck,
-      };
-    if (progress.scoredCount < progress.candidateCount) {
-      const list = cycle.rank_lists.find((item) =>
-        (item.allocations || []).some(
-          (allocation) => allocation.final_score === null,
-        ),
-      );
-      return {
-        title: "Complete assessment scores",
-        description: `${progress.candidateCount - progress.scoredCount} candidate(s) still need assessment scores.`,
-        label: `Open ${list?.department || "Rank"} List`,
-        action: () => setTab(list?.department || department),
-        icon: Pencil,
-      };
-    }
-    if (progress.rankedCount < progress.candidateCount)
-      return {
-        title: "Complete the rank list",
-        description:
-          "Ranks are generated after every candidate has a final score.",
-        label: `Review ${department} Rank List`,
-        action: () => setTab(department),
-        icon: ListOrdered,
-      };
-    if (progress.finalizedCount < progress.activeListCount) {
-      const list = cycle.rank_lists.find(
-        (item) =>
-          (item.allocations || []).length && item.status !== "Finalized",
-      );
-      return {
-        title: "Finalize the rank list",
-        description:
-          "Review and lock scores and ranks. Vessel assignments remain editable.",
-        label: `Finalize ${list?.department || ""} List`,
-        action: () => setTab(list?.department || department),
-        icon: Lock,
-      };
-    }
-    if (progress.allocatedCount < progress.candidateCount) {
-      const list = cycle.rank_lists.find((item) =>
-        (item.allocations || []).some(
-          (allocation) => !isVesselAllocated(allocation),
-        ),
-      );
-      return {
-        title: "Allocate vessels",
-        description: `${progress.candidateCount - progress.allocatedCount} candidate(s) need a compatible vessel.`,
-        label: `Open ${list?.department || "Rank"} List`,
-        action: () => setTab(list?.department || department),
-        icon: Ship,
-      };
-    }
-    if (progress.joiningPlanCount < progress.allocatedSlots)
-      return {
-        title: "Create joining plans",
-        description: `${progress.allocatedSlots - progress.joiningPlanCount} allocated vessel assignment(s) need joining details.`,
-        label: "Open Joining Plans",
-        action: () => setTab("Joining Plan"),
-        icon: ClipboardCheck,
-      };
-    if (progress.intimatedCount < progress.joiningPlanCount)
-      return {
-        title: "Send joining intimations",
-        description: `${progress.joiningPlanCount - progress.intimatedCount} plan(s) still need a successful Email, Phone, or WhatsApp record.`,
-        label: "Open Intimation Queue",
-        action: () => setTab("Joining Plan"),
-        icon: Mail,
-      };
-    if (progress.onboardedCount < progress.candidateCount)
-      return {
-        title: "Complete onboarding",
-        description: `${progress.candidateCount - progress.onboardedCount} informed candidate(s) need checklist clearance.`,
-        label: "Open Onboarding",
-        action: openOnboarding,
-        icon: ClipboardCheck,
-      };
-    return {
-      title: "Allocation cycle complete",
-      description: "Every candidate in this cycle has been onboarded.",
-      label: "View Onboarding",
-      action: openOnboarding,
-      icon: CheckCircle2,
-    };
-  })();
-  const NextIcon = nextAction.icon;
-  const cards = [
-    ["Candidates", progress.candidateCount, UserCheck],
-    [
-      "Scored & Ranked",
-      `${progress.scoredCount}/${progress.candidateCount}`,
-      ListOrdered,
-    ],
-    [
-      "Vessel Allocated",
-      `${progress.allocatedCount}/${progress.candidateCount}`,
-      Ship,
-    ],
-    [
-      "Onboarded",
-      `${progress.onboardedCount}/${progress.candidateCount}`,
-      CheckCircle2,
-    ],
-  ];
-
-  return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-[#3a5f9e]/20 bg-gradient-to-r from-[#3a5f9e]/10 to-[#3a5f9e]/5 p-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="rounded-xl bg-[#3a5f9e] p-2.5 text-white">
-              <NextIcon size={21} />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-[#3a5f9e]">
-                Recommended next action
-              </p>
-              <h2 className="mt-1 text-lg font-bold text-slate-900">
-                {nextAction.title}
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                {nextAction.description}
-              </p>
-            </div>
-          </div>
-          <Button onClick={nextAction.action} className="shrink-0">
-            {nextAction.label}
-            <ArrowRight size={16} className="ml-2" />
-          </Button>
-        </div>
-      </section>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map(([label, value, Icon]) => (
-          <div key={label} className="rounded-xl border bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500">{label}</p>
-              <Icon size={18} className="text-[#3a5f9e]" />
-            </div>
-            <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
-          </div>
-        ))}
-      </div>
-      <div className={`grid gap-4 ${cycle.rank_lists.length > 1 ? "lg:grid-cols-2" : ""}`}>
-        {cycle.rank_lists.map((list) => {
-          const allocations = list.allocations || [];
-          const scored = allocations.filter(
-            (item) => item.final_score !== null,
-          ).length;
-          const allocated = allocations.filter(isVesselAllocated).length;
-          return (
-            <article
-              key={list.id}
-              className="rounded-xl border bg-white p-5 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-bold">
-                    {list.department} Workflow
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Assessment scoring · {list.ranking_mode} ranking
-                  </p>
-                </div>
-                <Status status={list.status} />
-              </div>
-              <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs">
-                <Metric label="Candidates" value={allocations.length} />
-                <Metric
-                  label="Scored"
-                  value={`${scored}/${allocations.length}`}
-                />
-                <Metric
-                  label="Allocated"
-                  value={`${allocated}/${allocations.length}`}
-                />
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {canEdit && list.status === "Draft" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => openCandidates(list)}
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Add Candidates
-                  </Button>
-                )}
-                <Button onClick={() => setTab(list.department)}>
-                  Continue {list.department}
-                  <ArrowRight size={16} className="ml-2" />
-                </Button>
-              </div>
-            </article>
-          );
-        })}
-      </div>
-    </div>
   );
 };
 
@@ -1059,7 +839,9 @@ const RankList = ({
             {locked
               ? `This ${list.department} Rank List is Finalized. ${canEdit ? "You can allocate or change vessels until onboarding is complete. " : ""}A Super Admin can unlock ranks and scores with a reason.`
               : canEdit
-                ? "This Rank List is Draft. Saving assessment scores recalculates the Final Score and automatic rank immediately."
+                ? list.ranking_mode === "Manual"
+                  ? "Saving assessments updates the Final Score. Newly scored cadets are ranked after the existing manual order."
+                  : "This Rank List is Draft. Saving assessment scores recalculates the Final Score and automatic rank immediately."
                 : "You have view-only access to this Draft Rank List."}
           </p>
         </div>
@@ -1772,9 +1554,6 @@ const VesselAssignmentCell = ({
   const planId = secondary
     ? allocation.secondary_joining_plan_id
     : allocation.primary_joining_plan_id;
-  const planStatus = secondary
-    ? allocation.secondary_joining_plan_status
-    : allocation.primary_joining_plan_status;
   const planRequiresRefresh = Number(secondary
     ? allocation.secondary_joining_plan_requires_refresh
     : allocation.primary_joining_plan_requires_refresh);
@@ -1812,11 +1591,6 @@ const VesselAssignmentCell = ({
           <Mail size={14} />
           {planRequiresRefresh ? "Update Joining Plan" : "Create Joining Plan"}
         </button>
-      )}
-      {planId && (
-        <div className="text-xs text-slate-500">
-          Joining Plan: <Status status={planStatus || "Draft"} />
-        </div>
       )}
     </div>
   );
@@ -2126,6 +1900,7 @@ const CandidatePicker = ({
         .map((allocation) => ({
           key: `existing-${allocation.id}`,
           candidateId: allocation.cadet_unique_id,
+          currentRank: allocation.current_rank,
           finalScore: Number(allocation.final_score),
           academicScore: Number(allocation.academic_score),
         })),
@@ -2139,12 +1914,16 @@ const CandidatePicker = ({
           academicScore: Number(candidate.academic_score),
         }))
         .filter((candidate) => candidate.finalScore !== null),
-    ].sort(
-      (left, right) =>
-        right.finalScore - left.finalScore ||
+    ].sort((left, right) => {
+      if (activeList.ranking_mode === "Manual") {
+        const leftRank = Number(left.currentRank) || Infinity;
+        const rightRank = Number(right.currentRank) || Infinity;
+        if (leftRank !== rightRank) return leftRank - rightRank;
+      }
+      return right.finalScore - left.finalScore ||
         right.academicScore - left.academicScore ||
-        String(left.candidateId).localeCompare(String(right.candidateId)),
-    );
+        String(left.candidateId).localeCompare(String(right.candidateId));
+    });
     return new Map(
       rankedCandidates.map((candidate, index) => [candidate.key, index + 1]),
     );
@@ -2344,7 +2123,9 @@ const CandidatePicker = ({
                 </Th>
                 <Th className="w-[120px]">
                   Current Rank
-                  <span className="block text-[10px] font-normal">Auto</span>
+                  <span className="block text-[10px] font-normal">
+                    {activeList.ranking_mode === "Manual" ? "After manual ranks" : "Auto"}
+                  </span>
                 </Th>
                 <Th className="w-[190px]">Vessel Type</Th>
                 <Th className="w-[145px]">Allocation Status</Th>
@@ -3085,14 +2866,13 @@ const VesselSlot = ({
       )}
 
       <div className="max-h-[350px] overflow-auto rounded-lg border border-slate-200">
-        <table className="w-full min-w-[1040px] table-fixed text-left text-xs">
+        <table className="w-full min-w-[925px] table-fixed text-left text-xs">
           <thead className="sticky top-0 z-10 bg-slate-50 shadow-sm">
             <tr>
               <Th className="w-12"><span className="sr-only">Select</span></Th>
               <Th className="w-[150px]">Vessel Name</Th>
               <Th className="w-[135px]">Vessel Type</Th>
               <Th className="w-[130px]">Location</Th>
-              <Th className="w-[115px]">Joining Date</Th>
               <Th className="w-[105px]">Seats</Th>
               <Th className="w-[120px]">Voyage Ref</Th>
               <Th className="w-[135px]">Reporting Port</Th>
@@ -3126,7 +2906,6 @@ const VesselSlot = ({
                   <Td className="font-semibold text-slate-900">{vessel.name}</Td>
                   <Td>{vesselType}</Td>
                   <Td>{vessel.location || "—"}</Td>
-                  <Td>{vessel.joining_date || "TBD"}</Td>
                   <Td>
                     <span className={hasSeat ? "text-emerald-700" : "text-red-600"}>
                       {vessel.available_seats ?? 0}/{vessel.total_seats ?? 0}
@@ -3139,7 +2918,7 @@ const VesselSlot = ({
             })}
             {!displayedVessels.length && (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-sm text-slate-500">
+                <td colSpan={7} className="p-8 text-center text-sm text-slate-500">
                   {readOnly
                     ? "No vessel is assigned."
                     : `No active ${department} or Both-compatible vessels match these filters.`}
@@ -3710,7 +3489,7 @@ const QueueStep = ({ label, complete }) => (
   </span>
 );
 
-const CommunicationModal = ({
+export const CommunicationModal = ({
   plan,
   admins,
   currentUser,
@@ -3721,10 +3500,8 @@ const CommunicationModal = ({
   const defaultMode =
     plan.email_delivery_status === "Failed"
       ? "Email"
-      : previouslyInformed
-        ? plan.last_mode === "WhatsApp"
-          ? "WhatsApp"
-          : "Phone"
+      : previouslyInformed && ["Email", "Phone", "WhatsApp"].includes(plan.last_mode)
+        ? plan.last_mode
         : "Email";
   const [form, setForm] = useState({
     mode: defaultMode,
@@ -3794,17 +3571,8 @@ const CommunicationModal = ({
       onClose={onClose}
       width="max-w-4xl"
     >
+      <CommunicationReview plan={plan} previouslyInformed={previouslyInformed} onClose={onClose}>
       <div className="space-y-5">
-        <div className="flex flex-wrap items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <QueueStep label="Plan Ready" complete />
-          <ChevronRight size={14} className="text-slate-300" />
-          <QueueStep label="Candidate Informed" complete={previouslyInformed} />
-          <ChevronRight size={14} className="text-slate-300" />
-          <QueueStep
-            label="Confirmation Received"
-            complete={Boolean(plan.confirmation_received)}
-          />
-        </div>
         <div className="grid gap-3 rounded-xl border border-[#3a5f9e]/20 bg-[#3a5f9e]/5 p-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <p className="text-xs text-slate-500">Vessel Name</p>
@@ -3818,7 +3586,7 @@ const CommunicationModal = ({
           </div>
           <div>
             <p className="text-xs text-slate-500">Joining Date</p>
-            <p className="font-semibold">{plan.joining_date || "TBD"}</p>
+            <p className="font-semibold">{formatJoiningDate(plan.joining_date)}</p>
           </div>
           <div>
             <p className="text-xs text-slate-500">Reporting Port</p>
@@ -3901,6 +3669,8 @@ const CommunicationModal = ({
                     key={value}
                     type="button"
                     onClick={() => setField("mode", value)}
+                    aria-label={value}
+                    aria-pressed={active}
                     className={`flex h-9 items-center justify-center gap-1.5 rounded-md border text-xs font-semibold transition ${
                       active
                         ? "border-[#3a5f9e] bg-[#3a5f9e] text-white"
@@ -4028,11 +3798,7 @@ const CommunicationModal = ({
             {saving
               ? "Saving…"
               : form.mode === "Email"
-                ? plan.email_delivery_status === "Failed" || attemptError
-                  ? "Retry Joining Intimation"
-                  : previouslyInformed
-                    ? "Send Another Email"
-                    : "Send Joining Intimation"
+                ? getJoiningEmailActionLabel(plan, Boolean(attemptError))
                 : form.confirmation_received
                   ? "Record Confirmation"
                   : "Record Communication"}
@@ -4044,6 +3810,7 @@ const CommunicationModal = ({
           </p>
         )}
       </div>
+      </CommunicationReview>
     </Modal>
   );
 };
