@@ -1,0 +1,630 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
+import {
+  Save,
+  ArrowLeft,
+  Calendar,
+  Clock,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  ClipboardList,
+  Target,
+  Languages,
+  PencilLine,
+  MessageSquare,
+  AlertCircle,
+} from 'lucide-react';
+import api from '../../lib/utils/apiConfig';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
+import PageHeader from '../../components/common/PageHeader';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { errorTextClass } from '../../lib/utils/formStyles';
+import FileUploadPanel from '../../components/common/FileUploadPanel';
+
+const AssessmentForm = () => {
+  const { cadet_id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isViewMode =
+    location.pathname.endsWith('/view') ||
+    new URLSearchParams(location.search).get('view') === 'true';
+
+  const handleBack = () => {
+    const returnPath = location.state?.returnPath;
+    const returnState = location.state?.returnState;
+    if (returnPath) {
+      navigate(returnPath, { state: returnState });
+    } else {
+      navigate(-1);
+    }
+  };
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [cadet, setCadet] = useState(null);
+  const [essayFile, setEssayFile] = useState(null);
+  const [formData, setFormData] = useState({
+    assessment_date: '',
+    assessment_time: '',
+    ces_test: '',
+    ces_test_2: '',
+    english_test: '',
+    essay_writing_mark: '',
+    remarks: '',
+    status: 'pending',
+    mark_for_interview: false,
+    calculated_score: null,
+  });
+  const [existingEssay, setExistingEssay] = useState(null);
+  const [previewScore, setPreviewScore] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  useEffect(() => {
+    // Attempt 2 replaces Attempt 1 in the score when provided.
+    const hasCesAttempt2 = String(formData.ces_test_2 ?? '').trim() !== '';
+    const ces =
+      parseFloat(hasCesAttempt2 ? formData.ces_test_2 : formData.ces_test) || 0;
+    const eng = parseFloat(formData.english_test) || 0;
+    const essay = parseFloat(formData.essay_writing_mark) || 0;
+    const total = ces + eng + essay;
+    setPreviewScore(total > 0 ? total : null);
+  }, [
+    formData.ces_test,
+    formData.ces_test_2,
+    formData.english_test,
+    formData.essay_writing_mark,
+  ]);
+
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cadet_id]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      // Fetch cadet details
+      const cadetRes = await api.get(`/cadets/${cadet_id}`);
+      setCadet(cadetRes.data?.data || null);
+
+      // Fetch existing assessment if any
+      try {
+        const assessmentRes = await api.get(`/assessments/${cadet_id}`);
+        if (assessmentRes.data.success && assessmentRes.data.data) {
+          const data = assessmentRes.data.data;
+          setFormData({
+            assessment_date: data.assessment_date
+              ? data.assessment_date.split('T')[0]
+              : '',
+            assessment_time: data.assessment_time || '',
+            ces_test: data.ces_test || '',
+            ces_test_2: data.ces_test_2 ?? '',
+            english_test: data.english_test || '',
+            essay_writing_mark: data.essay_writing_mark || '',
+            remarks: data.remarks || '',
+            status: data.status || 'pending',
+            mark_for_interview: !!data.mark_for_interview,
+            calculated_score: data.calculated_score || null,
+          });
+          if (data.essay_name) {
+            setExistingEssay(data.essay_name);
+          }
+        }
+      } catch (err) {
+        // Assessment might not exist, which is fine
+        console.log('No existing assessment found');
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load cadet information');
+      handleBack();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validation
+    const requiredFields = [
+      { key: 'assessment_date', name: 'Assessment Date' },
+      { key: 'assessment_time', name: 'Assessment Time' },
+      { key: 'ces_test', name: 'CES Test (Attempt 1)' },
+      { key: 'english_test', name: 'English Test Score' },
+      { key: 'essay_writing_mark', name: 'Essay Writing Mark' },
+    ];
+
+    const newErrors = {};
+    let hasError = false;
+
+    for (const field of requiredFields) {
+      if (
+        formData[field.key] === '' ||
+        formData[field.key] === null ||
+        formData[field.key] === undefined
+      ) {
+        newErrors[field.key] = `${field.name} is required`;
+        hasError = true;
+      }
+    }
+
+    if (!formData.status || formData.status === 'pending') {
+      newErrors.status = 'Overall assessment status is required';
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      toast.error('Please fill in all mandatory fields');
+      return;
+    }
+
+    if (cadet && !Number(cadet.institute_detail_filled || 0)) {
+      setShowConfirmModal(true);
+    } else {
+      saveAssessmentData();
+    }
+  };
+
+  const saveAssessmentData = async () => {
+    setSaving(true);
+
+    try {
+      const data = new FormData();
+      data.append('assessment_date', formData.assessment_date);
+      data.append('assessment_time', formData.assessment_time);
+      data.append('ces_test', formData.ces_test);
+      data.append('ces_test_2', formData.ces_test_2);
+      data.append('english_test', formData.english_test);
+      data.append('essay_writing_mark', formData.essay_writing_mark);
+      data.append('remarks', formData.remarks);
+      data.append('status', formData.status);
+      data.append('mark_for_interview', formData.mark_for_interview ? 1 : 0);
+
+      if (essayFile) {
+        data.append('essay', essayFile);
+      }
+
+      await api.post(`/assessments/${cadet_id}`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      toast.success('Assessment saved successfully');
+      handleBack();
+    } catch (error) {
+      console.error('Error saving assessment:', error);
+      toast.error(error.response?.data?.message || 'Failed to save assessment');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const downloadEssay = () => {
+    if (essayFile) {
+      const fileURL = URL.createObjectURL(essayFile);
+      window.open(fileURL, '_blank');
+      return;
+    }
+
+    const userStr = localStorage.getItem('user');
+    let token = '';
+    try {
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        token = user.token || '';
+      }
+      if (!token) {
+        token = localStorage.getItem('token') || '';
+      }
+    } catch (e) {
+      token = localStorage.getItem('token') || '';
+    }
+
+    if (!token) {
+      toast.error('Authentication error. Please login again.');
+      return;
+    }
+
+    window.open(
+      `${api.defaults.baseURL}/assessments/${cadet_id}/essay/download?token=${token}`,
+      '_blank',
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className='flex items-center justify-center p-20'>
+        <Loader2 className='animate-spin text-[#3a5f9e]' size={40} />
+      </div>
+    );
+  }
+
+  const inputClass =
+    'w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none';
+
+  return (
+    <div className='py-6'>
+      <PageHeader
+        title={isViewMode ? 'Assessment Details' : 'Cadet Assessment'}
+        subtitle={`${isViewMode ? 'View recorded assessment for' : 'Evaluate and record test results for'} ${cadet?.name_as_in_indos_cert}`}
+        icon={ClipboardList}
+        backButton={
+          <button
+            onClick={handleBack}
+            className='p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors'
+          >
+            <ArrowLeft size={24} />
+          </button>
+        }
+      />
+
+      {!isViewMode && cadet && !Number(cadet.institute_detail_filled || 0) && (
+        <div className='mb-6 bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 text-amber-800 animate-in fade-in slide-in-from-top-2 duration-300'>
+          <AlertCircle className='shrink-0 mt-0.5' size={20} />
+          <div>
+            <p className='font-bold'>Institute Details Pending</p>
+            <p className='text-sm'>
+              The institute has not yet filled or completed all required details for this cadet. 
+              You can still record the assessment, but please note that some profile information may be missing.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className='bg-white rounded-2xl shadow-sm border border-gray-200 p-8 animate-in fade-in slide-in-from-bottom-4 duration-500'>
+        <form
+          onSubmit={isViewMode ? (event) => event.preventDefault() : handleSubmit}
+          className='space-y-8'
+        >
+          {/* Test Scores Section */}
+          <div>
+            <h2 className='text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2'>
+              <ClipboardList className='text-[#3a5f9e]' size={20} />
+              Test Scores
+            </h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  Assessment Date <span className="text-red-500">*</span>
+                </label>
+                <div className='relative'>
+                  <Input
+                    name='assessment_date'
+                    type='date'
+                    value={formData.assessment_date}
+                    onChange={handleInputChange}
+                    disabled={isViewMode}
+                    invalid={!!errors.assessment_date}
+                    className={inputClass}
+                  />
+                  <Calendar className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 z-10 pointer-events-none' />
+                </div>
+                {errors.assessment_date && <p className={errorTextClass}>{errors.assessment_date}</p>}
+              </div>
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  Assessment Time <span className="text-red-500">*</span>
+                </label>
+                <div className='relative'>
+                  <Clock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                  <Input
+                    name='assessment_time'
+                    type='time'
+                    value={formData.assessment_time}
+                    onChange={handleInputChange}
+                    disabled={isViewMode}
+                    invalid={!!errors.assessment_time}
+                    className={inputClass}
+                  />
+                </div>
+                {errors.assessment_time && <p className={errorTextClass}>{errors.assessment_time}</p>}
+              </div>
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  CES Test (Attempt 1) <span className="text-red-500">*</span>
+                </label>
+                <div className='relative'>
+                  <Target className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                  <Input
+                    name='ces_test'
+                    value={formData.ces_test}
+                    onChange={handleInputChange}
+                    disabled={isViewMode}
+                    placeholder='Score 1'
+                    invalid={!!errors.ces_test}
+                    className={inputClass}
+                  />
+                </div>
+                {errors.ces_test && <p className={errorTextClass}>{errors.ces_test}</p>}
+              </div>
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  CES Test (Attempt 2)
+                </label>
+                <div className='relative'>
+                  <Target className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                  <Input
+                    name='ces_test_2'
+                    value={formData.ces_test_2}
+                    onChange={handleInputChange}
+                    disabled={isViewMode}
+                    placeholder='Score 2'
+                    className={inputClass}
+                  />
+                </div>
+                <p className='text-xs text-gray-500'>
+                  Use Attempt 2 when a cadet is being reassessed after a failed first attempt.
+                </p>
+              </div>
+
+
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  English Test Score <span className="text-red-500">*</span>
+                </label>
+                <div className='relative'>
+                  <Languages className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                  <Input
+                    name='english_test'
+                    value={formData.english_test}
+                    onChange={handleInputChange}
+                    disabled={isViewMode}
+                    placeholder='Enter score'
+                    invalid={!!errors.english_test}
+                    className={inputClass}
+                  />
+                </div>
+                {errors.english_test && <p className={errorTextClass}>{errors.english_test}</p>}
+              </div>
+
+              <div className='space-y-2'>
+                <label className='text-sm font-medium text-gray-700'>
+                  Essay Writing Mark <span className="text-red-500">*</span>
+                </label>
+                <div className='relative'>
+                  <PencilLine className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4' />
+                  <Input
+                    name='essay_writing_mark'
+                    type='number'
+                    step='0.01'
+                    value={formData.essay_writing_mark}
+                    onChange={handleInputChange}
+                    disabled={isViewMode}
+                    placeholder='Enter mark'
+                    invalid={!!errors.essay_writing_mark}
+                    className={inputClass}
+                  />
+                </div>
+                {errors.essay_writing_mark && <p className={errorTextClass}>{errors.essay_writing_mark}</p>}
+              </div>
+            </div>
+          </div>
+
+          <div className='border-t border-gray-100 pt-8'>
+            <h2 className='text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2'>
+              <FileText className='text-[#3a5f9e]' size={20} />
+              Essay & Final Evaluation
+            </h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+              <FileUploadPanel
+                title='Upload Essay Document'
+                description='PDF, Word, JPG or PNG.'
+                files={
+                  essayFile
+                    ? [essayFile]
+                    : existingEssay
+                      ? [{ id: 'existing-essay', name: existingEssay }]
+                      : []
+                }
+                showFileList={isViewMode || Boolean(essayFile || existingEssay)}
+                emptyMessage='No essay document uploaded.'
+                maxFiles={1}
+                maxSizeMB={5}
+                canUpload={!isViewMode}
+                uploadLocked={Boolean(essayFile || existingEssay)}
+                uploadButtonLabel='Upload Essay'
+                lockMessage='Delete the selected essay document before uploading another file.'
+                onUpload={(files) => {
+                  setEssayFile(files[0]);
+                  return true;
+                }}
+                onView={downloadEssay}
+                canDelete={(file) => !isViewMode && file instanceof File}
+                onDelete={() => setEssayFile(null)}
+                getFileMetadata={(file) =>
+                  file instanceof File
+                    ? `${file.type?.split('/').pop()?.toUpperCase() || 'FILE'} | ${(file.size / 1024 / 1024).toFixed(2)} MB`
+                    : 'Saved essay document'
+                }
+              />
+
+              <div className='space-y-4'>
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium text-gray-700'>
+                    Overall Assessment Status
+                  </label>
+                  <Select
+                    value={formData.status}
+                    disabled={isViewMode}
+                    onValueChange={(val) => {
+                      setFormData((prev) => ({ ...prev, status: val }));
+                      if (errors.status) {
+                        setErrors((prev) => ({ ...prev, status: '' }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                      <SelectValue placeholder='Select outcome' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='pending'>
+                        <div className='flex items-center gap-2 text-gray-500'>
+                          <AlertCircle size={16} />
+                          <span>Pending</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value='pass'>
+                        <div className='flex items-center gap-2 text-green-600'>
+                          <CheckCircle size={16} />
+                          <span>Pass</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value='fail'>
+                        <div className='flex items-center gap-2 text-red-600'>
+                          <XCircle size={16} />
+                          <span>Fail</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.status && <p className={errorTextClass}>{errors.status}</p>}
+                </div>
+
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium text-gray-700'>
+                    Mark for Interview
+                  </label>
+                  <Select
+                    value={formData.mark_for_interview ? 'yes' : 'no'}
+                    disabled={isViewMode}
+                    onValueChange={(val) =>
+                      setFormData((prev) => ({ ...prev, mark_for_interview: val === 'yes' }))
+                    }
+                  >
+                    <SelectTrigger className='w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-gray-50/50 focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 h-auto outline-none'>
+                      <SelectValue placeholder='Select' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='yes'>Yes</SelectItem>
+                      <SelectItem value='no'>No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.mark_for_interview && formData.status === 'pass' && (
+                  <div className='p-3 bg-green-50 rounded-xl border border-green-100 flex items-start gap-2'>
+                    <CheckCircle className='text-green-600 mt-0.5' size={14} />
+                    <p className='text-[11px] text-green-700 leading-tight'>
+                      <strong>Stage Transition:</strong> On saving, this cadet will automatically move to the <strong>'Interview'</strong> stage and will appear in the Interview Management list.
+                    </p>
+                  </div>
+                )}
+
+                {previewScore !== null && (
+                  <div className='p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-2'>
+                    <p className='text-xs text-gray-500 uppercase font-bold tracking-wider'>Calculated Total Score (Preview)</p>
+                    <p className='text-xl font-bold text-gray-800'>{previewScore.toFixed(2)}</p>
+                    <div className='rounded-lg border border-blue-100 bg-blue-50 p-2 text-xs text-blue-700'>
+                      Recommendation logic is kept manual here until the final business formula is confirmed.
+                    </div>
+                  </div>
+                )}
+
+                {formData.status === 'fail' ? (
+                  <div className='p-3 bg-yellow-50 rounded-xl border border-yellow-200 flex items-start gap-2'>
+                    <XCircle className='text-yellow-600 mt-0.5' size={14} />
+                    <p className='text-[11px] text-yellow-700 leading-tight'>
+                      <strong>Reassessment:</strong> This cadet stays in the Assessment queue and can be reviewed again using CES Test Attempt 2.
+                    </p>
+                  </div>
+                ) : !formData.mark_for_interview ? (
+                  <div className='p-3 bg-yellow-50 rounded-xl border border-yellow-200 flex items-start gap-2'>
+                    <XCircle className='text-yellow-600 mt-0.5' size={14} />
+                    <p className='text-[11px] text-yellow-700 leading-tight'>
+                      <strong>Queue Hold:</strong> This cadet will stay in the Assessment queue and will not move to the Interview stage until you mark Interview as Yes.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className='mt-6 space-y-2'>
+              <label className='text-sm font-medium text-gray-700 flex items-center gap-2'>
+                <MessageSquare size={16} className='text-gray-400' />
+                Remarks / Feedback
+              </label>
+              <textarea
+                name='remarks'
+                value={formData.remarks}
+                onChange={handleInputChange}
+                disabled={isViewMode}
+                rows={4}
+                className='w-full rounded-xl border border-gray-300 bg-gray-50/50 p-4 text-sm focus:bg-white focus:ring-4 focus:ring-[#3a5f9e]/10 focus:border-[#3a5f9e] transition-all duration-200 outline-none resize-none'
+                placeholder='Add detailed assessment remarks here...'
+              />
+            </div>
+          </div>
+
+          <div className='pt-6 flex justify-end gap-3 border-t border-gray-200 mt-8'>
+            <button
+              type='button'
+              onClick={handleBack}
+              className='px-6 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors'
+            >
+              {isViewMode ? 'Close' : 'Cancel'}
+            </button>
+            {!isViewMode ? (
+              <Button
+                type='submit'
+                className='bg-[#3a5f9e] hover:bg-[#325186] text-white px-8 py-2.5 h-auto rounded-lg shadow-sm font-medium transition-all active:scale-95'
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className='w-4 h-4 mr-2' />
+                    Save Assessment
+                  </>
+                )}
+              </Button>
+            ) : null}
+          </div>
+        </form>
+      </div>
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={() => {
+          setShowConfirmModal(false);
+          saveAssessmentData();
+        }}
+        title="Pending Institute Details"
+        message={`Cadet ${cadet?.name_as_in_indos_cert}'s institute details are pending. Do you want to proceed and save the assessment anyway?`}
+        confirmText="Yes"
+        cancelText="No"
+      />
+    </div>
+  );
+};
+
+export default AssessmentForm;

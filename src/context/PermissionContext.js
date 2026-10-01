@@ -57,6 +57,18 @@ export const PermissionProvider = ({ children }) => {
         return true;
       }
 
+      if (['Institute', 'Cadet'].includes(user?.role) && module === 'dashboard' && action === 'view') {
+        return true;
+      }
+
+      if (
+        user?.role === 'Institute' &&
+        ((module === 'recruitment_drives' && action === 'view') ||
+          (module === 'cadets' && action === 'view'))
+      ) {
+        return true;
+      }
+
       return permissions.some(
         (perm) => perm.module === module && perm.action === action,
       );

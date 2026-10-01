@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,28 +8,53 @@ import {
 import { Toaster } from 'sonner';
 import { AuthProvider } from './context/AuthContext';
 import { PermissionProvider } from './context/PermissionContext';
-import Login from './pages/auth/Login';
-import Dashboard from './pages/Dashboard';
-import CadetManagement from './pages/CadetManagement';
-import CadetDetails from './pages/CadetManagement/CadetDetails';
-import AddCadetForm from './pages/CadetManagement/AddCadetForm';
-import AddCadetBasicForm from './pages/CadetManagement/AddCadetBasicForm';
-import ShortlistedCadetsView from './pages/CadetManagement/ShortlistedCadetsView';
 import MainLayout from './components/layout/MainLayout';
-import ResetPassword from './pages/auth/ResetPassword';
-import ActivityLogs from './pages/ActivityLogs/ActivityLogs';
-import UserManagement from './pages/Users';
-import UserForm from './pages/Users/UserForm';
-import InstitutesManagement from 'pages/institutes';
-import InstituteForm from 'pages/institutes/InstituteForm';
-import SubmitExcel from 'pages/institutes/SubmitExcel';
-import InstituteSubmissions from 'pages/institutes/InstituteSubmissions';
-import RolePermissions from './pages/RolePermissions';
-import CVForm from './pages/CVForm';
-
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
-import { PublicRoute } from 'components/common/PublicRoute';
+import { PublicRoute } from './components/common/PublicRoute';
+import HomeRedirect from './components/common/HomeRedirect';
+import PageLoader from './components/common/PageLoader';
+import { getLoginRedirectPath } from './lib/utils/routeUtils';
+
+const Login = lazy(() => import('./pages/auth/Login'));
+const InstituteLogin = lazy(() => import('./pages/auth/InstituteLogin'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const CadetManagement = lazy(() => import('./pages/CadetManagement'));
+const CadetDetails = lazy(() => import('./pages/CadetManagement/CadetDetails'));
+const CadetPendingDetails = lazy(() => import('./pages/CadetManagement/CadetPendingDetails'));
+const AddCadetForm = lazy(() => import('./pages/CadetManagement/AddCadetForm'));
+const ShortlistedCadetsView = lazy(() => import('./pages/CadetManagement/ShortlistedCadetsView'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
+const ActivityLogs = lazy(() => import('./pages/ActivityLogs/ActivityLogs'));
+const UserManagement = lazy(() => import('./pages/Users'));
+const UserForm = lazy(() => import('./pages/Users/UserForm'));
+const InstitutesManagement = lazy(() => import('pages/institutes'));
+const InstituteForm = lazy(() => import('pages/institutes/InstituteForm'));
+const SubmitExcel = lazy(() => import('pages/institutes/SubmitExcel'));
+const InstituteShortlistedCadets = lazy(() => import('pages/institutes/InstituteShortlistedCadets'));
+const InstituteSubmissions = lazy(() => import('pages/institutes/InstituteSubmissions'));
+const RolePermissions = lazy(() => import('./pages/RolePermissions'));
+const VesselList = lazy(() => import('./pages/vessels'));
+const VesselForm = lazy(() => import('./pages/vessels/VesselForm'));
+const VesselTypeMaster = lazy(() => import('./pages/vessels/VesselTypeMaster'));
+const MedicalCenterList = lazy(() => import('./pages/medical-centers'));
+const MedicalCenterForm = lazy(() => import('./pages/medical-centers/MedicalCenterForm'));
+const MedicalReportList = lazy(() => import('./pages/medical-reports'));
+const MedicalReportForm = lazy(() => import('./pages/medical-reports/MedicalReportForm'));
+const AssessmentForm = lazy(() => import('./pages/Assessments/AssessmentForm'));
+const AssessmentManagement = lazy(() => import('./pages/Assessments'));
+const InterviewForm = lazy(() => import('./pages/Assessments/InterviewForm'));
+const MedicalResultForm = lazy(() => import('./pages/Assessments/MedicalResultForm'));
+const InterviewManagement = lazy(() => import('./pages/Assessments/InterviewManagement'));
+const MedicalManagement = lazy(() => import('./pages/Assessments/MedicalManagement'));
+const RecruitmentDrives = lazy(() => import('./pages/RecruitmentDrives'));
+const DriveForm = lazy(() => import('./pages/RecruitmentDrives/DriveForm'));
+const DriveDetails = lazy(() => import('./pages/RecruitmentDrives/DriveDetails'));
+const NotificationHistory = lazy(() => import('./pages/Notifications/NotificationHistory'));
+const Allocations = lazy(() => import('./pages/Allocations'));
+const AllocationDetail = lazy(() => import('./pages/Allocations/AllocationDetail'));
+const AllocationMasters = lazy(() => import('./pages/AllocationMasters'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
 function App() {
   return (
@@ -37,6 +62,7 @@ function App() {
       <PermissionProvider>
         <Router>
           <Toaster position='top-center' richColors expand={false} />
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path='/reset-password' element={<ResetPassword />} />
             {/* Public Routes */}
@@ -48,9 +74,15 @@ function App() {
                 </PublicRoute>
               }
             />
-            <Route path='/' element={<Navigate to='/login' replace />} />
-            <Route path='/institute/submit-excel' element={<SubmitExcel />} />
-            <Route path='/cv-form/:token' element={<CVForm />} />
+            <Route
+              path='/institute-login'
+              element={
+                <PublicRoute>
+                  <InstituteLogin />
+                </PublicRoute>
+              }
+            />
+            <Route path='/' element={<HomeRedirect />} />
 
             {/* Protected Routes with Layout */}
             <Route
@@ -61,6 +93,39 @@ function App() {
                     <PermissionRoute module='dashboard' action='view'>
                       <Dashboard />
                     </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/notifications'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <NotificationHistory />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/institute/submit-excel'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <SubmitExcel />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/institute/shortlisted-cadets'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <InstituteShortlistedCadets />
                   </MainLayout>
                 </ProtectedRoute>
               }
@@ -80,7 +145,7 @@ function App() {
             />
 
             <Route
-              path='/institutes/addNewInstitue'
+              path='/institutes/addNewInstitute'
               element={
                 <ProtectedRoute>
                   <MainLayout>
@@ -119,12 +184,77 @@ function App() {
             />
 
             <Route
-              path='/cadets'
+              path='/drives'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='view'>
+                      <RecruitmentDrives />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives/new'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='create'>
+                      <DriveForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='edit'>
+                      <DriveForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/drives/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='recruitment_drives' action='view'>
+                      <DriveDetails />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/engine'
               element={
                 <ProtectedRoute>
                   <MainLayout>
                     <PermissionRoute module='cadets' action='view'>
-                      <CadetManagement />
+                      <CadetManagement courseType='Engine' />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/deck'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='view'>
+                      <CadetManagement courseType='Deck' />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
@@ -158,12 +288,12 @@ function App() {
             />
 
             <Route
-              path='/cadets/add-basic'
+              path='/cadets/view/:id'
               element={
                 <ProtectedRoute>
                   <MainLayout>
-                    <PermissionRoute module='cadets' action='create'>
-                      <AddCadetBasicForm />
+                    <PermissionRoute module='cadets' action='view'>
+                      <CadetDetails />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
@@ -171,12 +301,99 @@ function App() {
             />
 
             <Route
-              path='/cadets/view/:id'
+              path='/cadets/fill-details/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <CadetPendingDetails />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/assessments'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='tests' action='view'>
+                      <AssessmentManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/assess/:cadet_id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='edit'>
+                      <AssessmentForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/cadets/assess/:cadet_id/view'
               element={
                 <ProtectedRoute>
                   <MainLayout>
                     <PermissionRoute module='cadets' action='view'>
-                      <CadetDetails />
+                      <AssessmentForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/interview/:cadet_id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='edit'>
+                      <InterviewForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path='/interviews'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='tests' action='view'>
+                      <InterviewManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical' action='view'>
+                      <MedicalManagement />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/cadets/medical/:cadet_id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='cadets' action='edit'>
+                      <MedicalResultForm />
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>
@@ -248,9 +465,198 @@ function App() {
               }
             />
 
-            {/* Catch all - redirect to login */}
-            <Route path='*' element={<Navigate to='/login' replace />} />
+            {/* Vessel Master Routes */}
+            <Route
+              path='/allocations'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='allocations' action='view'>
+                      <Allocations />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/allocations/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='allocations' action='view'>
+                      <AllocationDetail />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/allocation-masters'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='allocation-masters' action='view'>
+                      <AllocationMasters />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/onboarding'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='onboarding' action='view'>
+                      <Onboarding />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/vessel-types'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='view'>
+                      <VesselTypeMaster />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/vessels'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='view'>
+                      <VesselList />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/vessels/add'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='create'>
+                      <VesselForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/vessels/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='vessel-master' action='edit'>
+                      <VesselForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Medical Center Master Routes */}
+            <Route
+              path='/medical-centers'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='view'>
+                      <MedicalCenterList />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-centers/add'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='create'>
+                      <MedicalCenterForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-centers/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='edit'>
+                      <MedicalCenterForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Medical Report Master Routes */}
+            <Route
+              path='/medical-reports'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='view'>
+                      <MedicalReportList />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-reports/add'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='create'>
+                      <MedicalReportForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/medical-reports/edit/:id'
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <PermissionRoute module='medical-centers' action='edit'>
+                      <MedicalReportForm />
+                    </PermissionRoute>
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Catch all - redirect to login based on context */}
+            <Route
+              path='*'
+              element={<Navigate to={getLoginRedirectPath(window.location.pathname)} replace />}
+            />
           </Routes>
+          </Suspense>
         </Router>
       </PermissionProvider>
     </AuthProvider>

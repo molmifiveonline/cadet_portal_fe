@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
-import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, History } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
+import { formatTimestampInIndia } from '../../lib/utils/timestampUtils';
+import PageHeader from '../../components/common/PageHeader';
+import PageLoader from '../../components/common/PageLoader';
 
 const ActivityLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -19,6 +21,10 @@ const ActivityLogs = () => {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState({
+    sortBy: 'created_at',
+    sortOrder: 'DESC',
+  });
 
   const columns = [
     {
@@ -27,29 +33,33 @@ const ActivityLogs = () => {
       width: '80px',
       sortable: false,
       renderCell: ({ index }) => (
-        <span className='text-sm text-gray-500 font-medium'>
+        <span className="text-sm text-gray-500 font-medium">
           {(pagination?.current_page - 1) * pagination?.per_page + index + 1}
         </span>
       ),
     },
     {
-      field: 'user_name',
+      field: 'display_name',
       headerName: 'User',
       width: '200px',
       renderCell: ({ row }) => {
-        // The backend intelligently merges Admin names and Institute names into 'user_name'
+        // The backend merges Admin names and Institute names into 'display_name'
         // If it's missing, fallback to the raw pieces or email
         const firstName = row.first_name || '';
         const lastName = row.last_name || '';
         const fallbackName = `${firstName} ${lastName}`.trim();
         const displayName =
-          row.user_name || fallbackName || row.user_email || 'Unknown User';
+          row.display_name ||
+          row.user_name ||
+          fallbackName ||
+          row.user_email ||
+          'Unknown User';
 
         return (
-          <div className='flex flex-col'>
-            <span className='font-medium text-gray-900'>{displayName}</span>
+          <div className="flex flex-col">
+            <span className="font-medium text-gray-900">{displayName}</span>
             {row.user_email && (
-              <span className='text-xs text-gray-500'>{row.user_email}</span>
+              <span className="text-xs text-gray-500">{row.user_email}</span>
             )}
           </div>
         );
@@ -60,7 +70,7 @@ const ActivityLogs = () => {
       headerName: 'Action',
       width: '180px',
       renderCell: ({ value }) => (
-        <span className='px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium'>
+        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium">
           {value}
         </span>
       ),
@@ -68,60 +78,68 @@ const ActivityLogs = () => {
     { field: 'details', headerName: 'Details', width: '300px' },
     {
       field: 'created_at',
-      headerName: 'Timestamp',
+      headerName: 'Timestamp (IST)',
       width: '180px',
       renderCell: ({ value }) => {
         if (!value) return '-';
-        const date = new Date(value);
+        const { date, time } = formatTimestampInIndia(value);
+        if (date === '-') return '-';
         return (
-          <div className='flex flex-col'>
-            <span className='text-sm'>{date.toLocaleDateString()}</span>
-            <span className='text-xs text-gray-500'>
-              {date.toLocaleTimeString()}
-            </span>
-          </div>
+          <time
+            dateTime={value}
+            className="flex flex-col"
+            title="India Standard Time (UTC+05:30)"
+          >
+            <span className="text-sm">{date}</span>
+            <span className="text-xs text-gray-500">{time} IST</span>
+          </time>
         );
       },
     },
-    {
-      field: 'ip_address',
-      headerName: 'IP Address',
-      width: '150px',
-      renderCell: ({ value }) => value || '-',
-    },
   ];
 
-  const fetchLogs = async (page = 1, limit = 10, search = '') => {
-    setLoading(true);
-    try {
-      const response = await api.get('/activity-logs/recent', {
-        params: {
-          page,
-          limit,
-          search: search.trim() !== '' ? search : undefined,
-        },
-      });
+  const fetchLogs = React.useCallback(
+    async (
+      page = 1,
+      limit = 10,
+      search = '',
+      sortBy = sortConfig.sortBy,
+      sortOrder = sortConfig.sortOrder,
+    ) => {
+      setLoading(true);
+      try {
+        const response = await api.get('/activity-logs/recent', {
+          params: {
+            page,
+            limit,
+            search: search.trim() !== '' ? search : undefined,
+            sortBy,
+            sortOrder,
+          },
+        });
 
-      const data = response.data;
-      setLogs(data.data || []);
-      setPagination({
-        current_page: data.pagination?.page || page,
-        per_page: data.pagination?.limit || limit,
-        total: data.pagination?.total || 0,
-        last_page: data.pagination?.totalPages || 1,
-      });
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          'Could not load activity logs.',
-      );
-      setLogs([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const data = response.data;
+        setLogs(data.data || []);
+        setPagination({
+          current_page: data.pagination?.page || page,
+          per_page: data.pagination?.limit || limit,
+          total: data.pagination?.total || 0,
+          last_page: data.pagination?.totalPages || 1,
+        });
+      } catch (error) {
+        console.error('Error fetching logs:', error);
+        toast.error(
+          error.response?.data?.message ||
+            error.message ||
+            'Could not load activity logs.',
+        );
+        setLogs([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [sortConfig.sortBy, sortConfig.sortOrder],
+  );
 
   // Debounced search effect
   useEffect(() => {
@@ -134,8 +152,21 @@ const ActivityLogs = () => {
   }, [searchInput]);
 
   useEffect(() => {
-    fetchLogs(currentPage, rowsPerPage, searchTerm);
-  }, [currentPage, rowsPerPage, searchTerm]);
+    fetchLogs(
+      currentPage,
+      rowsPerPage,
+      searchTerm,
+      sortConfig.sortBy,
+      sortConfig.sortOrder,
+    );
+  }, [
+    currentPage,
+    rowsPerPage,
+    searchTerm,
+    sortConfig.sortBy,
+    sortConfig.sortOrder,
+    fetchLogs,
+  ]);
 
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
@@ -146,65 +177,61 @@ const ActivityLogs = () => {
     setCurrentPage(1);
   };
 
-  const handleRefresh = () => {
-    fetchLogs(currentPage, rowsPerPage, searchTerm);
-    toast.success('Activity logs refreshed');
+  const handleSortChange = (field, order) => {
+    const newSortOrder = order.toUpperCase();
+    setSortConfig({ sortBy: field, sortOrder: newSortOrder });
+    setCurrentPage(1); // Optionally reset to page 1 on sort
   };
 
   return (
-    <div className='py-6 space-y-6'>
-      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
-        <div>
-          <h1 className='text-2xl font-bold text-slate-800'>Activity Logs</h1>
-          <p className='text-slate-500 mt-1'>
-            View system activities from the last 3 months
-          </p>
-        </div>
-        <Button
-          onClick={handleRefresh}
-          variant='outline'
-          className='flex items-center gap-2'
-        >
-          <RefreshCw className='w-4 h-4' />
-          Refresh
-        </Button>
-      </div>
+    <div className="py-6 space-y-6">
+      <PageHeader
+        title="Activity Logs"
+        subtitle="View system activities from the last 3 months"
+        icon={History}
+      />
 
       {/* Search Bar */}
-      <div className='bg-white rounded-lg shadow-sm border border-slate-200 p-4'>
-        <div className='relative'>
-          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <Input
-            type='text'
-            placeholder='Search by user name, email, action, or details...'
+            type="text"
+            placeholder="Search by user name, email, action, or details..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className='pl-10'
+            className="pl-10"
           />
         </div>
         {searchTerm && (
-          <p className='text-sm text-gray-500 mt-2'>
+          <p className="text-sm text-gray-500 mt-2">
             Searching for: <strong>{searchTerm}</strong>
           </p>
         )}
       </div>
 
-      <div className='bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden'>
-        <ReusableDataTable
-          columns={columns}
-          rows={logs}
-          loading={loading}
-          pagination={pagination}
-          handlePageChange={handlePageChange}
-          handlePerPageChange={handlePerPageChange}
-          pageSize={rowsPerPage}
-          checkboxSelection={false}
-          emptyMessage={
-            searchTerm
-              ? 'No activity logs found matching your search.'
-              : 'No activity logs found in the last 3 months.'
-          }
-        />
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        {loading && logs.length === 0 ? (
+          <PageLoader />
+        ) : (
+          <ReusableDataTable
+            columns={columns}
+            rows={logs}
+            loading={loading}
+            pagination={pagination}
+            sortConfig={sortConfig}
+            handleSortChange={handleSortChange}
+            handlePageChange={handlePageChange}
+            handlePerPageChange={handlePerPageChange}
+            pageSize={rowsPerPage}
+            checkboxSelection={false}
+            emptyMessage={
+              searchTerm
+                ? 'No activity logs found matching your search.'
+                : 'No activity logs found in the last 3 months.'
+            }
+          />
+        )}
       </div>
     </div>
   );

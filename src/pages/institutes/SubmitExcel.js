@@ -1,97 +1,341 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Upload, FileText, CheckCircle, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  Loader2,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+} from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
-import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import PageHeader from '../../components/common/PageHeader';
+import api from '../../lib/utils/apiConfig';
+import * as xlsx from 'xlsx';
+import { useNavigate } from 'react-router-dom';
+import {
+  isDateColumn,
+  formatCellValue,
+  validateExcelData,
+  validateFileType,
+  findHeaderRowIndex,
+} from './submitExcelValidation';
+import ConfirmationModal from '../../components/common/ConfirmationModal';
 
-const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL + '/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+const SubmitExcel = ({
+  isEmbedded = false,
+  driveContext = null,
+  onSuccess = null,
+  disabled = false,
+  disabledMessage = 'Cadet data upload is disabled for this drive.',
+}) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const instituteName = user?.first_name || 'Institute';
 
-const SubmitExcel = () => {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [file, setFile] = useState(null);
+  const [previewData, setPreviewData] = useState([]);
+  const [headers, setHeaders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [verifying, setVerifying] = useState(true);
-  const [isValidToken, setIsValidToken] = useState(false);
-  const [instituteName, setInstituteName] = useState('');
-  const navigate = useNavigate();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [validationError, setValidationError] = useState('');
+  const [cellErrors, setCellErrors] = useState({});
+  const [errorCount, setErrorCount] = useState(0);
+  const [remarks, setRemarks] = useState('');
+  const [submittedDriveId, setSubmittedDriveId] = useState('');
 
-  useEffect(() => {
-    const verifyToken = async () => {
-      if (!token) {
-        setVerifying(false);
-        return;
-      }
+  // Admin specific state
+  const [institutes, setInstitutes] = useState([]);
+  const [selectedInstitute, setSelectedInstitute] = useState(driveContext?.instituteId || '');
+  const [selectedBatchYear, setSelectedBatchYear] = useState(driveContext?.batchYear || '');
+  const [selectedCourseType, setSelectedCourseType] = useState(driveContext?.courseType || '');
+  const [drivesList, setDrivesList] = useState([]);
+  const [selectedDriveId, setSelectedDriveId] = useState(driveContext?.driveId || '');
+  const [loadingDrives, setLoadingDrives] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-      try {
-        const response = await api.get(
-          `/institutes/verify-token?token=${token}`,
-        );
-        setIsValidToken(true);
-        setInstituteName(response.data.instituteName || 'Institute');
-      } catch (error) {
-        console.error('Token verification failed:', error);
-        setIsValidToken(false);
-        toast.error('Invalid or expired link');
-      } finally {
-        setVerifying(false);
-      }
-    };
+  const getFilterSummary = () => {
+    const inst = institutes.find((i) => i.id.toString() === selectedInstitute);
+    const instName = inst ? inst.institute_name : 'All Institutes';
+    const year =
+      selectedBatchYear && selectedBatchYear !== ' '
+        ? selectedBatchYear
+        : 'All Years';
+    const type =
+      selectedCourseType && selectedCourseType !== ' '
+        ? selectedCourseType
+        : 'All Courses';
+    return `${instName} | ${year} | ${type}`;
+  };
 
-    verifyToken();
-  }, [token]);
+  const isAdmin = user?.role === 'SuperAdmin';
+  const currentYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear + 1 - i);
 
-  // handleLogin logic has been moved to main Login.js component.
+  React.useEffect(() => {
+    if (isAdmin) {
+      const fetchInstitutes = async () => {
+        try {
+          const response = await api.get('/institutes?limit=1000');
+          setInstitutes(response.data.data || []);
+        } catch (error) {
+          console.error('Error fetching institutes:', error);
+        }
+      };
+      fetchInstitutes();
+    }
+  }, [isAdmin]);
+
+  React.useEffect(() => {
+    if (isAdmin) {
+      const fetchDrives = async () => {
+        setLoadingDrives(true);
+        try {
+          const params = new URLSearchParams({
+            limit: 1000,
+            institute_id: selectedInstitute === ' ' ? '' : selectedInstitute,
+            year: selectedBatchYear === ' ' ? '' : selectedBatchYear,
+            course_type: (selectedCourseType && selectedCourseType !== 'all' && selectedCourseType !== ' ') ? selectedCourseType : '',
+          });
+          const response = await api.get(`/recruitment-drives?${params.toString()}`);
+          const drives = response.data.data || [];
+          setDrivesList(drives);
+          if (selectedDriveId && !drives.find(d => d.id === selectedDriveId)) {
+            setSelectedDriveId('');
+          }
+        } catch (error) {
+          console.error('Error fetching drives:', error);
+        } finally {
+          setLoadingDrives(false);
+        }
+      };
+      fetchDrives();
+    }
+  }, [isAdmin, selectedInstitute, selectedBatchYear, selectedCourseType]);
 
   const handleFileChange = (e) => {
+    if (disabled) {
+      toast.error(disabledMessage);
+      return;
+    }
+
     const selectedFile = e.target.files[0];
     if (selectedFile) {
-      if (
-        !selectedFile.name.endsWith('.xlsx') &&
-        !selectedFile.name.endsWith('.xls') &&
-        !selectedFile.name.endsWith('.csv')
-      ) {
-        toast.error('Please upload a valid Excel or CSV file');
+      const fileError = validateFileType(selectedFile);
+      if (fileError) {
+        toast.error(fileError);
         return;
       }
       setFile(selectedFile);
+      parseExcel(selectedFile);
     }
   };
 
-  const handleSubmit = async (e) => {
+  const parseExcel = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = xlsx.read(data, { type: 'array', cellDates: false });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+
+        // Helper: get the formatted text of a cell exactly as shown in Excel
+        const getCellDisplayValue = (sheetRow, colIdx, header) => {
+          const cellAddress = xlsx.utils.encode_cell({
+            r: sheetRow,
+            c: colIdx,
+          });
+          const cell = worksheet[cellAddress];
+          if (!cell) return '';
+
+          // If it's a date column and Excel parsed it as a number (serial date)
+          if (header && isDateColumn(header) && typeof cell.v === 'number') {
+            const date1904 = workbook.Workbook?.WBProps?.date1904 || false;
+            try {
+              const dateObj = xlsx.SSF.parse_date_code(cell.v, { date1904 });
+              if (dateObj) {
+                const day = String(dateObj.d).padStart(2, '0');
+                const month = String(dateObj.m).padStart(2, '0');
+                const year = dateObj.y;
+                return `${day}-${month}-${year}`;
+              }
+            } catch (err) {
+              console.error('Error parsing date', err);
+            }
+          }
+          if (cell.w !== undefined) return cell.w;
+          if (cell.v !== undefined) return String(cell.v);
+          return '';
+        };
+
+        const json = xlsx.utils.sheet_to_json(worksheet, {
+          header: 1,
+          defval: '',
+          raw: true,
+        });
+
+        // Find header row (assuming it's within the first 20 rows)
+        let headerRowIndex = findHeaderRowIndex(json);
+
+        if (headerRowIndex === -1) {
+          setValidationError(
+            'Could not identify a valid header row. Please make sure your Excel file has standard column headers like Name, Email, Phone.',
+          );
+          setHeaders([]);
+          setPreviewData([]);
+          setCellErrors({});
+          setErrorCount(0);
+          return;
+        }
+
+        setValidationError('');
+        const extractedHeaders = json[headerRowIndex].map((h) =>
+          h ? String(h).trim() : '',
+        );
+        setHeaders(extractedHeaders);
+
+        // Parse rows using the formatted cell display values
+        const rows = [];
+        for (let i = headerRowIndex + 1; i < json.length; i++) {
+          const rawRow = json[i];
+          if (!rawRow || rawRow.length === 0) continue;
+
+          // Check if the row has at least one non-empty cell
+          const hasData = rawRow.some((cell) => {
+            if (cell === null || cell === undefined || cell === '')
+              return false;
+            if (typeof cell === 'string' && cell.trim() === '') return false;
+            return true;
+          });
+          if (!hasData) continue;
+
+          const rowObj = {};
+          extractedHeaders.forEach((header, index) => {
+            if (header) {
+              // Use the formatted display value from the worksheet cell
+              // This preserves the exact date format shown in Excel
+              rowObj[header] = getCellDisplayValue(i, index, header);
+            }
+          });
+          rows.push(rowObj);
+        }
+
+        // Validate cells using external validator
+        const { errors, errorCount: errCount } = validateExcelData(
+          rows,
+          extractedHeaders,
+        );
+
+        setCellErrors(errors);
+        setErrorCount(errCount);
+        setPreviewData(rows);
+
+        if (errCount > 0) {
+          setValidationError(
+            `${errCount} cell(s) have invalid data. Please fix the highlighted cells in your Excel file and re-upload.`,
+          );
+        }
+      } catch (error) {
+        console.error('Error parsing Excel file', error);
+        setValidationError(
+          'Failed to read Excel file. Please check the file format.',
+        );
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const clearFile = (e) => {
+    e.stopPropagation();
     e.preventDefault();
+    setFile(null);
+    setPreviewData([]);
+    setHeaders([]);
+    setValidationError('');
+    setShowConfirm(false);
+    setCellErrors({});
+    setErrorCount(0);
+  };
+
+  const startSubmit = (e) => {
+    e.preventDefault();
+    if (disabled) {
+      toast.error(disabledMessage);
+      return;
+    }
+
     if (!file) {
       toast.error('Please select a file');
       return;
     }
+    if (errorCount > 0) {
+      toast.error('Please fix all validation errors before submitting');
+      return;
+    }
+    if (validationError) {
+      toast.error('Please fix file errors before submitting');
+      return;
+    }
+    if (isAdmin && !selectedDriveId) {
+      toast.error('Please select a Recruitment Drive');
+      return;
+    }
+    setShowConfirm(true);
+  };
 
+  const confirmSubmit = async () => {
+    if (disabled) {
+      toast.error(disabledMessage);
+      setShowConfirm(false);
+      return;
+    }
+
+    setShowConfirm(false);
     setLoading(true);
+
     try {
-      // Get token from URL or state if we just logged in
-      const currentToken =
-        token || new URLSearchParams(window.location.search).get('token');
-
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('token', currentToken);
 
-      await api.post('/institutes/submit-excel', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      if (driveContext) {
+        formData.append('drive_id', driveContext.driveId);
+        formData.append('batch_year', driveContext.batchYear);
+        formData.append('course_type', driveContext.courseType);
+        if (isAdmin) {
+          formData.append('instituteId', driveContext.instituteId);
+        }
+      } else if (isAdmin) {
+        const drive = drivesList.find((d) => d.id === selectedDriveId);
+        formData.append('drive_id', selectedDriveId);
+        formData.append('instituteId', drive?.institute_id || selectedInstitute);
+        formData.append('batch_year', drive?.year || selectedBatchYear);
+        formData.append('course_type', drive?.course_type || selectedCourseType);
+      }
+
+      formData.append('file', file);
+      formData.append('remarks', remarks);
+
+      const response = await api.post('/institutes/submit-excel', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
+      setSubmittedDriveId(response.data?.drive_id || driveContext?.driveId || '');
       setSubmitted(true);
       toast.success('File submitted successfully');
+      if (onSuccess) {
+        onSuccess(response.data);
+      }
     } catch (error) {
       console.error('Error submitting file:', error);
       toast.error(
@@ -104,39 +348,81 @@ const SubmitExcel = () => {
     }
   };
 
-  if (verifying) {
+  if (submitted) {
     return (
-      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
-        <div className='text-center'>
-          <Loader2 className='w-10 h-10 text-blue-600 animate-spin mx-auto mb-4' />
-          <p className='text-gray-500'>Verifying link...</p>
+      <div className='flex items-center justify-center h-full p-4'>
+        <div className='bg-white max-w-md w-full rounded-2xl shadow-sm border border-gray-100 p-8 text-center animate-in zoom-in duration-300'>
+          <div className='w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6'>
+            <CheckCircle className='w-8 h-8 text-green-500' />
+          </div>
+          {!isEmbedded && (
+            <PageHeader
+              title="Submission Successful!"
+              subtitle={`Thank you, ${instituteName}. Your Excel file has been successfully uploaded and sent for processing. The MOLMI team has been notified automatically.`}
+              icon={CheckCircle}
+              className="mb-6 shadow-none border-none bg-transparent backdrop-blur-none"
+            />
+          )}
+          {isEmbedded && (
+            <div className="mb-6">
+              <h3 className="text-xl font-bold text-slate-800">Submission Successful!</h3>
+              <p className="text-sm text-slate-600 mt-2">
+                Thank you. Your Excel file has been successfully uploaded and sent for processing.
+              </p>
+            </div>
+          )}
+          <div className='space-y-3'>
+            <p className='text-sm text-slate-600'>
+              Next step: upload cadet CVs in the drive document workspace so MOLMI can review them.
+            </p>
+            <div className='flex flex-col gap-3 sm:flex-row sm:justify-center'>
+              {!isEmbedded && submittedDriveId ? (
+                <Button
+                  onClick={() => navigate(`/drives/${submittedDriveId}`)}
+                  className='bg-[#3a5f9e] text-white hover:bg-[#325186]'
+                >
+                  Open Recruitment Drive
+                </Button>
+              ) : null}
+              {!isEmbedded ? (
+                <Button
+                  variant='outline'
+                  onClick={() => {
+                    setSubmitted(false);
+                    setSubmittedDriveId('');
+                    setRemarks('');
+                  }}
+                >
+                  Upload Another File
+                </Button>
+              ) : null}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  // If no token and not valid, redirect to main Login page
-  if (!isValidToken) {
-    navigate('/login?redirect=/institute/submit-excel');
-    return null;
-  }
-
-  if (submitted) {
+  if (disabled) {
     return (
-      <div className='min-h-screen flex items-center justify-center bg-gray-50 p-4'>
-        <div className='bg-white max-w-md w-full rounded-2xl shadow-sm border border-gray-100 p-8 text-center animate-in zoom-in duration-300'>
-          <div className='w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6'>
-            <CheckCircle className='w-8 h-8 text-green-500' />
+      <div className='mx-auto py-6'>
+        <PageHeader
+          title="Submit Cadet Data"
+          subtitle={
+            <span className='text-slate-600'>{disabledMessage}</span>
+          }
+          icon={Upload}
+        />
+
+        <div className='rounded-xl border border-slate-200 bg-slate-50 p-8 text-center'>
+          <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-slate-200'>
+            <AlertCircle className='h-6 w-6 text-slate-600' />
           </div>
-          <h1 className='text-2xl font-bold text-gray-900 mb-2'>
-            Submission Successful!
-          </h1>
-          <p className='text-gray-500 mb-6'>
-            Thank you, {instituteName}. Your Excel file has been successfully
-            uploaded and sent for processing.
-          </p>
-          <p className='text-sm text-gray-400'>
-            You can close this window now.
+          <h3 className='text-lg font-bold text-slate-900'>
+            Upload unavailable
+          </h3>
+          <p className='mx-auto mt-2 max-w-lg text-sm text-slate-600'>
+            {disabledMessage}
           </p>
         </div>
       </div>
@@ -144,95 +430,379 @@ const SubmitExcel = () => {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-[url("https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80")] bg-cover bg-center bg-no-repeat relative'>
-      <div className='absolute inset-0 bg-white/90 backdrop-blur-sm'></div>
+    <div className='mx-auto py-6'>
+      <PageHeader
+        title="Submit Cadet Data"
+        subtitle={
+          <>
+            Welcome, <span className='font-medium text-[#3a5f9e] capitalize'>{instituteName}</span>.
+            Please upload the requested Excel sheet containing cadet details.
+          </>
+        }
+        icon={Upload}
+      />
 
-      <div className='sm:mx-auto sm:w-full sm:max-w-md relative z-10'>
-        <div className='text-center mb-8'>
-          <h2 className='text-3xl font-extrabold text-slate-900'>
-            Cadet Portal
-          </h2>
-          <p className='mt-2 text-sm text-slate-600'>
-            Institute Data Submission
-          </p>
-        </div>
-
-        <div className='bg-white py-8 px-4 shadow-xl rounded-2xl sm:px-10 border border-white/50'>
-          <div className='mb-6'>
-            <h3 className='text-lg font-semibold text-gray-900 mb-1'>
-              Upload Cadet Data
-            </h3>
-            <p className='text-sm text-gray-500'>
-              Welcome,{' '}
-              <span className='font-medium text-blue-600'>{instituteName}</span>
-              . Please upload the requested Excel sheet containing cadet
-              details.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className='space-y-6'>
-            <div className='w-full'>
-              <div className='border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-blue-500 hover:bg-blue-50/50 transition-all cursor-pointer relative group'>
-                <input
-                  type='file'
-                  accept='.xlsx,.xls,.csv'
-                  onChange={handleFileChange}
-                  className='absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20'
-                />
-                <div className='flex flex-col items-center justify-center gap-3'>
-                  {file ? (
-                    <>
-                      <div className='w-12 h-12 bg-green-100 rounded-full flex items-center justify-center'>
-                        <FileText className='w-6 h-6 text-green-600' />
-                      </div>
-                      <div className='text-center'>
-                        <p className='text-sm font-medium text-gray-900 truncate max-w-[200px]'>
-                          {file.name}
-                        </p>
-                        <p className='text-xs text-gray-500 mt-1'>
-                          {(file.size / 1024).toFixed(2)} KB
-                        </p>
-                      </div>
-                      <p className='text-xs text-blue-600 font-medium group-hover:underline'>
-                        Click to change file
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className='w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform'>
-                        <Upload className='w-6 h-6 text-blue-600' />
-                      </div>
-                      <div className='text-center'>
-                        <p className='text-sm font-medium text-gray-900'>
-                          Click to upload or drag and drop
-                        </p>
-                        <p className='text-xs text-gray-500 mt-1'>
-                          Excel files (XLSX, XLS, CSV) only
-                        </p>
-                      </div>
-                    </>
+      <div className='bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden'>
+        <div className='p-6 border-b border-gray-100 bg-slate-50'>
+          <form onSubmit={startSubmit}>
+            {isAdmin && (
+              <div className='space-y-6 mb-6'>
+                <div className='flex items-center justify-between border-b border-gray-100 pb-3'>
+                  <button
+                    type='button'
+                    onClick={() => setShowFilters(!showFilters)}
+                    className='flex items-center gap-2 text-sm font-semibold text-[#3a5f9e] hover:bg-white px-2 py-1 rounded transition-all'
+                  >
+                    <Filter className='w-4 h-4' />
+                    {showFilters ? 'Hide Filters' : 'Show Filters'}
+                    {showFilters ? (
+                      <ChevronUp className='w-4 h-4' />
+                    ) : (
+                      <ChevronDown className='w-4 h-4' />
+                    )}
+                  </button>
+                  {!showFilters && (
+                    <div className='text-xs font-medium text-slate-500 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-sm animate-in fade-in zoom-in duration-300'>
+                      <span className='text-slate-400 mr-1'>Active Filters:</span> {getFilterSummary()}
+                    </div>
                   )}
                 </div>
+
+                {showFilters && (
+                  <div className='flex flex-col md:flex-row gap-4 animate-in fade-in slide-in-from-top-2 duration-300'>
+                    <div className='flex-1 space-y-2'>
+                      <label className='text-sm font-medium leading-none'>
+                        Select Institute
+                      </label>
+                      <Select
+                        value={selectedInstitute}
+                        onValueChange={setSelectedInstitute}
+                      >
+                        <SelectTrigger className='bg-white'>
+                          <SelectValue placeholder='All Institutes' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value=' '>All Institutes</SelectItem>
+                          {institutes.map((inst) => (
+                            <SelectItem
+                              key={inst.id}
+                              value={inst.id.toString()}
+                            >
+                              {inst.institute_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className='flex-1 space-y-2'>
+                      <label className='text-sm font-medium leading-none'>
+                        Batch Year
+                      </label>
+                      <Select
+                        value={selectedBatchYear}
+                        onValueChange={setSelectedBatchYear}
+                      >
+                        <SelectTrigger className='bg-white'>
+                          <SelectValue placeholder='All Years' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value=' '>All Years</SelectItem>
+                          {yearOptions.map((year) => (
+                            <SelectItem key={year} value={year.toString()}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className='flex-1 space-y-2'>
+                      <label className='text-sm font-medium leading-none'>
+                        Course Type
+                      </label>
+                      <Select
+                        value={selectedCourseType}
+                        onValueChange={setSelectedCourseType}
+                      >
+                        <SelectTrigger className='bg-white'>
+                          <SelectValue placeholder='All Courses' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value=' '>All Courses</SelectItem>
+                          <SelectItem value='Deck'>Deck</SelectItem>
+                          <SelectItem value='Engine'>Engine</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+
+                <div className='space-y-2'>
+                  <label className='text-sm font-medium leading-none'>
+                    Recruitment Drive <span className='text-red-500'>*</span>
+                  </label>
+                  <Select
+                    value={selectedDriveId}
+                    onValueChange={setSelectedDriveId}
+                    disabled={loadingDrives}
+                  >
+                    <SelectTrigger className='bg-white'>
+                      <SelectValue
+                        placeholder={
+                          loadingDrives
+                            ? 'Loading drives...'
+                            : 'Choose a recruitment drive'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {drivesList.length === 0 ? (
+                        <SelectItem value='none' disabled>
+                          No drives found matching filters
+                        </SelectItem>
+                      ) : (
+                        drivesList.map((drive) => (
+                          <SelectItem key={drive.id} value={drive.id}>
+                            {drive.drive_name} ({drive.institute_name} -{' '}
+                            {drive.course_type} {drive.year})
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            <div className='border-2 border-dashed border-gray-300 rounded-xl p-8 hover:border-blue-500 hover:bg-blue-50/50 transition-all cursor-pointer relative group'>
+              <input
+                type='file'
+                accept='.xlsx,.xls,.csv'
+                onChange={handleFileChange}
+                className='absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20'
+              />
+              <div className='flex flex-col items-center justify-center gap-3'>
+                {file ? (
+                  <>
+                    <div className='w-12 h-12 bg-green-100 rounded-full flex items-center justify-center'>
+                      <FileText className='w-6 h-6 text-green-600' />
+                    </div>
+                    <div className='text-center'>
+                      <p className='text-sm font-medium text-gray-900 truncate max-w-[200px]'>
+                        {file.name}
+                      </p>
+                      <p className='text-xs text-gray-500 mt-1'>
+                        {(file.size / 1024).toFixed(2)} KB
+                      </p>
+                    </div>
+                    <p className='text-xs text-blue-600 font-medium group-hover:underline'>
+                      Click to change file
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className='w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform'>
+                      <Upload className='w-6 h-6 text-blue-600' />
+                    </div>
+                    <div className='text-center'>
+                      <p className='text-sm font-medium text-gray-900'>
+                        Click to upload or drag and drop
+                      </p>
+                      <p className='text-xs text-gray-500 mt-1'>
+                        Excel files (XLSX, XLS, CSV) only
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
-            <Button
-              type='submit'
-              className='w-full bg-[#3a5f9e] hover:bg-[#325186] text-white py-6 text-lg rounded-xl shadow-lg shadow-blue-900/10'
-              disabled={loading || !file}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className='w-5 h-5 mr-2 animate-spin' />
-                  Uploading...
-                </>
-              ) : (
-                'Submit Data'
+            {validationError && (
+              <div className='mt-4 p-4 bg-red-50 text-red-700 rounded-lg flex items-start gap-3'>
+                <AlertCircle className='w-5 h-5 mt-0.5 shrink-0' />
+                <p className='text-sm'>{validationError}</p>
+              </div>
+            )}
+
+            <div className='mt-4 space-y-2'>
+              <label className='text-sm font-medium leading-none'>
+                Submission Remarks
+              </label>
+              <textarea
+                value={remarks}
+                onChange={(event) => setRemarks(event.target.value)}
+                rows={3}
+                className='w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500'
+                placeholder='Optional notes for MOLMI along with this submission'
+              />
+            </div>
+
+            <div className='mt-6 flex justify-end gap-3'>
+              {file && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={clearFile}
+                  className='border-gray-300'
+                >
+                  Clear File
+                </Button>
               )}
-            </Button>
+              <Button
+                type='submit'
+                className='bg-[#3a5f9e] hover:bg-[#325186] text-white px-8 shadow-sm'
+                disabled={
+                  loading || !file || !!validationError || errorCount > 0
+                }
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className='w-5 h-5 mr-2 animate-spin' />
+                    Processing...
+                  </>
+                ) : (
+                  'Review & Submit'
+                )}
+              </Button>
+            </div>
           </form>
         </div>
+
+        {/* Preview Section */}
+        {previewData.length > 0 && (
+          <div className='p-6'>
+            <div className='flex items-center justify-between mb-4'>
+              <h3 className='text-lg font-semibold text-gray-800'>
+                Data Preview
+              </h3>
+              <div className='flex items-center gap-3'>
+                {errorCount > 0 && (
+                  <span className='px-3 py-1 bg-red-50 text-red-700 text-xs font-semibold rounded-full flex items-center gap-1'>
+                    <AlertCircle className='w-3 h-3' />
+                    {errorCount} error{errorCount > 1 ? 's' : ''}
+                  </span>
+                )}
+                <span className='px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full'>
+                  {previewData.length} records found
+                </span>
+              </div>
+            </div>
+
+            {errorCount > 0 && (
+              <div className='mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg flex items-start gap-2'>
+                <AlertCircle className='w-4 h-4 mt-0.5 shrink-0' />
+                <p className='text-sm'>
+                  <strong>
+                    {errorCount} cell{errorCount > 1 ? 's have' : ' has'}{' '}
+                    invalid data.
+                  </strong>{' '}
+                  Cells highlighted in{' '}
+                  <span className='text-red-600 font-semibold'>red</span>{' '}
+                  contain incorrect values. Please fix these in your Excel file
+                  and re-upload.
+                </p>
+              </div>
+            )}
+
+            <div className='overflow-x-auto border border-gray-200 rounded-lg max-h-[500px] overflow-y-auto'>
+              <table className='w-full text-sm text-left text-gray-600'>
+                <thead className='text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 shadow-sm'>
+                  <tr>
+                    <th className='px-4 py-3 font-medium bg-gray-50 border-r border-gray-200'>
+                      #
+                    </th>
+                    {headers.map((header, idx) => (
+                      <th
+                        key={idx}
+                        className='px-4 py-3 font-medium bg-gray-50 border-r border-gray-200 whitespace-nowrap'
+                      >
+                        {header}
+                        {isDateColumn(header) && (
+                          <span className='ml-1 text-[10px] font-normal text-gray-400 normal-case'>
+                            (date)
+                          </span>
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewData.slice(0, 100).map((row, rowIdx) => {
+                    const rowHasError = headers.some(
+                      (h) => cellErrors[`${rowIdx}-${h}`],
+                    );
+                    return (
+                      <tr
+                        key={rowIdx}
+                        className={`border-b hover:bg-gray-50 ${
+                          rowHasError ? 'bg-red-50/30' : 'bg-white'
+                        }`}
+                      >
+                        <td className='px-4 py-3 font-medium text-gray-900 border-r border-gray-200'>
+                          {rowIdx + 1}
+                        </td>
+                        {headers.map((header, colIdx) => {
+                          const errorKey = `${rowIdx}-${header}`;
+                          const hasError = !!cellErrors[errorKey];
+                          return (
+                            <td
+                              key={colIdx}
+                              className={`px-4 py-3 border-r border-gray-200 whitespace-nowrap truncate max-w-[200px] ${
+                                hasError
+                                  ? 'bg-red-100 text-red-800 font-medium'
+                                  : ''
+                              }`}
+                              title={
+                                hasError
+                                  ? `Error: ${cellErrors[errorKey]}`
+                                  : formatCellValue(row[header], header)
+                              }
+                            >
+                              {hasError && (
+                                <AlertCircle
+                                  className='w-3 h-3 inline-block mr-1 text-red-500'
+                                  title={`Error: ${cellErrors[errorKey]}`}
+                                />
+                              )}
+                              {formatCellValue(row[header], header)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {previewData.length > 100 && (
+              <p className='text-sm text-gray-500 mt-2 text-center'>
+                Showing first 100 rows preview...
+              </p>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={confirmSubmit}
+        title='Confirm Submission'
+        message={
+          <>
+            Are you sure you want to add these{' '}
+            <span className='font-semibold text-gray-900'>
+              {previewData.length}
+            </span>{' '}
+            records? This action will submit the data to the server and process
+            them.
+          </>
+        }
+        confirmText='Confirm & Add Data'
+        isLoading={loading}
+      />
     </div>
   );
 };

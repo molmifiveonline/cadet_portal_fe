@@ -1,7 +1,33 @@
 import axios from 'axios';
 
+const getApiBaseUrl = () => {
+  const configuredUrl =
+    process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+  try {
+    const apiUrl = new URL(configuredUrl);
+    const browserHostname = window.location.hostname;
+    const configuredForLoopback = ['localhost', '127.0.0.1'].includes(
+      apiUrl.hostname,
+    );
+    const browserIsRemote = !['localhost', '127.0.0.1'].includes(
+      browserHostname,
+    );
+
+    // When the frontend is opened from a phone/tablet on the local network,
+    // localhost refers to that device. Use the frontend host for the API too.
+    if (configuredForLoopback && browserIsRemote) {
+      apiUrl.hostname = browserHostname;
+    }
+
+    return `${apiUrl.toString().replace(/\/$/, '')}/api`;
+  } catch (error) {
+    return `${configuredUrl.replace(/\/$/, '')}/api`;
+  }
+};
+
 const api = axios.create({
-  baseURL: (process.env.REACT_APP_API_URL || 'http://localhost:5000') + '/api',
+  baseURL: getApiBaseUrl(),
   // baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
   headers: {
     'Content-Type': 'application/json',
@@ -43,12 +69,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Clear local storage and redirect to login if token is invalid
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+    if (error.response && [401, 403].includes(error.response.status)) {
+      const isAuthEndpoint = error.config && error.config.url && error.config.url.includes('/auth/');
+      
+      // Clear local storage and redirect to login if token is invalid or access is forbidden (e.g., inactive user)
+      // but only if it's not an authentication request itself (like login or requesting an OTP)
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);
