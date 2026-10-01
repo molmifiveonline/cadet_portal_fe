@@ -1,9 +1,22 @@
 import React from 'react';
 import { Check, X } from 'lucide-react';
 
-const PermissionCard = ({ permission, moduleName, onPermissionToggle }) => {
+export const getPermissionLabel = (permission, moduleName = '') =>
+  permission.display_name ||
+  `${permission.action.charAt(0).toUpperCase() + permission.action.slice(1)} ${moduleName}`.trim();
+
+const PermissionCard = ({
+  permission,
+  moduleName,
+  onPermissionToggle,
+  disabled,
+}) => {
   return (
     <button
+      type="button"
+      aria-pressed={permission.granted}
+      disabled={disabled}
+      aria-label={getPermissionLabel(permission, moduleName)}
       onClick={() => onPermissionToggle(permission.id, permission.granted)}
       className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 text-left group ${
         permission.granted
@@ -20,30 +33,21 @@ const PermissionCard = ({ permission, moduleName, onPermissionToggle }) => {
         }`}
       >
         {permission.granted ? (
-          <Check className='w-5 h-5 text-white' strokeWidth={3} />
+          <Check className="w-5 h-5 text-white" strokeWidth={3} />
         ) : (
-          <X className='w-5 h-5 text-[#94A3B8]' strokeWidth={2.5} />
+          <X className="w-5 h-5 text-[#94A3B8]" strokeWidth={2.5} />
         )}
       </div>
 
       {/* Info */}
-      <div className='min-w-0'>
+      <div className="min-w-0">
         <h4
-          className={`text-[15px] font-bold truncate transition-colors ${
+          className={`text-[15px] font-bold transition-colors ${
             permission.granted ? 'text-[#166534]' : 'text-[#334155]'
           }`}
         >
-          {permission.action.charAt(0).toUpperCase() +
-            permission.action.slice(1)}{' '}
-          {moduleName || ''}
+          {getPermissionLabel(permission, moduleName)}
         </h4>
-        <p
-          className={`text-[13px] truncate transition-colors ${
-            permission.granted ? 'text-[#15803D]' : 'text-[#64748B]'
-          }`}
-        >
-          {permission.description || `Manage ${permission.action} rights`}
-        </p>
       </div>
     </button>
   );

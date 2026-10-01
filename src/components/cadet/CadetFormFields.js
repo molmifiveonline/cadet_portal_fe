@@ -48,13 +48,14 @@ const CadetFormFields = ({
   interviewData = null,
   medicalData = null,
   assessmentData = null,
+  showStageDetails = true,
   user = null,
   instituteUploadType = null,
 }) => {
   const navigate = useNavigate();
   const isAdmin = user?.role?.toLowerCase() === 'superadmin';
   const isCadetOrInstitute = ['cadet', 'institute'].includes(user?.role?.toLowerCase());
-  const canViewStageDetails = isAdmin;
+  const canViewStageDetails = isAdmin && showStageDetails;
   const canManageStageDetails = isAdmin;
   const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
 
@@ -275,7 +276,7 @@ const CadetFormFields = ({
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
               <DetailItem label='Batch Rank' value={cadet.batch_rank_out_of_72_cadets} name='batch_rank_out_of_72_cadets' icon={Award} disabled={isPanama} />
               <DetailItem label='Arrears' value={cadet.no_of_arrears} name='no_of_arrears' type='number' icon={Book} disabled={isPanama} />
-              <DetailItem label='Passing Out Year' value={formatDateForDisplay(cadet.passing_out_date)} name='passing_out_date' type='date' icon={Calendar} />
+              <DetailItem label='Passing Out Year' value={cadet.passing_out_date} name='passing_out_date' type='number' placeholder='YYYY' icon={Calendar} />
               <DetailItem label='Age at Passing' value={cadet.age_when_passing_out} name='age_when_passing_out' type='number' icon={User} />
             </div>
           </div>

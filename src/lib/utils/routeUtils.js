@@ -53,6 +53,7 @@ export const getPrefixRoute = (user) => {
  * @returns {boolean}
  */
 export const isAllowedRoute = (user, pathname) => {
+  if (user?.role === 'Institute' && pathname === '/dashboard') return true;
   if (!user?.intent) return true; // No intent restriction
   if (!pathname) return false; // If pathname is undefined, don't crash
 

@@ -6,12 +6,12 @@ import {
   Pencil,
   Plus,
   Search,
-  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../../lib/utils/apiConfig";
 import PageHeader from "../../components/common/PageHeader";
 import PageLoader from "../../components/common/PageLoader";
+import DeleteButtonWithReason from "../../components/common/DeleteButtonWithReason";
 import ConfirmationModal from "../../components/common/ConfirmationModal";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import { Button } from "../../components/ui/button";
@@ -23,12 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import { useAuth } from "../../context/AuthContext";
+import { usePermission } from "../../hooks/usePermission";
 import { formatDateForDisplay } from "../../lib/utils/dateUtils";
 
 const AssessmentTypes = () => {
-  const { user } = useAuth();
-  const canManage = ["SuperAdmin", "Admin"].includes(user?.role);
+  const { hasPermission: canManage } = usePermission("allocation-masters", "manage");
+  const { hasPermission: canCreate } = usePermission("allocation-masters", "create");
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -135,6 +135,7 @@ const AssessmentTypes = () => {
 
   const activeCount = types.filter((item) => item.status === "Active").length;
   const openAdd = () => {
+    if (!canCreate) return;
     setEditor({ mode: "add" });
     setForm({ name: "" });
     setErrors({});
@@ -156,6 +157,7 @@ const AssessmentTypes = () => {
   };
 
   const save = async () => {
+    if (!editor || !(editor.mode === "edit" ? canManage : canCreate)) return;
     const name = form.name.trim().replace(/\s+/g, " ");
     if (!name) {
       setErrors({ name: "Assessment Type Name is required." });
@@ -240,6 +242,10 @@ const AssessmentTypes = () => {
       toast.error(
         error.response?.data?.message || 'Failed to delete Assessment Type',
       );
+      if (error.response?.status === 409) {
+        setDeleteAction(null);
+        await load();
+      }
     } finally {
       setDeleting(false);
     }
@@ -335,16 +341,13 @@ const AssessmentTypes = () => {
                   )}
                   {row.status === "Active" ? "Deactivate" : "Activate"}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                <DeleteButtonWithReason
+                  showLabel
+                  label="Delete"
+                  disabled={row.can_delete === false}
+                  reason={row.delete_blocked_reason}
                   onClick={() => setDeleteAction(row)}
-                >
-                  <Trash2 size={14} className="mr-1.5" />
-                  Delete
-                </Button>
+                />
               </div>
             ),
           },
@@ -361,7 +364,7 @@ const AssessmentTypes = () => {
         subtitle="General assessment names used for every Deck and Engine cadet"
         icon={ClipboardList}
       >
-        {canManage && (
+        {canCreate && (
           <Button onClick={openAdd}>
             <Plus size={18} className="mr-2" />
             Add Assessment Type
@@ -369,23 +372,9 @@ const AssessmentTypes = () => {
         )}
       </PageHeader>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <SummaryCard
-          label="Total Assessment Types"
-          value={types.length}
-          tone="blue"
-        />
-        <SummaryCard label="Active" value={activeCount} tone="green" />
-        <SummaryCard
-          label="Inactive"
-          value={types.length - activeCount}
-          tone="slate"
-        />
-      </div>
-
       <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
         Every Assessment Type is general, applies to both departments, and has a
-        fixed maximum score of <strong>10</strong>. Only active types are copied
+        fixed maximum score of <strong>100</strong>. Only active types are copied
         into newly created allocation cycles; existing cycles keep their saved
         snapshot.
       </div>
@@ -441,7 +430,7 @@ const AssessmentTypes = () => {
       </div>
 
       <ConfirmationModal
-        isOpen={Boolean(editor)}
+        isOpen={Boolean(editor) && (editor?.mode === "edit" ? canManage : canCreate)}
         onClose={closeEditor}
         onConfirm={save}
         title={
@@ -475,7 +464,7 @@ const AssessmentTypes = () => {
             <strong>Applies to:</strong> Deck and Engine
           </p>
           <p>
-            <strong>Maximum score:</strong> 10
+            <strong>Maximum score:</strong> 100
           </p>
         </div>
       </ConfirmationModal>

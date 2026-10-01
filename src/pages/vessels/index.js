@@ -128,7 +128,8 @@ const VesselList = () => {
         searchTerm,
       );
     } catch (error) {
-      toast.error('Failed to delete vessel');
+      toast.error(error.response?.data?.message || 'Failed to delete vessel');
+      if (error.response?.status === 409) fetchVessels();
     }
   };
 

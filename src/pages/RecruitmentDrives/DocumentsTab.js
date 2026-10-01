@@ -539,6 +539,7 @@ const DocumentsTab = ({ drive }) => {
             const isCtvApproved =
               cadet.document_verification_status === "Verified" &&
               allDocumentsAccepted;
+            const isCtvRevoked = cadet.document_verification_status === "Revoked";
 
             return (
               <div
@@ -565,10 +566,16 @@ const DocumentsTab = ({ drive }) => {
                       className={`rounded-full px-2 py-1 text-xs font-semibold ${
                         isCtvApproved
                           ? "bg-emerald-100 text-emerald-700"
-                          : "bg-amber-100 text-amber-700"
+                          : isCtvRevoked
+                            ? "bg-rose-100 text-rose-700"
+                            : "bg-amber-100 text-amber-700"
                       }`}
                     >
-                      {isCtvApproved ? "CTV Approved" : "CTV Approval Pending"}
+                      {isCtvApproved
+                        ? "CTV Approved"
+                        : isCtvRevoked
+                          ? "CTV Approval Revoked"
+                          : "CTV Approval Pending"}
                     </span>
                   </div>
 
@@ -608,18 +615,26 @@ const DocumentsTab = ({ drive }) => {
                         className={`mb-4 flex flex-col justify-between gap-3 rounded-lg border p-4 sm:flex-row sm:items-center ${
                           isCtvApproved
                             ? "border-emerald-200 bg-emerald-50"
-                            : "border-amber-200 bg-amber-50"
+                            : isCtvRevoked
+                              ? "border-rose-200 bg-rose-50"
+                              : "border-amber-200 bg-amber-50"
                         }`}
                       >
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                            <CheckCircle
-                              size={17}
-                              className={isCtvApproved ? "text-emerald-600" : "text-amber-600"}
-                            />
+                            {isCtvRevoked ? (
+                              <XCircle size={17} className="shrink-0 text-rose-600" />
+                            ) : (
+                              <CheckCircle
+                                size={17}
+                                className={isCtvApproved ? "text-emerald-600" : "text-amber-600"}
+                              />
+                            )}
                             {isCtvApproved
                               ? "Approved for CTV Vessel Allocation"
-                              : "Complete document approval for CTV Allocation"}
+                              : isCtvRevoked
+                                ? "CTV document approval revoked"
+                                : "Complete document approval for CTV Allocation"}
                           </p>
                           <p className="mt-1 text-xs text-slate-600">
                             {isCtvApproved
@@ -634,9 +649,12 @@ const DocumentsTab = ({ drive }) => {
                                   ? "All documents are accepted. Admin can now approve this cadet."
                                   : `${summary.total - summary.acceptedCount} document(s) must be accepted before approval.`}
                           </p>
-                          {isCtvApproved && cadet.document_verification_remarks ? (
-                            <p className="mt-1 text-xs text-slate-500">
-                              Remarks: {cadet.document_verification_remarks}
+                          {(isCtvApproved || isCtvRevoked) && cadet.document_verification_remarks ? (
+                            <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-700">
+                              <span className="font-medium">
+                                {isCtvRevoked ? "Revocation remarks: " : "Remarks: "}
+                              </span>
+                              {cadet.document_verification_remarks}
                             </p>
                           ) : null}
                         </div>
@@ -645,6 +663,7 @@ const DocumentsTab = ({ drive }) => {
                             type="button"
                             variant="outline"
                             size="sm"
+                            className="shrink-0"
                             onClick={() => openCandidateApproval(cadet, "Revoked")}
                           >
                             Revoke Approval
@@ -653,6 +672,7 @@ const DocumentsTab = ({ drive }) => {
                           <Button
                             type="button"
                             size="sm"
+                            className="shrink-0"
                             disabled={!allDocumentsAccepted}
                             onClick={() => openCandidateApproval(cadet, "Verified")}
                           >
@@ -810,7 +830,10 @@ const DocumentsTab = ({ drive }) => {
             className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 p-2 text-sm outline-none focus:border-blue-500"
             value={candidateApprovalRemarks}
             onChange={(event) => setCandidateApprovalRemarks(event.target.value)}
-            placeholder="Required"
+            required
+            placeholder={candidateApproval?.status === "Revoked"
+              ? "Enter the reason for revoking approval"
+              : "Enter approval remarks"}
           />
         </label>
       </ConfirmationModal>

@@ -133,7 +133,8 @@ const MedicalCenterList = () => {
         searchTerm,
       );
     } catch (error) {
-      toast.error('Failed to delete medical center');
+      toast.error(error.response?.data?.message || 'Failed to delete medical center');
+      if (error.response?.status === 409) fetchCenters();
     }
   };
 

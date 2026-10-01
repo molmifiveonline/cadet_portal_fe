@@ -27,8 +27,9 @@ const TitleManager = () => {
 
     // 2. If no exact match, try prefix match (for forms like /users/add)
     if (!currentItem) {
-      for (const item of MenuItems) {
+      for (const item of MenuItems.flatMap((item) => item.subItems || [item])) {
         if (
+          item.url &&
           item.url !== '/' &&
           item.url !== '/dashboard' &&
           path.startsWith(item.url)
