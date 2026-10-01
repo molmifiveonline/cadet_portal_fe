@@ -10,6 +10,7 @@ import {
   User,
   Eye,
   MoreVertical,
+  Info,
 } from "lucide-react";
 import ReusableDataTable from "../../components/common/ReusableDataTable";
 import DeleteConfirmationModal from "../../components/common/DeleteConfirmationModal";
@@ -23,6 +24,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "components/ui/tooltip";
 
 const InstitutesTable = ({
   institutes,
@@ -296,6 +303,7 @@ const InstitutesTable = ({
                         size="icon"
                         className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
                         title="Actions"
+                        aria-label={`Actions for ${row.institute_name}`}
                       >
                         <MoreVertical size={16} />
                       </Button>
@@ -335,13 +343,61 @@ const InstitutesTable = ({
                         </DropdownMenuItem>
                       </Permission>
                       <Permission module="institutes" action="delete">
-                        <DropdownMenuItem
-                          onClick={() => setDeleteId(row.id)}
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                        >
-                          <Trash2 size={16} className="text-red-500" />
-                          <span>Delete</span>
-                        </DropdownMenuItem>
+                        <div className="flex items-center">
+                          <DropdownMenuItem
+                            disabled={row.can_delete === false}
+                            aria-describedby={
+                              row.can_delete === false
+                                ? `institute-delete-reason-${row.id}`
+                                : undefined
+                            }
+                            onClick={() => {
+                              if (row.can_delete !== false) setDeleteId(row.id);
+                            }}
+                            className="flex flex-1 items-center gap-2 px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                          >
+                            <Trash2 size={16} className="text-red-500" />
+                            <span>Delete</span>
+                          </DropdownMenuItem>
+                          {row.can_delete === false && (
+                            <TooltipProvider delayDuration={200}>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <DropdownMenuItem
+                                    asChild
+                                    onSelect={(event) => event.preventDefault()}
+                                    className="shrink-0 rounded-md p-2 text-slate-500 hover:text-slate-700 focus:bg-slate-100"
+                                  >
+                                    <button
+                                      type="button"
+                                      aria-label="Why deletion is disabled"
+                                    >
+                                      <Info size={16} aria-hidden="true" />
+                                    </button>
+                                  </DropdownMenuItem>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                  side="bottom"
+                                  align="end"
+                                  sideOffset={8}
+                                  className="max-w-[280px] text-xs leading-relaxed z-[60]"
+                                >
+                                  {row.delete_blocked_reason ||
+                                    "This institute has linked records and cannot be deleted."}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                        {row.can_delete === false && (
+                          <span
+                            id={`institute-delete-reason-${row.id}`}
+                            className="sr-only"
+                          >
+                            {row.delete_blocked_reason ||
+                              "This institute has linked records and cannot be deleted."}
+                          </span>
+                        )}
                       </Permission>
                     </DropdownMenuContent>
                   </DropdownMenu>

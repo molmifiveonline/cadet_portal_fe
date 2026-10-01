@@ -1,15 +1,10 @@
+import { isPlanIntimated as isIntimated } from "../communicationUtils";
+
 export const hasScore = (value) =>
   value !== null &&
   value !== undefined &&
   value !== "" &&
   Number.isFinite(Number(value));
-
-const isIntimated = (plan) =>
-  plan &&
-  !Number(plan.requires_refresh) &&
-  (Number(plan.successful_communication_count || 0) > 0 ||
-    ["Phone", "WhatsApp"].includes(plan.last_mode) ||
-    (plan.last_mode === "Email" && plan.email_delivery_status === "Sent"));
 
 // Plans belong to a berth, not just a cadet. A secondary assignment needs its own plan.
 export const getOverviewData = (cycle, joiningPlans = [], vessels = []) => {
@@ -198,9 +193,9 @@ export const getOverviewMilestone = (cycle, data) => {
       step: 5,
       icon: "joining",
       target: "joining",
-      title: "Send joining intimations",
-      label: "Open Intimation Queue",
-      description: `${data.planCount - data.intimatedCount} plan(s) still need a successful Email, WhatsApp, or Phone record.`,
+      title: "Record candidate communication",
+      label: "Open Communication Queue",
+      description: `${data.planCount - data.intimatedCount} plan(s) still need the admin to record Email, WhatsApp, or Phone communication.`,
     };
   return {
     ...base,

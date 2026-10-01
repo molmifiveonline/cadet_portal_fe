@@ -1,41 +1,42 @@
-import { getJoiningEmailActionLabel } from "./communicationUtils";
+import { isPlanIntimated } from "./communicationUtils";
 
-describe("joining intimation email action", () => {
-  it.each(["Phone", "WhatsApp"])("uses the first-email label after %s contact only", (last_mode) => {
-    expect(getJoiningEmailActionLabel({
-      last_mode,
-      successful_communication_count: 2,
-      successful_email_count: 0,
-      confirmation_received: true,
-    })).toBe("Send Joining Intimation");
+describe("recorded candidate communication", () => {
+  it.each(["Phone", "WhatsApp", "Email"])(
+    "counts an admin-recorded %s contact without delivery",
+    (last_mode) => {
+      expect(isPlanIntimated({ last_mode, email_delivery_status: null })).toBe(
+        true,
+      );
+    },
+  );
+  it("preserves previously delivered email history", () => {
+    expect(
+      isPlanIntimated({ last_mode: "Email", email_delivery_status: "Sent" }),
+    ).toBe(true);
   });
-
-  it("uses the first-email label for a new plan", () => {
-    expect(getJoiningEmailActionLabel({})).toBe("Send Joining Intimation");
+  it("does not count a failed email or an uncontacted plan", () => {
+    expect(
+      isPlanIntimated({ last_mode: "Email", email_delivery_status: "Failed" }),
+    ).toBe(false);
+    expect(isPlanIntimated({})).toBe(false);
   });
-
-  it("recognizes an earlier successful email even when the latest contact was by phone", () => {
-    expect(getJoiningEmailActionLabel({
-      last_mode: "Phone", successful_email_count: "1",
-    })).toBe("Send Another Email");
+  it("preserves a successful earlier contact despite a later failed email", () => {
+    expect(
+      isPlanIntimated({
+        last_mode: "Email",
+        email_delivery_status: "Failed",
+        successful_communication_count: "1",
+      }),
+    ).toBe(true);
   });
-
-  it("recognizes the latest successful email", () => {
-    expect(getJoiningEmailActionLabel({
-      last_mode: "Email", email_delivery_status: "Sent",
-    })).toBe("Send Another Email");
-  });
-
-  it("does not use outdated email history for a plan requiring refresh", () => {
-    expect(getJoiningEmailActionLabel({
-      successful_email_count: 1, requires_refresh: "1",
-    })).toBe("Send Joining Intimation");
-  });
-
-  it("keeps the retry label for a failed email, including a failure during this session", () => {
-    expect(getJoiningEmailActionLabel({
-      last_mode: "Email", email_delivery_status: "Failed", successful_email_count: 1,
-    })).toBe("Retry Joining Intimation");
-    expect(getJoiningEmailActionLabel({}, true)).toBe("Retry Joining Intimation");
+  it("does not count communication from a plan requiring refresh", () => {
+    expect(
+      isPlanIntimated({
+        last_mode: "Email",
+        email_delivery_status: null,
+        successful_communication_count: 1,
+        requires_refresh: "1",
+      }),
+    ).toBe(false);
   });
 });

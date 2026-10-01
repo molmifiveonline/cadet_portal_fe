@@ -72,7 +72,7 @@ const VesselTypeMaster = () => {
   useEffect(() => { setCurrentPage(1); }, [search, statusFilter]);
   useEffect(() => { setCurrentPage((page) => Math.min(page, totalPages)); }, [totalPages]);
 
-  const activeCount = types.filter((type) => type.status === 'Active').length;
+  // const activeCount = types.filter((type) => type.status === 'Active').length;
 
   const openCreate = () => {
     setEditor({ mode: 'add' });
@@ -191,20 +191,6 @@ const VesselTypeMaster = () => {
           </Button>
         </Permission>
       </PageHeader>
-
-      <div className='mb-6 grid gap-4 sm:grid-cols-3'>
-        <SummaryCard
-          label='Total Vessel Types'
-          value={types.length}
-          tone='blue'
-        />
-        <SummaryCard label='Active' value={activeCount} tone='green' />
-        <SummaryCard
-          label='Inactive'
-          value={types.length - activeCount}
-          tone='slate'
-        />
-      </div>
 
       <div className='mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900'>
         Active vessel types can be selected when adding a vessel. Renaming a
@@ -367,20 +353,6 @@ const VesselTypeMaster = () => {
         }
         isLoading={updatingStatus}
       />
-    </div>
-  );
-};
-
-const SummaryCard = ({ label, value, tone }) => {
-  const tones = {
-    blue: 'border-blue-200 bg-blue-50 text-blue-700',
-    green: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-    slate: 'border-slate-200 bg-slate-50 text-slate-700',
-  };
-  return (
-    <div className={`rounded-xl border p-4 ${tones[tone]}`}>
-      <p className='text-sm font-medium'>{label}</p>
-      <p className='mt-1 text-2xl font-bold'>{value}</p>
     </div>
   );
 };

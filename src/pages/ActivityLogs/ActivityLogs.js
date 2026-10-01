@@ -4,7 +4,7 @@ import { Input } from '../../components/ui/input';
 import { toast } from 'sonner';
 import { Search, History } from 'lucide-react';
 import api from '../../lib/utils/apiConfig';
-import { formatDateForDisplay } from '../../lib/utils/dateUtils';
+import { formatTimestampInIndia } from '../../lib/utils/timestampUtils';
 import PageHeader from '../../components/common/PageHeader';
 import PageLoader from '../../components/common/PageLoader';
 
@@ -33,7 +33,7 @@ const ActivityLogs = () => {
       width: '80px',
       sortable: false,
       renderCell: ({ index }) => (
-        <span className='text-sm text-gray-500 font-medium'>
+        <span className="text-sm text-gray-500 font-medium">
           {(pagination?.current_page - 1) * pagination?.per_page + index + 1}
         </span>
       ),
@@ -56,10 +56,10 @@ const ActivityLogs = () => {
           'Unknown User';
 
         return (
-          <div className='flex flex-col'>
-            <span className='font-medium text-gray-900'>{displayName}</span>
+          <div className="flex flex-col">
+            <span className="font-medium text-gray-900">{displayName}</span>
             {row.user_email && (
-              <span className='text-xs text-gray-500'>{row.user_email}</span>
+              <span className="text-xs text-gray-500">{row.user_email}</span>
             )}
           </div>
         );
@@ -70,7 +70,7 @@ const ActivityLogs = () => {
       headerName: 'Action',
       width: '180px',
       renderCell: ({ value }) => (
-        <span className='px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium'>
+        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium">
           {value}
         </span>
       ),
@@ -78,18 +78,21 @@ const ActivityLogs = () => {
     { field: 'details', headerName: 'Details', width: '300px' },
     {
       field: 'created_at',
-      headerName: 'Timestamp',
+      headerName: 'Timestamp (IST)',
       width: '180px',
       renderCell: ({ value }) => {
         if (!value) return '-';
-        const date = new Date(value);
+        const { date, time } = formatTimestampInIndia(value);
+        if (date === '-') return '-';
         return (
-          <div className='flex flex-col'>
-            <span className='text-sm'>{formatDateForDisplay(value)}</span>
-            <span className='text-xs text-gray-500'>
-              {date.toLocaleTimeString()}
-            </span>
-          </div>
+          <time
+            dateTime={value}
+            className="flex flex-col"
+            title="India Standard Time (UTC+05:30)"
+          >
+            <span className="text-sm">{date}</span>
+            <span className="text-xs text-gray-500">{time} IST</span>
+          </time>
         );
       },
     },
@@ -181,7 +184,7 @@ const ActivityLogs = () => {
   };
 
   return (
-    <div className='py-6 space-y-6'>
+    <div className="py-6 space-y-6">
       <PageHeader
         title="Activity Logs"
         subtitle="View system activities from the last 3 months"
@@ -189,25 +192,25 @@ const ActivityLogs = () => {
       />
 
       {/* Search Bar */}
-      <div className='bg-white rounded-lg shadow-sm border border-slate-200 p-4'>
-        <div className='relative'>
-          <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <Input
-            type='text'
-            placeholder='Search by user name, email, action, or details...'
+            type="text"
+            placeholder="Search by user name, email, action, or details..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className='pl-10'
+            className="pl-10"
           />
         </div>
         {searchTerm && (
-          <p className='text-sm text-gray-500 mt-2'>
+          <p className="text-sm text-gray-500 mt-2">
             Searching for: <strong>{searchTerm}</strong>
           </p>
         )}
       </div>
 
-      <div className='bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden'>
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         {loading && logs.length === 0 ? (
           <PageLoader />
         ) : (

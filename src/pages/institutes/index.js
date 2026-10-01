@@ -160,7 +160,10 @@ const InstitutesManagement = () => {
       );
     } catch (error) {
       console.error('Error deleting institute:', error);
-      toast.error('Failed to delete institute');
+      toast.error(error.response?.data?.message || 'Failed to delete institute');
+      if (error.response?.status === 409) {
+        fetchInstitutes();
+      }
     }
   };
 

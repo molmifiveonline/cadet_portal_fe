@@ -48,13 +48,14 @@ const CadetFormFields = ({
   interviewData = null,
   medicalData = null,
   assessmentData = null,
+  showStageDetails = true,
   user = null,
   instituteUploadType = null,
 }) => {
   const navigate = useNavigate();
   const isAdmin = user?.role?.toLowerCase() === 'superadmin';
   const isCadetOrInstitute = ['cadet', 'institute'].includes(user?.role?.toLowerCase());
-  const canViewStageDetails = isAdmin;
+  const canViewStageDetails = isAdmin && showStageDetails;
   const canManageStageDetails = isAdmin;
   const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
 

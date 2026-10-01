@@ -16,12 +16,11 @@ import { Button } from '../../components/ui/button';
 import { toast } from 'sonner';
 import CadetFormFields from '../../components/cadet/CadetFormFields';
 import { useAuth } from '../../context/AuthContext';
+import { usePermission } from '../../hooks/usePermission';
 import { getPrefixRoute } from '../../lib/utils/routeUtils';
 import { formatDateForInput } from '../../lib/utils/dateUtils';
 import PageHeader from '../../components/common/PageHeader';
 import { sanitizePhoneValue } from '../../lib/utils/validationUtils';
-
-import StageTracker from '../../components/common/StageTracker';
 
 const CadetDetails = () => {
   const { id } = useParams();
@@ -35,13 +34,10 @@ const CadetDetails = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [photoError, setPhotoError] = useState(null);
   const [imageError, setImageError] = useState(false);
-  const [stageData, setStageData] = useState({
-    interview: null,
-    medical: null,
-    assessment: null
-  });
   const fileInputRef = React.useRef(null);
   const isInstituteUser = user?.role === 'Institute';
+  const { hasPermission: hasEditPermission } = usePermission('cadets', 'edit');
+  const canEdit = !isInstituteUser && hasEditPermission;
 
   const [returnPath] = useState(location.state?.returnPath || null);
   const [returnStatePayload] = useState(location.state?.returnState || null);
@@ -60,7 +56,7 @@ const CadetDetails = () => {
 
   useEffect(() => {
     // Check if we should start in edit mode
-    if (location.state?.editMode && !isInstituteUser) {
+    if (location.state?.editMode && canEdit) {
       setIsEditing(true);
       // Clear editMode so refresh doesn't keep it, but keep return routing
       navigate(location.pathname, {
@@ -71,7 +67,11 @@ const CadetDetails = () => {
         },
       });
     }
-  }, [isInstituteUser, location, navigate]);
+  }, [canEdit, location, navigate]);
+
+  useEffect(() => {
+    if (!canEdit) setIsEditing(false);
+  }, [canEdit]);
 
   useEffect(() => {
     setImageError(false);
@@ -85,22 +85,6 @@ const CadetDetails = () => {
         const data = response.data.data || response.data;
         setCadet(data);
         setImageError(false);
-
-        // Fetch additional stage data
-        try {
-          const [intRes, medRes, assRes] = await Promise.all([
-            api.get(`/interviews/${id}`).catch(() => ({ data: { data: null } })),
-            api.get(`/medical-results/${id}`).catch(() => ({ data: { data: null } })),
-            api.get(`/assessments/${id}`).catch(() => ({ data: { data: null } }))
-          ]);
-          setStageData({
-            interview: intRes.data.data,
-            medical: medRes.data.data,
-            assessment: assRes.data.data
-          });
-        } catch (err) {
-          console.error('Error fetching stage data:', err);
-        }
 
         // Format dates and gender for form
         const formData = {
@@ -284,7 +268,7 @@ const CadetDetails = () => {
               </Button>
             </>
           ) : (
-            !isInstituteUser && (
+            canEdit && (
               <Button
                 type='button'
                 onClick={() => setIsEditing(true)}
@@ -296,14 +280,6 @@ const CadetDetails = () => {
           )}
         </div>
       </PageHeader>
-
-      {/* Stage Tracker - Only for Admins */}
-      {user?.role?.toLowerCase() === 'superadmin' && (
-        <div className='bg-white rounded-[2rem] shadow-md border border-gray-100 p-8 animate-in fade-in slide-in-from-top-4 duration-500'>
-          <h2 className='text-sm font-black text-indigo-400 uppercase tracking-[0.2em] mb-6 px-4'>Profile Progress</h2>
-          <StageTracker currentStage={cadet.status} />
-        </div>
-      )}
 
       <div className='bg-white rounded-[2rem] shadow-xl shadow-indigo-100/20 border border-gray-100 p-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150'>
         <div className='space-y-8'>
@@ -405,9 +381,7 @@ const CadetDetails = () => {
             watch={watch}
             setValue={setValue}
             isSubmitting={isSubmitting}
-            interviewData={stageData.interview}
-            medicalData={stageData.medical}
-            assessmentData={stageData.assessment}
+            showStageDetails={false}
             user={user}
             instituteUploadType={cadet?.institute_upload_type}
           />

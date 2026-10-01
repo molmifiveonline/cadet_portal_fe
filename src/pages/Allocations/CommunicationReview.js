@@ -202,8 +202,12 @@ const CommunicationHistory = ({ plan }) => {
                   />
                   {record.mode === "Email" && (
                     <SavedField
-                      label="Email Delivery Status"
-                      value={record.delivery_status || "Not recorded"}
+                      label={
+                        record.delivery_status
+                          ? "Email Delivery Status"
+                          : "Email Contact"
+                      }
+                      value={record.delivery_status || "Recorded by admin"}
                     />
                   )}
                   <SavedField

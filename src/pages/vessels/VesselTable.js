@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Trash2,
   Search,
   Anchor,
   Navigation,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
+import DeleteButtonWithReason from '../../components/common/DeleteButtonWithReason';
 import Permission from '../../components/common/Permission';
 import { Button } from '../../components/ui/button';
 
@@ -178,7 +178,7 @@ const VesselTable = ({
     {
       field: 'actions',
       headerName: 'Actions',
-      width: '100px',
+      width: '130px',
       align: 'right',
       sortable: false,
       sticky: 'right',
@@ -198,15 +198,12 @@ const VesselTable = ({
             </Button>
           </Permission>
           <Permission module='vessel-master' action='delete'>
-            <Button
-              variant="ghosy"
-              size="icon"
+            <DeleteButtonWithReason
+              disabled={row.can_delete === false}
+              reason={row.delete_blocked_reason}
+              label="Delete vessel"
               onClick={() => setDeleteVessel(row)}
-              className='p-2 rounded-lg text-red-600 hover:bg-red-100 transition-colors'
-              title='Delete vessel'
-            >
-              <Trash2 size={16} />
-            </Button>
+            />
           </Permission>
         </div>
       ),

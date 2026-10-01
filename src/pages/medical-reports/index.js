@@ -135,7 +135,8 @@ const MedicalReportList = () => {
         searchTerm,
       );
     } catch (error) {
-      toast.error('Failed to delete medical report');
+      toast.error(error.response?.data?.message || 'Failed to delete medical report');
+      if (error.response?.status === 409) fetchReports();
     }
   };
 

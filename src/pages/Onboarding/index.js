@@ -281,16 +281,6 @@ const Onboarding = () => {
         subtitle="Complete final checks for CTV Assigned cadets"
         icon={ClipboardCheck}
       >
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => load(false)}
-          disabled={refreshing}
-          className="border-[#3a5f9e]/30 text-[#3a5f9e] hover:bg-[#3a5f9e]/10"
-        >
-          <RefreshCw size={16} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh
-        </Button>
       </PageHeader>
 
       <section className="mb-5 rounded-xl border border-[#3a5f9e]/20 bg-gradient-to-r from-[#3a5f9e]/10 via-blue-50 to-white px-4 py-3.5">

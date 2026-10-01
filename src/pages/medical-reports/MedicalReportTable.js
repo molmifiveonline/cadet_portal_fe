@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Trash2,
   Search,
   ClipboardList,
   Edit,
@@ -9,6 +8,7 @@ import ReusableDataTable from '../../components/common/ReusableDataTable';
 import DeleteConfirmationModal from '../../components/common/DeleteConfirmationModal';
 import Permission from '../../components/common/Permission';
 import { Button } from '../../components/ui/button';
+import DeleteButtonWithReason from '../../components/common/DeleteButtonWithReason';
 
 const MedicalReportTable = ({
   reports,
@@ -76,7 +76,7 @@ const MedicalReportTable = ({
     {
       field: 'actions',
       headerName: 'Actions',
-      width: '100px',
+      width: '130px',
       align: 'right',
       sortable: false,
       sticky: 'right',
@@ -96,15 +96,12 @@ const MedicalReportTable = ({
             </Button>
           </Permission>
           <Permission module='medical-centers' action='delete'>
-            <Button
-              variant='ghosy'
-              size='icon'
+            <DeleteButtonWithReason
+              disabled={row.can_delete === false}
+              reason={row.delete_blocked_reason}
+              label='Delete report'
               onClick={() => setDeleteReport(row)}
-              className='p-2 rounded-lg text-red-600 hover:bg-red-100 transition-colors'
-              title='Delete report'
-            >
-              <Trash2 size={16} />
-            </Button>
+            />
           </Permission>
         </div>
       ),

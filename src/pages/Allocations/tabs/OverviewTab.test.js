@@ -58,7 +58,9 @@ describe("overview workflow and berth summaries", () => {
         .step,
     ).toBe(4);
     expect(milestone(cycle()).title).toBe("Create joining plans & intimate");
-    expect(milestone(cycle(), [plan()]).title).toBe("Send joining intimations");
+    expect(milestone(cycle(), [plan()]).title).toBe(
+      "Record candidate communication",
+    );
     expect(milestone(cycle(), [plan({ last_mode: "Phone" })]).target).toBe(
       "onboarding",
     );
@@ -132,6 +134,7 @@ describe("overview workflow and berth summaries", () => {
 
   it.each([
     { last_mode: "Email", email_delivery_status: "Sent" },
+    { last_mode: "Email", email_delivery_status: null },
     { last_mode: "WhatsApp" },
     { last_mode: "Phone" },
     {
