@@ -13,16 +13,18 @@ import {
 } from "../../lib/utils/formStyles";
 
 const Login = () => {
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(
+    () => searchParams.get("forgotPassword") === "1",
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { login } = useAuth();
 
   const handleChange = (e) => {
