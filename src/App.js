@@ -14,6 +14,7 @@ import PermissionRoute from './components/common/PermissionRoute';
 import { PublicRoute } from './components/common/PublicRoute';
 import HomeRedirect from './components/common/HomeRedirect';
 import PageLoader from './components/common/PageLoader';
+import { RecruitmentDrivesSkeleton } from './pages/RecruitmentDrives/DriveCardSkeleton';
 import { getLoginRedirectPath } from './lib/utils/routeUtils';
 
 const Login = lazy(() => import('./pages/auth/Login'));
@@ -189,7 +190,9 @@ function App() {
                 <ProtectedRoute>
                   <MainLayout>
                     <PermissionRoute module='recruitment_drives' action='view'>
-                      <RecruitmentDrives />
+                      <Suspense fallback={<RecruitmentDrivesSkeleton includePageChrome />}>
+                        <RecruitmentDrives />
+                      </Suspense>
                     </PermissionRoute>
                   </MainLayout>
                 </ProtectedRoute>

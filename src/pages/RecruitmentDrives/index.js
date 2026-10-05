@@ -24,7 +24,7 @@ import api from "../../lib/utils/apiConfig";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
 import PageHeader from "../../components/common/PageHeader";
-import PageLoader from "../../components/common/PageLoader";
+import DriveCardSkeleton, { RecruitmentDrivesSkeleton } from "./DriveCardSkeleton";
 import Permission from "../../components/common/Permission";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
@@ -463,16 +463,10 @@ const RecruitmentDrives = () => {
         </div>
       </div>
 
-      {loading && drives.length === 0 ? (
-        <PageLoader />
+      {loading ? (
+        <RecruitmentDrivesSkeleton showMetrics={user?.role !== "Institute"} />
       ) : (
         <div className="relative">
-          {loading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[2px] rounded-2xl">
-              <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-blue-600" />
-            </div>
-          )}
-
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {drives.map((drive) => {
               const progress = calculateProgress(drive);
@@ -643,6 +637,16 @@ const RecruitmentDrives = () => {
                 </div>
               );
             })}
+            {loadingMore &&
+              Array.from(
+                { length: Math.min(pagination.per_page, pagination.total - drives.length) },
+                (_, index) => (
+                  <DriveCardSkeleton
+                    key={`loading-${index}`}
+                    showMetrics={user?.role !== "Institute"}
+                  />
+                ),
+              )}
           </div>
 
           {drives.length === 0 ? (
@@ -678,13 +682,15 @@ const RecruitmentDrives = () => {
                   onClick={handleLoadMore}
                   disabled={loading || loadingMore}
                 >
-                  {loadingMore ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-transparent" />
-                  ) : null}
                   {loadingMore ? "Loading..." : "Load More Drives"}
                 </Button>
               )}
             </div>
+          )}
+          {loadingMore && (
+            <span role="status" className="sr-only">
+              Loading more recruitment drives...
+            </span>
           )}
         </div>
       )}
