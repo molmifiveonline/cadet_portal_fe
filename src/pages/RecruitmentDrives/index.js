@@ -23,10 +23,22 @@ import {
 import api from "../../lib/utils/apiConfig";
 import { useAuth } from "../../context/AuthContext";
 import { Button } from "../../components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 import PageHeader from "../../components/common/PageHeader";
 import DriveCardSkeleton, { RecruitmentDrivesSkeleton } from "./DriveCardSkeleton";
 import Permission from "../../components/common/Permission";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
+
+const FILTER_MENU_CLASSNAME =
+  "w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)] rounded-xl border-slate-200 shadow-lg [&_[data-radix-select-viewport]]:min-w-0";
+const FILTER_ITEM_CLASSNAME =
+  "rounded-lg py-2.5 pr-3 text-slate-700 data-[highlighted]:bg-blue-50 data-[highlighted]:text-blue-700 data-[state=checked]:bg-blue-50 data-[state=checked]:font-medium data-[state=checked]:text-blue-700";
 
 // ─── Status config ────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -390,7 +402,7 @@ const RecruitmentDrives = () => {
       </PageHeader>
 
       <div className="rounded-lg border bg-white p-4 shadow-sm">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4 [&>*]:min-w-0">
           <input
             type="text"
             placeholder="Search drives..."
@@ -419,33 +431,70 @@ const RecruitmentDrives = () => {
             <option value="Cancelled">Cancelled</option>
           </select> */}
 
-          <select
+          <Select
             value={filters.course_type}
-            onChange={(event) =>
-              handleFilterChange("course_type", event.target.value)
-            }
-            className="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onValueChange={(value) => handleFilterChange("course_type", value)}
           >
-            <option value="all">All Courses</option>
-            <option value="Deck">Deck</option>
-            <option value="Engine">Engine</option>
-          </select>
+            <SelectTrigger
+              aria-label="Filter drives by course"
+              className="h-[42px] min-w-0 border-slate-300 bg-white text-base focus:ring-blue-500 [&>svg]:shrink-0"
+            >
+              <SelectValue placeholder="All Courses" />
+            </SelectTrigger>
+            <SelectContent
+              align="start"
+              className={FILTER_MENU_CLASSNAME}
+            >
+              {[
+                { value: "all", label: "All Courses" },
+                { value: "Deck", label: "Deck" },
+                { value: "Engine", label: "Engine" },
+              ].map((course) => (
+                <SelectItem
+                  key={course.value}
+                  value={course.value}
+                  className={FILTER_ITEM_CLASSNAME}
+                >
+                  {course.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {user?.role !== "Institute" ? (
-            <select
-              value={filters.institute_id}
-              onChange={(event) =>
-                handleFilterChange("institute_id", event.target.value)
+            <Select
+              value={filters.institute_id || "all"}
+              onValueChange={(value) =>
+                handleFilterChange("institute_id", value === "all" ? "" : value)
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Institutes</option>
-              {institutes.map((institute) => (
-                <option key={institute.id} value={institute.id}>
-                  {institute.institute_name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                aria-label="Filter drives by institute"
+                className="h-[42px] min-w-0 border-slate-300 bg-white text-base focus:ring-blue-500 [&>span]:truncate [&>svg]:shrink-0"
+              >
+                <SelectValue placeholder="All Institutes" />
+              </SelectTrigger>
+              <SelectContent
+                align="start"
+                className={FILTER_MENU_CLASSNAME}
+              >
+                <SelectItem
+                  value="all"
+                  className={FILTER_ITEM_CLASSNAME}
+                >
+                  All Institutes
+                </SelectItem>
+                {institutes.map((institute) => (
+                  <SelectItem
+                    key={institute.id}
+                    value={String(institute.id)}
+                    className={`${FILTER_ITEM_CLASSNAME} [&>span:last-child]:whitespace-normal [&>span:last-child]:break-words`}
+                  >
+                    {institute.institute_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : null}
 
           {hasActiveFilters && (

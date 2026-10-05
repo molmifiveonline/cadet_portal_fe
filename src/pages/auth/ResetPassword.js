@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Lock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,6 +17,9 @@ const ResetPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [linkStatus, setLinkStatus] = useState('checking');
+  const [linkMessage, setLinkMessage] = useState('');
+  const [validationAttempt, setValidationAttempt] = useState(0);
   const {
     register,
     handleSubmit,
@@ -25,12 +28,48 @@ const ResetPassword = () => {
   } = useForm();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const userId = searchParams.get('id');
-  const token = searchParams.get('token'); // Added token support for security
+  const token = searchParams.get('token');
+
+  useEffect(() => {
+    const existing = document.querySelector('meta[name="referrer"]');
+    const meta = existing || document.createElement('meta');
+    const previous = meta.getAttribute('content');
+    meta.name = 'referrer';
+    meta.content = 'no-referrer';
+    if (!existing) document.head.appendChild(meta);
+    return () => {
+      if (!existing) meta.remove();
+      else if (previous === null) meta.removeAttribute('content');
+      else meta.content = previous;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+      setLinkStatus('invalid');
+      setLinkMessage('This reset link is invalid. Please request a new link using Forgot Password.');
+      return;
+    }
+    setLinkStatus('checking');
+    api.post('/auth/validate-reset-token', { token })
+      .then(() => { if (active) setLinkStatus('valid'); })
+      .catch((error) => {
+        if (!active) return;
+        const invalid = error.response?.data?.code === 'INVALID_RESET_TOKEN';
+        setLinkStatus(invalid ? 'invalid' : 'error');
+        setLinkMessage(
+          invalid
+            ? error.response.data.message
+            : 'Unable to verify this reset link. Please try again.',
+        );
+      });
+    return () => { active = false; };
+  }, [token, validationAttempt]);
 
   const onSubmit = async (data) => {
-    if (!userId) {
-      toast.error('Invalid reset link. Missing User ID.');
+    if (linkStatus !== 'valid' || !token) {
+      toast.error('Please request a new reset link using Forgot Password.');
       return;
     }
 
@@ -47,17 +86,19 @@ const ResetPassword = () => {
     setIsSubmitting(true);
     try {
       await api.post('/auth/reset-password', {
-        userId,
-        token, // Sending token if present
+        token,
         password: data.password,
         confirm_password: data.confirm_password,
       });
       toast.success('Password reset successful! Please login.');
       navigate('/login');
     } catch (error) {
-      console.error('Reset Password Error:', error);
       const message =
         error.response?.data?.message || 'Failed to reset password';
+      if (error.response?.data?.code === 'INVALID_RESET_TOKEN') {
+        setLinkStatus('invalid');
+        setLinkMessage(message);
+      }
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -100,10 +141,39 @@ const ResetPassword = () => {
                 Reset Password
               </h2>
               <p className='mt-2 text-gray-600'>
-                Enter your new password below.
+                {linkStatus === 'valid'
+                  ? 'Enter your new password below. This link can be used only once.'
+                  : linkStatus === 'checking'
+                    ? 'Checking your reset link...'
+                    : linkMessage}
               </p>
             </div>
 
+            {linkStatus === 'checking' && (
+              <div role='status' aria-label='Checking reset link' className='space-y-4 motion-safe:animate-pulse'>
+                <div className='h-12 rounded-lg bg-slate-200' />
+                <div className='h-12 rounded-lg bg-slate-200' />
+              </div>
+            )}
+            {linkStatus === 'error' && (
+              <button
+                type='button'
+                onClick={() => setValidationAttempt((attempt) => attempt + 1)}
+                className='w-full rounded-full bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700'
+              >
+                Try again
+              </button>
+            )}
+            {linkStatus === 'invalid' && (
+              <button
+                type='button'
+                onClick={() => navigate('/login?forgotPassword=1')}
+                className='w-full rounded-full bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700'
+              >
+                Request a new reset link
+              </button>
+            )}
+            {linkStatus === 'valid' && (
             <form onSubmit={handleSubmit(onSubmit)} noValidate className='space-y-6 mt-6'>
               <div className='space-y-4'>
                 {/* New Password */}
@@ -117,6 +187,7 @@ const ResetPassword = () => {
                     </div>
                     <input
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete='new-password'
                       {...register('password', {
                         required: 'Password is required',
                         minLength: {
@@ -159,6 +230,7 @@ const ResetPassword = () => {
                     </div>
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
+                      autoComplete='new-password'
                       {...register('confirm_password', {
                         required: 'Please confirm your password',
                         validate: (val) => {
@@ -208,6 +280,7 @@ const ResetPassword = () => {
                 {!isSubmitting && <ArrowRight size={20} />}
               </button>
             </form>
+            )}
           </div>
         </div>
       </div>

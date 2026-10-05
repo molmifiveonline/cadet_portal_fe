@@ -19,31 +19,29 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    setError,
+    clearErrors,
   } = useForm();
 
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
+    clearErrors('root.server');
     try {
       const response = await api.post('/auth/forgot-password', {
         email: data.email,
       });
       toast.success(response.data.message || 'Reset link sent to your email!');
 
-      // In dev mode, show OTP for convenience
-      if (response.data.dev_otp) {
-        toast.info(`Dev Mode OTP: ${response.data.dev_otp}`);
-        console.log('Dev OTP:', response.data.dev_otp);
-      }
-
       reset();
       onClose();
       // Navigate to login page
       navigate('/login');
     } catch (error) {
-      console.error('Forgot Password Error:', error);
       const message =
         error.response?.data?.message || 'Failed to send reset link';
+      // Keep the server message visible after the toast disappears.
+      setError('root.server', { type: 'server', message });
       toast.error(message);
     }
   };
@@ -89,6 +87,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
                   inputMode='email'
                   {...register('email', {
                     required: 'Email is required',
+                    onChange: () => clearErrors('root.server'),
                     validate: (value) =>
                       getEmailValidationMessage(value) ||
                       true,
@@ -106,6 +105,12 @@ const ForgotPasswordModal = ({ isOpen, onClose }) => {
                 </span>
               )}
             </div>
+
+            {errors.root?.server && (
+              <p role='alert' className={errorTextClass}>
+                {errors.root.server.message}
+              </p>
+            )}
 
             <button
               type='submit'
