@@ -133,7 +133,7 @@ const RankList = ({
     openConfirmation({
       title: `Finalize ${list.department} Rank List`,
       message: readyToFinalize
-        ? "Review scores and ranks before finalizing. Each vessel remains editable until its own joining plan is created."
+        ? "Review scores and ranks before finalizing. Vessel assignments and joining details remain editable until onboarding is completed."
         : "Resolve every blocking item before this Rank List can be finalized.",
       confirmText: "Finalize",
       showFinalizeSummary: true,
@@ -149,7 +149,7 @@ const RankList = ({
     openConfirmation({
       title: `Unlock ${list.department} Rank List`,
       message:
-        "Unlocking allows rank and score changes and marks existing joining plans for review. Each vessel with a joining plan remains locked.",
+          "Unlocking allows rank and score changes. Saved vessel assignments, joining details, and onboarding checks are retained.",
       confirmText: "Unlock",
       showRemarks: true,
       remarksRequired: true,
@@ -292,7 +292,7 @@ const RankList = ({
           </p>
           <p className="mt-0.5 text-xs opacity-80">
             {locked
-              ? `This ${list.department} Rank List is Finalized. ${canEdit ? "Each vessel locks when its own joining plan is created. " : ""}A Super Admin can unlock ranks and scores with a reason.`
+              ? `This ${list.department} Rank List is Finalized. Vessel allocation and follow-ups remain available until onboarding is complete. A Super Admin can unlock ranks and scores with a reason.`
               : canEdit
                 ? list.ranking_mode === "Manual"
                   ? "Saving assessments updates the Final Score. Newly scored cadets are ranked after the existing manual order."

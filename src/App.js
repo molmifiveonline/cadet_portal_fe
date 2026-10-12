@@ -54,6 +54,7 @@ const DriveDetails = lazy(() => import('./pages/RecruitmentDrives/DriveDetails')
 const NotificationHistory = lazy(() => import('./pages/Notifications/NotificationHistory'));
 const Allocations = lazy(() => import('./pages/Allocations'));
 const AllocationDetail = lazy(() => import('./pages/Allocations/AllocationDetail'));
+const MyFollowups = lazy(() => import('./pages/Allocations/MyFollowups'));
 const AllocationMasters = lazy(() => import('./pages/AllocationMasters'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 
@@ -469,6 +470,10 @@ function App() {
             />
 
             {/* Vessel Master Routes */}
+            <Route
+              path='/my-follow-ups'
+              element={<ProtectedRoute><MainLayout><MyFollowups /></MainLayout></ProtectedRoute>}
+            />
             <Route
               path='/allocations'
               element={

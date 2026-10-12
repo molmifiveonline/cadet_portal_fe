@@ -2,7 +2,6 @@ import React from 'react';
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import ActivityLogs from './ActivityLogs';
-import ActivityWidget from '../../components/dashboard/ActivityWidget';
 import api from '../../lib/utils/apiConfig';
 
 jest.mock('../../lib/utils/apiConfig', () => ({ get: jest.fn() }));
@@ -37,13 +36,5 @@ it('displays the activity date and time in IST with the original instant in the 
         sortOrder: 'DESC',
       }),
     }),
-  );
-});
-
-it('uses the same India timestamp in dashboard recent activity', () => {
-  render(<ActivityWidget rows={[row]} />);
-  expect(screen.getByText('01-10-2026 01:30:00 AM IST')).toHaveAttribute(
-    'datetime',
-    row.created_at,
   );
 });

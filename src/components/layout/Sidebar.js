@@ -53,6 +53,7 @@ const Sidebar = () => {
   };
 
   const visibleItems = MenuItems.filter((item) => {
+    if (item.internalOnly) return !['cadet','institute'].includes(String(user?.role || '').toLowerCase());
     if (user?.intent && !isAllowedRoute(user, item.url)) {
       return false;
     }

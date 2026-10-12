@@ -8,11 +8,7 @@ import {
   Th,
   Td,
 } from "./AllocationPrimitives";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-} from "../../../components/ui/select";
+import { Select, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Button } from "../../../components/ui/button";
 
 const VesselSlot = ({
@@ -38,26 +34,18 @@ const VesselSlot = ({
   );
   const locations = [
     ...new Set(
-      compatibleVessels
-        .map((item) => item.location || item.reporting_port)
-        .filter(Boolean),
+      compatibleVessels.map((item) => item.location || item.reporting_port).filter(Boolean),
     ),
   ].sort((left, right) => left.localeCompare(right));
   const filteredVessels = compatibleVessels.filter((item) => {
-    const matchesType =
-      !form[typeField] ||
-      String(item.vessel_type_id) === String(form[typeField]);
+    const matchesType = !form[typeField] || String(item.vessel_type_id) === String(form[typeField]);
     const matchesLocation =
       locationFilter === "all-locations" ||
       item.location === locationFilter ||
       item.reporting_port === locationFilter;
     return matchesType && matchesLocation;
   });
-  const displayedVessels = readOnly
-    ? selected
-      ? [selected]
-      : []
-    : filteredVessels;
+  const displayedVessels = readOnly ? (selected ? [selected] : []) : filteredVessels;
 
   const selectVessel = (vessel) => {
     if (readOnly) return;
@@ -113,7 +101,7 @@ const VesselSlot = ({
               </BrandedSelectContent>
             </Select>
           </Field>
-          <Field label="Location">
+          <Field label="Filter by Location">
             <Select value={locationFilter} onValueChange={setLocationFilter}>
               <SelectTrigger
                 className={brandedSelectTriggerClass}
@@ -122,9 +110,7 @@ const VesselSlot = ({
                 <SelectValue />
               </SelectTrigger>
               <BrandedSelectContent>
-                <BrandedSelectItem value="all-locations">
-                  All locations
-                </BrandedSelectItem>
+                <BrandedSelectItem value="all-locations">All locations</BrandedSelectItem>
                 {locations.map((location) => (
                   <BrandedSelectItem key={location} value={location}>
                     {location}
@@ -155,9 +141,7 @@ const VesselSlot = ({
             {displayedVessels.map((vessel) => {
               const isSelected = vessel.id === form[vesselField];
               const vesselType =
-                types.find(
-                  (item) => String(item.id) === String(vessel.vessel_type_id),
-                )?.name ||
+                types.find((item) => String(item.id) === String(vessel.vessel_type_id))?.name ||
                 vessel.vessel_type ||
                 "—";
               return (
@@ -177,9 +161,7 @@ const VesselSlot = ({
                       className="h-4 w-4 border-slate-300 text-[#3a5f9e] focus:ring-[#3a5f9e]/30"
                     />
                   </Td>
-                  <Td className="font-semibold text-slate-900">
-                    {vessel.name}
-                  </Td>
+                  <Td className="font-semibold text-slate-900">{vessel.name}</Td>
                   <Td>{vesselType}</Td>
                   <Td>{vessel.location || "—"}</Td>
                   <Td>{vessel.total_seats ?? "—"}</Td>
@@ -190,10 +172,7 @@ const VesselSlot = ({
             })}
             {!displayedVessels.length && (
               <tr>
-                <td
-                  colSpan={7}
-                  className="p-8 text-center text-sm text-slate-500"
-                >
+                <td colSpan={7} className="p-8 text-center text-sm text-slate-500">
                   {readOnly
                     ? "No vessel is assigned."
                     : `No active ${department} or Both-compatible vessels match these filters.`}
@@ -209,9 +188,7 @@ const VesselSlot = ({
           <Select
             disabled={readOnly}
             value={form[statusField]}
-            onValueChange={(value) =>
-              setForm({ ...form, [statusField]: value })
-            }
+            onValueChange={(value) => setForm({ ...form, [statusField]: value })}
           >
             <SelectTrigger
               className={brandedSelectTriggerClass}
@@ -220,7 +197,10 @@ const VesselSlot = ({
               <SelectValue />
             </SelectTrigger>
             <BrandedSelectContent>
-              {["Pending", "Allocated", "Hold", "Cancelled"].map((value) => (
+              {(form[statusField] === "Pending"
+                ? ["Pending", "Allocated", "Hold", "Cancelled"]
+                : ["Allocated", "Hold", "Cancelled"]
+              ).map((value) => (
                 <BrandedSelectItem key={value} value={value}>
                   {value}
                 </BrandedSelectItem>

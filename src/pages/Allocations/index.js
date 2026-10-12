@@ -13,7 +13,6 @@ import {
   Search,
   Send,
   Ship,
-  Ban,
   Users,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -112,9 +111,6 @@ const Allocations = () => {
   const [departmentError, setDepartmentError] = useState('');
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [disableCycle, setDisableCycle] = useState(null);
-  const [disabling, setDisabling] = useState(false);
-  const [disableReason, setDisableReason] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState(() => {
@@ -235,25 +231,6 @@ const Allocations = () => {
       );
     } finally {
       setCreating(false);
-    }
-  };
-
-  const confirmDisable = async () => {
-    if (!disableCycle || !disableReason.trim()) return;
-    try {
-      setDisabling(true);
-      await api.delete(`/allocations/${disableCycle.id}`, {
-        data: { reason: disableReason.trim() },
-      });
-      toast.success(`${disableCycle.allocation_number} disabled`);
-      setDisableCycle(null);
-      await load();
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || 'Failed to disable allocation',
-      );
-    } finally {
-      setDisabling(false);
     }
   };
 
@@ -379,12 +356,7 @@ const Allocations = () => {
             <CycleCard
               key={cycle.id}
               cycle={cycle}
-              canEdit={canEdit}
               onOpen={() => navigate(`/allocations/${cycle.id}`)}
-              onDisable={() => {
-                setDisableReason('');
-                setDisableCycle(cycle);
-              }}
             />
           ))}
         </div>
@@ -479,33 +451,6 @@ const Allocations = () => {
           </label>
         </div>
       </ConfirmationModal>
-
-      <ConfirmationModal
-        isOpen={Boolean(disableCycle)}
-        onClose={() => {
-          if (!disabling) setDisableCycle(null);
-        }}
-        onConfirm={confirmDisable}
-        title="Disable CTV Vessel Allocation"
-        message={`Disable ${disableCycle?.allocation_number || 'this allocation'}? All records will remain available as history. Eligible cadets can be selected in another allocation. This action cannot be undone.`}
-        confirmText="Disable Allocation"
-        confirmDisabled={!disableReason.trim()}
-        confirmButtonClass="bg-red-600 hover:bg-red-700 shadow-red-600/20"
-        isLoading={disabling}
-      >
-        <label className="block text-sm font-medium text-slate-700">
-          Reason for disabling <span className="text-red-600">*</span>
-          <textarea
-            value={disableReason}
-            onChange={(event) => setDisableReason(event.target.value)}
-            disabled={disabling}
-            maxLength={1000}
-            rows={3}
-            required
-            className="mt-2 w-full rounded-lg border border-slate-300 p-2"
-          />
-        </label>
-      </ConfirmationModal>
     </div>
   );
 };
@@ -536,17 +481,13 @@ const SummaryCard = ({ label, value, helper, icon: Icon, tone }) => {
   );
 };
 
-const CycleCard = ({ cycle, canEdit, onOpen, onDisable }) => {
+const CycleCard = ({ cycle, onOpen }) => {
   const candidates = toNumber(cycle.candidate_count);
   const allocated = toNumber(cycle.allocated_count);
   const progress = calculateCycleProgress(cycle);
   const pipeline = getCyclePipeline(cycle);
   const stage = getCycleStage(cycle);
   const disabled = Boolean(cycle.deleted_at);
-  const disableBlocked =
-    cycle.rank_list_status === 'Finalized' ||
-    Number(cycle.existing_joining_plan_count) > 0 ||
-    Number(cycle.existing_onboarding_count) > 0;
 
   return (
     <article
@@ -613,27 +554,7 @@ const CycleCard = ({ cycle, canEdit, onOpen, onDisable }) => {
           <DisabledAllocationNotice cycle={cycle} compact />
         </div>
       )}
-      <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/60 px-5 py-3">
-        {canEdit && !disabled ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={onDisable}
-            disabled={disableBlocked}
-            title={
-              disableBlocked
-                ? 'Allocations with finalized rank lists, joining plans, or onboarding records cannot be disabled'
-                : 'Disable allocation cycle'
-            }
-          >
-            <Ban size={14} className="mr-1.5" />
-            Disable
-          </Button>
-        ) : (
-          <span />
-        )}
+      <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/60 px-5 py-3">
         <Button
           type="button"
           size="sm"

@@ -117,6 +117,12 @@ export const MenuItems = [
     allowedRoles: ['SuperAdmin', 'Admin'],
   },
   {
+    title: 'My Follow-ups',
+    icon: ClipboardList,
+    url: '/my-follow-ups',
+    internalOnly: true,
+  },
+  {
     title: 'Onboarding',
     icon: ClipboardList,
     url: '/onboarding',

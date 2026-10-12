@@ -1,220 +1,126 @@
+import React, { lazy, useState, useCallback, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { usePermission } from "../../hooks/usePermission";
-import React, { lazy, useState, useCallback, useEffect } from "react";
 import api from "../../lib/utils/apiConfig";
 import { toast } from "sonner";
-import PageLoader from "../../components/common/PageLoader";
-import { getCycleProgress } from "./allocationUtils";
-import PageHeader from "../../components/common/PageHeader";
 import { Anchor, ArrowLeft } from "lucide-react";
-import WorkflowStepper from "./components/WorkflowStepper";
+import PageLoader from "../../components/common/PageLoader";
+import PageHeader from "../../components/common/PageHeader";
+import DisableAllocationButton from "./components/DisableAllocationButton";
 import DisabledAllocationNotice from "./components/DisabledAllocationNotice";
-// import OverviewTab from "./tabs/OverviewTab";
 import RankList from "./components/RankList";
 import JoiningPlans from "./components/JoiningPlans";
-
-import CommunicationModal from "./components/CommunicationModal";
-
 import DeferredDialog from "./components/DeferredDialog";
-
+// Overview remains hidden at the user's request.
+// import OverviewTab from './tabs/OverviewTab';
 const CandidatePicker = lazy(() => import("./components/CandidatePicker"));
 const VesselModal = lazy(() => import("./components/VesselModal"));
-const JoiningPlanModal = lazy(() => import("./components/JoiningPlanModal"));
 
-const AllocationDetail = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
-  const { hasPermission: hasEditPermission } = usePermission(
-    "allocations",
-    "edit",
-  );
-  const { hasPermission: hasFinalizePermission } = usePermission(
-    "allocations",
-    "finalize",
-  );
-  const {
-    hasPermission: hasCommunicationPermission,
-    loading: permissionsLoading,
-  } = usePermission("allocations", "communicate");
-  // const { hasPermission: canViewOnboarding } = usePermission(
-  //   "onboarding",
-  //   "view",
-  // );
-  const [cycle, setCycle] = useState(null);
-  const disabled = Boolean(cycle?.deleted_at);
-  const canEditAllocations = hasEditPermission && !disabled;
-  const canFinalizeAllocations = hasFinalizePermission && !disabled;
-  const canCommunicate = hasCommunicationPermission && !disabled;
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState(null);
-  const [vesselTypes, setVesselTypes] = useState([]);
-  const [assessmentTypes, setAssessmentTypes] = useState([]);
-  const [vessels, setVessels] = useState([]);
-  const [admins, setAdmins] = useState([]);
-  const [joiningPlans, setJoiningPlans] = useState([]);
-  const [candidateList, setCandidateList] = useState(null);
-  const [vesselAllocation, setVesselAllocation] = useState(null);
-  const [joiningPlanCandidate, setJoiningPlanCandidate] = useState(null);
-  const [communicationPlan, setCommunicationPlan] = useState(null);
-
+export default function AllocationDetail() {
+  const { id } = useParams(),
+    navigate = useNavigate(),
+    [searchParams, setSearchParams] = useSearchParams(),
+    { user } = useAuth();
+  const { hasPermission: hasEdit } = usePermission("allocations", "edit");
+  const { hasPermission: hasFinalize } = usePermission("allocations", "finalize");
+  const [cycle, setCycle] = useState(null),
+    [loading, setLoading] = useState(true),
+    [tab, setTab] = useState(null);
+  const [types, setTypes] = useState([]),
+    [courses, setCourses] = useState([]);
+  const [candidateList, setCandidateList] = useState(null),
+    [vessel, setVessel] = useState(null);
   const load = useCallback(async () => {
-    if (permissionsLoading) return;
     try {
       setLoading(true);
-      const [
-        cycleResponse,
-        typeResponse,
-        courseResponse,
-        vesselResponse,
-        planResponse,
-        adminResponse,
-      ] = await Promise.all([
+      const [c, t, s] = await Promise.all([
         api.get(`/allocations/${id}`),
-        api.get("/allocations/masters/vessel-types", {
-          params: { status: "Active" },
-        }),
-        api.get("/allocations/masters/courses", {
-          params: { status: "Active" },
-        }),
-        api.get("/allocations/vessels", { params: { limit: 200 } }),
-        api.get("/allocations/joining-plans", { params: { cycle_id: id } }),
-        hasCommunicationPermission
-          ? api.get("/allocations/admins")
-          : Promise.resolve({ data: { data: [] } }),
+        api.get("/allocations/masters/vessel-types", { params: { status: "Active" } }),
+        api.get("/allocations/masters/courses", { params: { status: "Active" } }),
       ]);
-      setCycle(cycleResponse.data.data);
-      setVesselTypes(typeResponse.data.data || []);
-      setAssessmentTypes(courseResponse.data.data || []);
-      setVessels(vesselResponse.data.data || []);
-      setJoiningPlans(planResponse.data.data || []);
-      setAdmins(adminResponse.data.data || []);
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Failed to load allocation cycle",
-      );
+      setCycle(c.data.data);
+      setTypes(t.data.data || []);
+      setCourses(s.data.data || []);
+    } catch (e) {
+      toast.error(e.response?.data?.message || "Failed to load allocation");
     } finally {
       setLoading(false);
     }
-  }, [id, hasCommunicationPermission, permissionsLoading]);
+  }, [id]);
   useEffect(() => {
     setCycle(null);
     setTab(null);
     setCandidateList(null);
-    setVesselAllocation(null);
-    setJoiningPlanCandidate(null);
-    setCommunicationPlan(null);
+    setVessel(null);
     load();
   }, [load]);
+  const canEdit = hasEdit && !cycle?.deleted_at,
+    canFinalize = hasFinalize && !cycle?.deleted_at;
   useEffect(() => {
-    if (
-      cycle &&
-      cycle.id === id &&
-      canEditAllocations &&
-      searchParams.get("action") === "add-candidates"
-    ) {
-      const draftList = cycle.rank_lists.find(
-        (item) => item.status === "Draft",
-      );
-      if (draftList) setCandidateList(draftList);
+    if (cycle?.id === id && canEdit && searchParams.get("action") === "add-candidates") {
+      const list = cycle.rank_lists.find((l) => l.status === "Draft");
+      if (list) setCandidateList(list);
       setSearchParams({}, { replace: true });
     }
-  }, [canEditAllocations, cycle, id, searchParams, setSearchParams]);
-
+  }, [cycle, id, canEdit, searchParams, setSearchParams]);
   if (loading && !cycle) return <PageLoader />;
-  if (!cycle)
-    return <div className="p-8 text-center">Allocation cycle not found.</div>;
-  const department = cycle.department || cycle.rank_lists[0]?.department;
-  const activeTab = tab || cycle.rank_lists[0]?.department || "Joining Plan";
-  const currentList = cycle.rank_lists.find(
-    (item) => item.department === activeTab,
-  );
-  const progress = getCycleProgress(cycle, joiningPlans);
-
+  if (!cycle) return <p className="p-8 text-center">Allocation cycle not found.</p>;
+  const activeTab = tab || cycle.rank_lists[0]?.department || "Joining Plan",
+    currentList = cycle.rank_lists.find((l) => l.department === activeTab);
   return (
     <div className="py-6">
       <PageHeader
         title={cycle.allocation_number}
-        subtitle={`${department} vessel allocation · ${cycle.allocation_year}`}
+        subtitle={`${cycle.department || cycle.rank_lists[0]?.department} vessel allocation · ${cycle.allocation_year}`}
         icon={Anchor}
         backButton={
           <button
+            aria-label="Back to allocations"
             onClick={() => navigate("/allocations")}
             className="rounded-lg p-2 hover:bg-slate-100"
           >
             <ArrowLeft />
           </button>
         }
-      />
+      >
+        {canEdit && <DisableAllocationButton key={cycle.id} cycle={cycle} onDisabled={load} />}
+      </PageHeader>
       <DisabledAllocationNotice cycle={cycle} />
-      <WorkflowStepper steps={progress.steps} />
       <div className="mb-6 flex flex-wrap gap-2 rounded-xl border bg-white p-2">
         {[
-          // ["Dashboard", "Overview"],
-          ...cycle.rank_lists.map((list) => [
-            list.department,
-            `${list.department} Workflow`,
-          ]),
+          ...cycle.rank_lists.map((l) => [l.department, `${l.department} Workflow`]),
           ["Joining Plan", "Joining & Intimation"],
         ].map(([value, label]) => (
           <button
             key={value}
             onClick={() => setTab(value)}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold ${activeTab === value ? "bg-[#3a5f9e] text-white" : "text-slate-600 hover:bg-[#3a5f9e]/10 hover:text-[#3a5f9e]"}`}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold ${activeTab === value ? "bg-[#3a5f9e] text-white" : "text-slate-600 hover:bg-slate-100"}`}
           >
             {label}
           </button>
         ))}
       </div>
-      {/* {tab === "Dashboard" && (
-        <OverviewTab
-          cycle={cycle}
-          progress={progress}
-          joiningPlans={joiningPlans}
-          vessels={vessels}
-          openCandidates={setCandidateList}
-          setTab={setTab}
-          canEdit={canEditAllocations}
-          canFinalize={canFinalizeAllocations}
-          canViewOnboarding={canViewOnboarding}
-          openOnboarding={() =>
-            navigate(
-              `/onboarding?allocation=${encodeURIComponent(cycle.allocation_number)}`,
-            )
-          }
-        />
-      )} */}
       {currentList && (
         <RankList
           key={currentList.id}
           list={currentList}
-          assessmentTypes={assessmentTypes}
+          assessmentTypes={courses}
           reload={load}
           openCandidates={() => setCandidateList(currentList)}
-          openVessel={setVesselAllocation}
-          isSuperAdmin={user?.role === "SuperAdmin" && !disabled}
-          canEdit={canEditAllocations}
-          canFinalizePermission={canFinalizeAllocations}
+          openVessel={setVessel}
+          isSuperAdmin={user?.role === "SuperAdmin" && !cycle.deleted_at}
+          canEdit={canEdit}
+          canFinalizePermission={canFinalize}
         />
       )}
-      {activeTab === "Joining Plan" && (
-        <JoiningPlans
-          cycle={cycle}
-          plans={joiningPlans}
-          openJoiningPlan={setJoiningPlanCandidate}
-          openCommunication={setCommunicationPlan}
-          canEdit={canEditAllocations}
-          canCommunicate={canCommunicate}
-        />
-      )}
-      {candidateList && canEditAllocations && (
+      {activeTab === "Joining Plan" && <JoiningPlans cycle={cycle} onChanged={load} />}
+      {candidateList && canEdit && (
         <DeferredDialog onClose={() => setCandidateList(null)}>
           <CandidatePicker
             list={candidateList}
-            assessmentTypes={assessmentTypes}
-            vesselTypes={vesselTypes}
+            assessmentTypes={courses}
+            vesselTypes={types}
             onClose={() => setCandidateList(null)}
             onSaved={() => {
               setCandidateList(null);
@@ -223,92 +129,17 @@ const AllocationDetail = () => {
           />
         </DeferredDialog>
       )}
-      {vesselAllocation && canEditAllocations && (
-        <DeferredDialog onClose={() => setVesselAllocation(null)}>
+      {vessel && canEdit && (
+        <DeferredDialog onClose={() => setVessel(null)}>
           <VesselModal
-            allocation={vesselAllocation.allocation}
-            role={vesselAllocation.role}
-            readOnly={vesselAllocation.readOnly}
-            canCommunicate={canCommunicate}
-            canManageJoiningPlans={
-              canEditAllocations &&
-              vesselAllocation.allocation.onboarding_status !== "Onboarded"
-            }
-            list={cycle.rank_lists.find(
-              (item) => item.id === vesselAllocation.allocation.rank_list_id,
-            )}
-            types={vesselTypes}
-            vessels={vessels}
-            joiningPlan={joiningPlans.find(
-              (plan) =>
-                plan.allocation_id === vesselAllocation.allocation.id &&
-                plan.vessel_role === vesselAllocation.role,
-            )}
-            onCreateJoiningPlan={() => {
-              const { allocation, role } = vesselAllocation;
-              const rankList = cycle.rank_lists.find(
-                (item) => item.id === allocation.rank_list_id,
-              );
-              setVesselAllocation(null);
-              setJoiningPlanCandidate({
-                ...allocation,
-                vesselRole: role,
-                department: rankList?.department,
-                refreshJoiningPlan: Boolean(
-                  joiningPlans.find(
-                    (plan) =>
-                      plan.allocation_id === allocation.id &&
-                      plan.vessel_role === role,
-                  )?.requires_refresh,
-                ),
-              });
-            }}
-            onCommunicate={(plan) => {
-              setVesselAllocation(null);
-              setCommunicationPlan(plan);
-            }}
-            onClose={() => setVesselAllocation(null)}
-            onSaved={() => {
-              setVesselAllocation(null);
-              load();
-            }}
+            allocation={vessel.allocation}
+            role={vessel.role}
+            onClose={() => setVessel(null)}
+            onSaved={load}
           />
         </DeferredDialog>
-      )}
-      {joiningPlanCandidate && canEditAllocations && (
-        <DeferredDialog onClose={() => setJoiningPlanCandidate(null)}>
-          <JoiningPlanModal
-            candidate={joiningPlanCandidate}
-            vessels={vessels}
-            canCommunicate={canCommunicate}
-            onClose={() => setJoiningPlanCandidate(null)}
-            onCreated={(plan) => {
-              setJoiningPlanCandidate(null);
-              if (canCommunicate) setCommunicationPlan(plan);
-              load();
-            }}
-          />
-        </DeferredDialog>
-      )}
-      {communicationPlan && canCommunicate && (
-        <CommunicationModal
-          plan={communicationPlan}
-          admins={admins}
-          currentUser={user}
-          onClose={() => {
-            setCommunicationPlan(null);
-            load();
-          }}
-          onSaved={() => {
-            setCommunicationPlan(null);
-            load();
-          }}
-        />
       )}
     </div>
   );
-};
-
-export default AllocationDetail;
-
+}
 export { default as CommunicationModal } from "./components/CommunicationModal";

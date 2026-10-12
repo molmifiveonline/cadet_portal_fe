@@ -20,6 +20,7 @@ jest.mock("../../lib/utils/apiConfig", () => ({
 
 const sentPlan = {
   id: "plan-email-sent",
+  revision: 3,
   name_as_in_indos_cert: "Example Cadet",
   email_id: "cadet@example.invalid",
   vessel_name: "Example Vessel",
@@ -35,7 +36,8 @@ const setup = (overrides = {}) =>
   render(
     <CommunicationModal
       plan={{ ...sentPlan, ...overrides }}
-      admins={[]}
+      admins={[{ id: "admin-1", name: "Admin", role: "Admin" }]}
+      followupUserId="admin-1"
       currentUser={{ id: "admin-1" }}
       onClose={jest.fn()}
       onSaved={jest.fn()}
@@ -46,20 +48,12 @@ beforeEach(() => jest.clearAllMocks());
 
 it("opens an Email Sent record with Email selected and keeps it selected when confirming", () => {
   setup();
-  expect(
-    screen.getByRole("button", { name: "Email", pressed: true }),
-  ).toBeTruthy();
-  expect(
-    screen.getByRole("button", { name: "Phone", pressed: false }),
-  ).toBeTruthy();
-  expect(
-    screen.getByRole("button", { name: "Record Communication" }),
-  ).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Email", pressed: true })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Phone", pressed: false })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Record Communication" })).toBeTruthy();
 
   fireEvent.click(screen.getByRole("button", { name: "Yes", exact: true }));
-  expect(
-    screen.getByRole("button", { name: "Email", pressed: true }),
-  ).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Email", pressed: true })).toBeTruthy();
   expect(api.post).not.toHaveBeenCalled();
 });
 
@@ -67,12 +61,8 @@ it.each(["Phone", "WhatsApp"])(
   "preserves a saved %s contact instead of selecting Email",
   (mode) => {
     setup({ last_mode: mode, email_delivery_status: null });
-    expect(
-      screen.getByRole("button", { name: mode, pressed: true }),
-    ).toBeTruthy();
-    expect(
-      screen.getByRole("button", { name: "Record Communication" }),
-    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: mode, pressed: true })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Record Communication" })).toBeTruthy();
   },
 );
 
@@ -83,37 +73,22 @@ it("selects Email for a first intimation", () => {
     successful_communication_count: 0,
     successful_email_count: 0,
   });
-  expect(
-    screen.getByRole("button", { name: "Email", pressed: true }),
-  ).toBeTruthy();
-  expect(
-    screen.getByRole("button", { name: "Record Communication" }),
-  ).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Email", pressed: true })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Record Communication" })).toBeTruthy();
 });
 
 it("keeps Email selected for a failed attempt", () => {
   setup({ email_delivery_status: "Failed" });
-  expect(
-    screen.getByRole("button", { name: "Email", pressed: true }),
-  ).toBeTruthy();
-  expect(
-    screen.getByRole("button", { name: "Record Communication" }),
-  ).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Email", pressed: true })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Record Communication" })).toBeTruthy();
 });
 
-it("allows changing the mode and preserves that selection while reviewing the plan", () => {
+it("allows selecting a manual contact method without sending", () => {
   setup();
-  fireEvent.click(
-    screen.getByRole("button", { name: "WhatsApp", exact: true }),
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Plan Ready" }));
-  fireEvent.click(screen.getByRole("button", { name: "Record Communication" }));
-  expect(
-    screen.getByRole("button", { name: "WhatsApp", pressed: true }),
-  ).toBeTruthy();
-  expect(
-    screen.getByRole("button", { name: "Email", pressed: false }),
-  ).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "WhatsApp", exact: true }));
+
+  expect(screen.getByRole("button", { name: "WhatsApp", pressed: true })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Email", pressed: false })).toBeTruthy();
   expect(api.post).not.toHaveBeenCalled();
 });
 
@@ -128,15 +103,14 @@ it.each(["Email", "Phone", "WhatsApp"])(
     fireEvent.click(screen.getByRole("button", { name: "Yes", exact: true }));
     const save = screen.getByRole("button", { name: "Record Confirmation" });
     expect(save).toBeEnabled();
-    expect(
-      screen.queryByRole("button", { name: /Send|Retry/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Send|Retry/ })).not.toBeInTheDocument();
     fireEvent.click(save);
     await waitFor(() =>
       expect(api.post).toHaveBeenCalledWith(
         `/allocations/joining-plans/${sentPlan.id}/communications`,
         expect.objectContaining({
           mode,
+          expected_revision: 3,
           confirmation_received: true,
           informed_by: "admin-1",
         }),
