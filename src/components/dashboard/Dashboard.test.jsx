@@ -218,59 +218,66 @@ test('auto-refresh fires at sixty seconds and cleans up when disabled', async ()
   }
 });
 
-test('request re-upload requires remarks and prevents duplicate review submissions', async () => {
+test('documents action opens only the saved Drive URL without review or download requests', () => {
   const document = {
     id: 'doc',
     document_type: 'Passport',
     cadet_name: 'Sample cadet',
     institute_name: 'Institute',
-    has_file: 0,
+    has_file: 1,
+    drive_id: 'recruitment-drive',
+    external_upload_link: 'https://onedrive.live.com/?id=saved-folder',
     status: 'pending',
   };
-  const onUpdated = jest.fn();
-  let resolveSave;
-  api.put.mockImplementation(
-    () =>
-      new Promise((resolve) => {
-        resolveSave = resolve;
-      }),
-  );
   render(
-    <MemoryRouter>
-      <PendingDocumentsQueue
-        data={{ ...queue, rows: [document], total: 1 }}
-        onPage={jest.fn()}
-        canReview
-        onUpdated={onUpdated}
-      />
-    </MemoryRouter>,
+    <PendingDocumentsQueue
+      data={{ ...queue, rows: [document], total: 1 }}
+      onPage={jest.fn()}
+    />,
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Review' }));
-  const dialog = screen.getByRole('dialog');
-  expect(
-    within(dialog).getByRole('button', { name: 'Approve document' }),
-  ).toBeDisabled();
-  fireEvent.click(
-    within(dialog).getByRole('button', { name: 'Request re-upload' }),
-  );
+  const action = within(screen.getAllByRole('row')[1]).getAllByRole(
+    'cell',
+  )[2];
+  const link = within(action).getByRole('link', { name: 'Open Drive' });
+  expect(link).toHaveAttribute('href', document.external_upload_link);
+  expect(link).toHaveAttribute('target', '_blank');
+  expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  expect(within(action).getAllByRole('link')).toHaveLength(1);
+  expect(within(action).queryByRole('button')).not.toBeInTheDocument();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(api.get).not.toHaveBeenCalled();
   expect(api.put).not.toHaveBeenCalled();
-  fireEvent.change(screen.getByLabelText('Review remarks'), {
-    target: { value: 'Please upload a legible scan' },
-  });
-  fireEvent.click(
-    within(dialog).getByRole('button', { name: 'Request re-upload' }),
-  );
-  expect(
-    within(dialog).getByRole('button', { name: 'Request re-upload' }),
-  ).toBeDisabled();
-  expect(api.put).toHaveBeenCalledTimes(1);
-  expect(api.put).toHaveBeenCalledWith('/documents/doc/review', {
-    status: 'reupload_requested',
-    admin_remarks: 'Please upload a legible scan',
-  });
-  await act(async () => resolveSave({ data: { success: true } }));
-  expect(onUpdated).toHaveBeenCalledTimes(1);
 });
+
+// eslint-disable-next-line no-script-url -- Verify unsafe saved URLs never become links.
+test.each([null, 'folder name only', 'javascript:alert(1)'])(
+  'documents without a usable Drive URL show no action link: %s',
+  (external_upload_link) => {
+    render(
+      <PendingDocumentsQueue
+        data={{
+          ...queue,
+          rows: [
+            {
+              id: 'doc',
+              cadet_name: 'Sample cadet',
+              drive_id: 'drive',
+              external_upload_link,
+            },
+          ],
+          total: 1,
+        }}
+        onPage={jest.fn()}
+      />,
+    );
+    const action = within(screen.getAllByRole('row')[1]).getAllByRole(
+      'cell',
+    )[2];
+    expect(action).toHaveTextContent('No Drive link');
+    expect(within(action).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(action).queryByRole('button')).not.toBeInTheDocument();
+  },
+);
 
 test('cadet checklist uploads only a requested file and shows confirmed vessels', async () => {
   const onUpdated = jest.fn();

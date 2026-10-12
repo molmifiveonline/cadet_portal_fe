@@ -51,7 +51,6 @@ export default function Dashboard() {
   const requestVersion = useRef(0);
   const personal = user?.role === 'Cadet';
   const institute = user?.role === 'Institute';
-  const canReview = ['SuperAdmin', 'Admin'].includes(user?.role);
   const identity = `${user?.id}:${user?.role}`;
   const snapshotKey = `${identity}:${personal ? '{}' : filterKey}`;
   const data = snapshot?.key === snapshotKey ? snapshot.data : null;
@@ -185,9 +184,6 @@ export default function Dashboard() {
                     unavailable={missing('documents')}
                     onPage={page('documents')}
                     refreshing={refreshing}
-                    onUpdated={load}
-                    canReview={canReview}
-                    canViewDrives={canViewDrives}
                   />
                   <CtvReadinessCard
                     data={data.ctvReadyCandidates}

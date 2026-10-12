@@ -34,6 +34,9 @@ const HomeRedirect = () => {
 
   // Find the first menu item the user has permission to access
   for (const item of MenuItems) {
+    if (item.internalOnly) {
+      continue;
+    }
     // If it's a dropdown menu with subItems, check its subItems
     if (item.subItems) {
       for (const sub of item.subItems) {
@@ -49,7 +52,10 @@ const HomeRedirect = () => {
     }
   }
 
-  // Fallback if no permissions match (or return default unauthorized view)
+  // Staff with only assignment-based access can still reach their own cases.
+  if (!['cadet', 'institute'].includes(String(user.role).toLowerCase())) {
+    return <Navigate to='/my-follow-ups' replace />;
+  }
   return <Navigate to='/dashboard' replace />;
 };
 

@@ -1,12 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import AllocationDetail from "./AllocationDetail";
 import api from "../../lib/utils/apiConfig";
 import { usePermission } from "../../hooks/usePermission";
@@ -28,6 +22,7 @@ jest.mock("../../hooks/usePermission", () => ({ usePermission: jest.fn() }));
 jest.mock("../../lib/utils/apiConfig", () => ({
   get: jest.fn(),
   put: jest.fn(),
+  patch: jest.fn(),
   post: jest.fn(),
   delete: jest.fn(),
 }));
@@ -41,6 +36,7 @@ let vessels;
 let courses;
 let eligibleCandidate;
 let joiningPlans;
+const mockPermission = usePermission;
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -58,9 +54,7 @@ beforeEach(() => {
     current_rank: 1,
     final_score: 80,
     academic_score: 75,
-    scores: [
-      { course_id: "course-1", course_name_snapshot: "Navigation", score: 85 },
-    ],
+    scores: [{ course_id: "course-1", course_name_snapshot: "Navigation", score: 85 }],
     vessel_type_id: "type-1",
     vessel_type_name: "Tanker",
     vessel_id: "vessel-1",
@@ -77,6 +71,9 @@ beforeEach(() => {
     secondary_joining_plan_id: "plan-2",
     secondary_joining_plan_requires_refresh: 0,
     admin_remarks: "Existing vessel remarks",
+    department: "Deck",
+    primary_plan_version: 1,
+    secondary_plan_version: 1,
   };
   vessels = ["Primary Vessel", "Secondary Vessel"].map((name, index) => ({
     id: `vessel-${index + 1}`,
@@ -85,7 +82,10 @@ beforeEach(() => {
     department: "Deck",
     vessel_type_id: "type-1",
     vessel_type: "Tanker",
-    total_seats: 6,
+    total_seats: 0,
+    joining_date: "2026-11-12",
+    reporting_port: "Mumbai",
+    contact_person_name: "Port Agent",
   }));
   cycle = {
     id: "cycle-1",
@@ -110,9 +110,28 @@ beforeEach(() => {
     academic_score: 72,
     ineligible_reasons: [],
   };
+  const workflowRow = () => ({
+    ...allocation,
+    plans: joiningPlans,
+    abilities: {
+      can_view: true,
+      can_edit: !cycle.deleted_at && mockPermission("allocations", "edit").hasPermission,
+      can_follow: !cycle.deleted_at && mockPermission("allocations", "communicate").hasPermission,
+      can_send: false,
+      can_assign: false,
+      can_choose_informed_by: true,
+    },
+  });
   api.get.mockImplementation(async (url) => {
     const data = {
       "/allocations/cycle-1": cycle,
+      "/allocations/follow-ups/allocation-1": workflowRow(),
+      "/allocations/follow-ups/allocation-1/lookups": {
+        vessels,
+        types: [{ id: "type-1", name: "Tanker", department: "Deck", status: "Active" }],
+      },
+      "/allocations/follow-ups": { data: [workflowRow()], pagination: { totalPages: 1 } },
+      "/allocations/follow-up-users": [{ id: "admin-1", name: "Test Admin", role: "SuperAdmin" }],
       "/allocations/masters/vessel-types": [
         { id: "type-1", name: "Tanker", department: "Deck", status: "Active" },
       ],
@@ -131,6 +150,7 @@ beforeEach(() => {
       },
     };
   });
+  api.patch.mockResolvedValue({ data: { success: true } });
   api.put.mockResolvedValue({ data: { success: true } });
   api.post.mockResolvedValue({
     data: {
@@ -147,17 +167,137 @@ beforeEach(() => {
 
 const openWorkflow = async () => {
   render(<AllocationDetail />);
-  fireEvent.click(
-    (await screen.findAllByRole("button", { name: "Deck Workflow" }))[0],
-  );
+  fireEvent.click((await screen.findAllByRole("button", { name: "Deck Workflow" }))[0]);
 };
 
 const expectReload = async () =>
   waitFor(() => {
-    expect(
-      api.get.mock.calls.filter(([url]) => url === "/allocations/cycle-1"),
-    ).toHaveLength(2);
+    expect(api.get.mock.calls.filter(([url]) => url === "/allocations/cycle-1")).toHaveLength(2);
   });
+
+const allowDisable = () => {
+  allocation.primary_joining_plan_id = null;
+  allocation.secondary_joining_plan_id = null;
+  allocation.onboarding_status = null;
+};
+
+it("requires a reason, disables the selected allocation once, and reloads it as read-only history", async () => {
+  allowDisable();
+  let finishDisable;
+  api.delete.mockImplementationOnce(
+    (url, { data }) =>
+      new Promise((resolve) => {
+        finishDisable = () => {
+          cycle = {
+            ...cycle,
+            deleted_at: "2026-10-06T04:30:00Z",
+            deleted_by_name: "Test Admin",
+            delete_reason: data.reason,
+          };
+          resolve({ data: { success: true } });
+        };
+      }),
+  );
+  await openWorkflow();
+  fireEvent.click(screen.getByRole("button", { name: "Disable Allocation", exact: true }));
+  expect(screen.getByText(/Disable ALLOC-001\?/)).toBeInTheDocument();
+  const reason = screen.getByRole("textbox", { name: /Reason for disabling/ });
+  const confirm = screen.getByRole("button", { name: "Confirm Disable" });
+  expect(confirm).toBeDisabled();
+  fireEvent.change(reason, { target: { value: "   " } });
+  expect(confirm).toBeDisabled();
+  expect(api.delete).not.toHaveBeenCalled();
+  fireEvent.change(reason, { target: { value: "  Replacement allocation  " } });
+  fireEvent.click(confirm);
+  fireEvent.click(confirm);
+  expect(api.delete).toHaveBeenCalledTimes(1);
+  expect(api.delete).toHaveBeenCalledWith("/allocations/cycle-1", {
+    data: { reason: "Replacement allocation" },
+  });
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeDisabled();
+  finishDisable();
+  await screen.findByText(/Disabled allocation.*view only/);
+  expect(screen.getByText("Reason: Replacement allocation")).toBeInTheDocument();
+  expect(screen.getByText("Example Cadet")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", {
+      name: /Disable Allocation|Add Candidates|Change Primary|Restore/,
+    }),
+  ).not.toBeInTheDocument();
+  await expectReload();
+});
+
+it("keeps the reason when the server rejects disabling and allows cancellation without another request", async () => {
+  allowDisable();
+  api.delete.mockRejectedValueOnce({
+    response: { data: { message: "A joining plan was created" } },
+  });
+  await openWorkflow();
+  fireEvent.click(screen.getByRole("button", { name: "Disable Allocation", exact: true }));
+  const reason = screen.getByRole("textbox", { name: /Reason for disabling/ });
+  fireEvent.change(reason, { target: { value: "Wrong allocation" } });
+  fireEvent.click(screen.getByRole("button", { name: "Confirm Disable" }));
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith("A joining plan was created"));
+  expect(reason).toHaveValue("Wrong allocation");
+  expect(screen.getByRole("button", { name: "Add Candidates" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(screen.queryByRole("textbox", { name: /Reason for disabling/ })).not.toBeInTheDocument();
+  expect(api.delete).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+  [
+    "finalized ranks",
+    () => {
+      cycle.rank_lists[0].status = "Finalized";
+    },
+    /rank list is finalized/,
+  ],
+  [
+    "joining plans on inactive cadets",
+    () => {
+      cycle.existing_joining_plan_count = 1;
+    },
+    /joining plans/,
+  ],
+  [
+    "onboarding on inactive cadets",
+    () => {
+      cycle.existing_onboarding_count = 1;
+    },
+    /onboarding records/,
+  ],
+  [
+    "loaded joining plans",
+    () => {
+      allocation.secondary_joining_plan_id = "plan";
+    },
+    /joining plans/,
+  ],
+])("blocks disabling with %s and explains why", async (label, protect, explanation) => {
+  allowDisable();
+  protect();
+  await openWorkflow();
+  const button = screen.getByRole("button", { name: "Disable Allocation", exact: true });
+  expect(button).toBeDisabled();
+  expect(button).toHaveAccessibleDescription(explanation);
+  expect(
+    screen.getByRole("button", { name: "Why disable allocation is unavailable" }),
+  ).toBeInTheDocument();
+  fireEvent.click(button);
+  expect(screen.queryByRole("textbox", { name: /Reason for disabling/ })).not.toBeInTheDocument();
+  expect(api.delete).not.toHaveBeenCalled();
+});
+
+it("hides the detail disable action without allocation edit permission", async () => {
+  allowDisable();
+  usePermission.mockReturnValue({ hasPermission: false });
+  await openWorkflow();
+  expect(
+    screen.queryByRole("button", { name: "Disable Allocation", exact: true }),
+  ).not.toBeInTheDocument();
+  expect(api.delete).not.toHaveBeenCalled();
+});
 
 it.each(["Draft", "Finalized"])(
   "keeps disabled %s history read-only even for a SuperAdmin with every permission",
@@ -171,27 +311,22 @@ it.each(["Draft", "Finalized"])(
     allocation.primary_joining_plan_id = null;
     allocation.secondary_joining_plan_id = null;
     await openWorkflow();
-    expect(
-      screen.getByText(/Disabled allocation.*view only/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Reason: Replacement drive created/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Disabled allocation.*view only/)).toBeInTheDocument();
+    expect(screen.getByText(/Reason: Replacement drive created/)).toBeInTheDocument();
     expect(screen.getByText(/10:00:00.*IST/)).toBeInTheDocument();
     expect(screen.getByText("Example Cadet")).toBeInTheDocument();
     expect(screen.getByText("Primary Vessel")).toBeInTheDocument();
     expect(screen.getByText("Secondary Vessel")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", {
-        name: /Add Candidates|Edit Assessment|Change Primary|Change Secondary|Finalize|Unlock|Remove|Reset Ranks|Move Up|Move Down/,
+        name: /Add Candidates|Edit Assessment|Change Primary|Change Secondary|Finalize|Unlock|Remove|Reset Ranks|Move Up|Move Down|Disable Allocation/,
       }),
     ).not.toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Joining & Intimation" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Joining & Intimation" }));
+    await screen.findByRole("button", { name: "View History" });
     expect(
       screen.queryByRole("button", {
-        name: /Create Plan|Record Communication|Record Confirmation|Add Contact|Restore/,
+        name: /Create Plan|Record Communication|Record Confirmation|Add Follow-up|Change Vessel|Assign User|Restore/,
       }),
     ).not.toBeInTheDocument();
     expect(api.post).not.toHaveBeenCalled();
@@ -202,28 +337,19 @@ it.each(["Draft", "Finalized"])(
 
 it("loads the existing page data and keeps candidate selection, save payload, and reload connected", async () => {
   await openWorkflow();
-  expect(api.get).toHaveBeenCalledTimes(6);
+  expect(api.get).toHaveBeenCalledTimes(3);
   fireEvent.click(screen.getByRole("button", { name: "Add Candidates" }));
   const dialog = await screen.findByRole("dialog", {
     name: "Select Deck Candidates",
   });
-  fireEvent.click(
-    await within(dialog).findByRole("checkbox", { name: "Select New Cadet" }),
-  );
-  fireEvent.click(
-    within(dialog).getByRole("button", { name: "Add 1 to Deck" }),
-  );
+  fireEvent.click(await within(dialog).findByRole("checkbox", { name: "Select New Cadet" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Add 1 to Deck" }));
   await waitFor(() =>
-    expect(api.post).toHaveBeenCalledWith(
-      "/allocations/rank-lists/list-1/candidates",
-      {
-        candidates: [{ cadet_id: "cadet-2", scores: [], vessel_type_id: null }],
-      },
-    ),
+    expect(api.post).toHaveBeenCalledWith("/allocations/rank-lists/list-1/candidates", {
+      candidates: [{ cadet_id: "cadet-2", scores: [], vessel_type_id: null }],
+    }),
   );
-  await waitFor(() =>
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
-  );
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   await expectReload();
 });
 
@@ -238,13 +364,9 @@ it("keeps the candidate dialog and selection when saving fails", async () => {
   });
   fireEvent.click(checkbox);
   fireEvent.click(screen.getByRole("button", { name: "Add 1 to Deck" }));
-  await waitFor(() =>
-    expect(toast.error).toHaveBeenCalledWith("Candidate already allocated"),
-  );
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Candidate already allocated"));
   expect(checkbox).toBeChecked();
-  expect(
-    screen.getByRole("dialog", { name: "Select Deck Candidates" }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole("dialog", { name: "Select Deck Candidates" })).toBeInTheDocument();
 });
 
 it("validates assessment scores before saving and reloads after the lazy dialog succeeds", async () => {
@@ -253,59 +375,17 @@ it("validates assessment scores before saving and reloads after the lazy dialog 
   const score = await screen.findByRole("spinbutton");
   fireEvent.change(score, { target: { value: "101" } });
   fireEvent.click(screen.getByRole("button", { name: "Save Assessment" }));
-  expect(
-    screen.getByText("Score must be between 0 and 100."),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Score must be between 0 and 100.")).toBeInTheDocument();
   expect(api.put).not.toHaveBeenCalled();
   fireEvent.change(score, { target: { value: "90" } });
   fireEvent.click(screen.getByRole("button", { name: "Save Assessment" }));
   await waitFor(() =>
-    expect(api.put).toHaveBeenCalledWith(
-      "/allocations/candidate-allocations/allocation-1/scores",
-      { scores: [{ course_id: "course-1", score: 90 }] },
-    ),
+    expect(api.put).toHaveBeenCalledWith("/allocations/candidate-allocations/allocation-1/scores", {
+      scores: [{ course_id: "course-1", score: 90 }],
+    }),
   );
   await expectReload();
 });
-
-it.each(["Primary", "Secondary"])(
-  "preserves the %s vessel selection and both assignment fields when saving",
-  async (role) => {
-    allocation.primary_joining_plan_id = null;
-    allocation.secondary_joining_plan_id = null;
-    await openWorkflow();
-    const changeButton = screen.getByRole("button", { name: `Change ${role}` });
-    expect(changeButton.parentElement.textContent.endsWith("0")).toBe(false);
-    expect(
-      screen.queryByRole("button", { name: /Joining Plan/ }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(changeButton);
-    const dialog = await screen.findByRole("dialog", {
-      name: `${role} Vessel Allocation — Example Cadet`,
-    });
-    fireEvent.change(within(dialog).getByLabelText("Admin remarks"), {
-      target: { value: "Updated remarks" },
-    });
-    fireEvent.click(
-      within(dialog).getByRole("button", { name: `Save ${role} Allocation` }),
-    );
-    await waitFor(() =>
-      expect(api.put).toHaveBeenCalledWith(
-        "/allocations/candidate-allocations/allocation-1/vessel",
-        {
-          vessel_type_id: "type-1",
-          vessel_id: "vessel-1",
-          allocation_status: "Allocated",
-          secondary_vessel_type_id: "type-1",
-          secondary_vessel_id: "vessel-2",
-          secondary_allocation_status: "Allocated",
-          admin_remarks: "Updated remarks",
-        },
-      ),
-    );
-    await expectReload();
-  },
-);
 
 it("requires rank-change remarks and retains the selected target rank in the request", async () => {
   cycle.rank_lists[0].allocations.push({
@@ -335,12 +415,8 @@ it("requires rank-change remarks and retains the selected target rank in the req
 it("keeps incomplete lists blocked from finalization", async () => {
   allocation.final_score = null;
   await openWorkflow();
-  fireEvent.click(
-    screen.getByRole("button", { name: "Finalize", exact: true }),
-  );
-  expect(
-    screen.getAllByRole("button", { name: "Finalize", exact: true }).at(-1),
-  ).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Finalize", exact: true }));
+  expect(screen.getAllByRole("button", { name: "Finalize", exact: true }).at(-1)).toBeDisabled();
   expect(screen.getByText(/Final Score incomplete/)).toBeInTheDocument();
   expect(api.post).not.toHaveBeenCalled();
 });
@@ -351,241 +427,153 @@ it("keeps editing unavailable with read-only permissions", async () => {
   usePermission.mockReturnValue({ hasPermission: false });
   await openWorkflow();
   expect(api.get).not.toHaveBeenCalledWith("/allocations/admins");
-  expect(
-    screen.queryByRole("button", { name: "Edit Assessment" }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: "Add Candidates" }),
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: "Change Primary" }),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Edit Assessment" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Add Candidates" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Change Primary" })).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: /Change Secondary|View Details/ }),
   ).not.toBeInTheDocument();
 });
 
+it.each(["Draft", "Finalized"])(
+  "allows vessel changes in %s lists after a joining plan exists",
+  async (status) => {
+    cycle.rank_lists[0].status = status;
+    await openWorkflow();
+    expect(screen.getByRole("button", { name: "Change Primary" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Change Secondary" })).toBeEnabled();
+    if (status === "Finalized")
+      expect(screen.queryByRole("button", { name: "Edit Assessment" })).not.toBeInTheDocument();
+  },
+);
+it.each(["Primary", "Secondary"])(
+  "saves only the %s revision and joining details without sending",
+  async (role) => {
+    await openWorkflow();
+    const change = screen.getByRole("button", { name: "Change " + role });
+    expect(change.parentElement.textContent.endsWith("0")).toBe(false);
+    fireEvent.click(change);
+    const location = await screen.findByLabelText("Location");
+    fireEvent.change(location, { target: { value: "Cadet-specific location" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save Allocation" }));
+    await waitFor(() =>
+      expect(api.patch).toHaveBeenCalledWith(
+        "/allocations/candidate-allocations/allocation-1/vessel-plan",
+        {
+          vessel_role: role,
+          expected_version: 1,
+          vessel_id: role === "Primary" ? "vessel-1" : "vessel-2",
+          allocation_status: "Allocated",
+          change_reason: "",
+          joining_details: expect.objectContaining({
+            location: "Cadet-specific location",
+            joining_date: "2026-11-12",
+            required_documents: [],
+          }),
+        },
+      ),
+    );
+    expect(api.post).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await expectReload();
+  },
+);
+it("allows a zero-seat replacement and submits its change reason", async () => {
+  vessels.push({ ...vessels[0], id: "vessel-3", name: "Replacement Vessel", available_seats: 0 });
+  await openWorkflow();
+  fireEvent.click(screen.getByRole("button", { name: "Change Primary" }));
+  const select = await screen.findByRole("radio", { name: "Select Replacement Vessel" });
+  expect(select).toBeEnabled();
+  expect(screen.queryByRole("checkbox", { name: "Available seats only" })).not.toBeInTheDocument();
+  fireEvent.click(select);
+  fireEvent.change(screen.getByLabelText("Reason for Change"), {
+    target: { value: "Cadet requested a later date" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Save Allocation" }));
+  await waitFor(() =>
+    expect(api.patch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        vessel_id: "vessel-3",
+        change_reason: "Cadet requested a later date",
+      }),
+    ),
+  );
+});
+it("preserves unsaved details when the server rejects a stale revision", async () => {
+  api.patch.mockRejectedValueOnce({
+    response: { data: { message: "Allocation changed. Reload before saving." } },
+  });
+  await openWorkflow();
+  fireEvent.click(screen.getByRole("button", { name: "Change Primary" }));
+  fireEvent.change(await screen.findByLabelText("Location"), {
+    target: { value: "Keep this draft" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Save Allocation" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Reload before saving");
+  expect(screen.getByLabelText("Location")).toHaveValue("Keep this draft");
+});
+it.each([
+  ["Primary", "Allocated"],
+  ["Primary", "Hold"],
+  ["Primary", "Cancelled"],
+  ["Secondary", "Allocated"],
+  ["Secondary", "Hold"],
+  ["Secondary", "Cancelled"],
+])("shows only the follow-up person for a %s vessel with %s status", async (role, status) => {
+  allocation.follow_up_user_id = "admin-1";
+  allocation.owner = { id: "admin-1", name: "Test Admin", status: "active" };
+  allocation[role === "Primary" ? "allocation_status" : "secondary_allocation_status"] = status;
+  await openWorkflow();
+  fireEvent.click(screen.getByRole("button", { name: "Change " + role }));
+  const section = await screen.findByRole("region", { name: "Follow-up Details" });
+  expect(
+    within(section).getByRole("textbox", { name: "Follow-up Person (Informed By)" }),
+  ).toHaveValue("Test Admin");
+  expect(within(section).queryByRole("button")).not.toBeInTheDocument();
+  expect(within(section).queryByText(/confirmation|Last contact/i)).not.toBeInTheDocument();
+  expect(api.post).not.toHaveBeenCalled();
+});
 it.each([
   [false, false],
   [true, false],
   [false, true],
   [true, true],
-])(
-  "respects separate joining plan edit (%s) and communication (%s) permissions",
-  async (canEdit, canCommunicate) => {
-    cycle.rank_lists[0].status = "Finalized";
-    allocation.secondary_joining_plan_id = null;
-    joiningPlans = [
-      {
-        ...allocation,
-        id: "plan-1",
-        allocation_id: allocation.id,
-        vessel_role: "Primary",
-        status: "Draft",
-        requires_refresh: 0,
-      },
-    ];
-    usePermission.mockImplementation((module, action) => ({
-      hasPermission:
-        action === "edit"
-          ? canEdit
-          : action === "communicate"
-            ? canCommunicate
-            : false,
-    }));
-    await openWorkflow();
-    fireEvent.click(
-      screen.getByRole("button", { name: "Joining & Intimation" }),
-    );
-    expect(Boolean(screen.queryByRole("button", { name: "Create Plan" }))).toBe(
-      canEdit,
-    );
-    expect(
-      Boolean(screen.queryByRole("button", { name: "Record Communication" })),
-    ).toBe(canCommunicate);
-    expect(
-      api.get.mock.calls.some(([url]) => url === "/allocations/admins"),
-    ).toBe(canCommunicate);
-  },
-);
-
-it("allows a joining plan editor to save without opening communication", async () => {
-  cycle.rank_lists[0].status = "Finalized";
-  allocation.primary_joining_plan_id = null;
-  Object.assign(vessels[0], {
-    joining_date: "2027-01-10",
-    reporting_port: "Mumbai",
-    contact_person_name: "Port Agent",
-  });
+])("keeps edit %s and manual follow-up %s permissions separate", async (canEdit, canFollow) => {
+  joiningPlans = [
+    {
+      id: "plan-1",
+      vessel_id: "vessel-1",
+      vessel_role: "Primary",
+      revision: 1,
+      vessel_name: "Primary Vessel",
+    },
+    {
+      id: "plan-2",
+      vessel_id: "vessel-2",
+      vessel_role: "Secondary",
+      revision: 1,
+      vessel_name: "Secondary Vessel",
+    },
+  ];
   usePermission.mockImplementation((module, action) => ({
-    hasPermission: action === "edit",
+    hasPermission: action === "edit" ? canEdit : action === "communicate" ? canFollow : false,
   }));
   await openWorkflow();
   fireEvent.click(screen.getByRole("button", { name: "Joining & Intimation" }));
-  fireEvent.click(screen.getByRole("button", { name: "Create Plan" }));
-  const dialog = await screen.findByRole("dialog", {
-    name: "Create Primary Joining Plan",
-  });
-  expect(
-    within(dialog).queryByRole("button", { name: /Record Communication/ }),
-  ).not.toBeInTheDocument();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Create Plan" }));
-  await waitFor(() => expect(api.post).toHaveBeenCalled());
-  await waitFor(() =>
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+  await screen.findByRole("button", { name: "View History" });
+  expect(screen.queryAllByRole("button", { name: "Change Vessel / Joining Details" })).toHaveLength(
+    canEdit ? 2 : 0,
   );
+  expect(screen.queryAllByRole("button", { name: "Add Follow-up" })).toHaveLength(
+    canFollow ? 2 : 0,
+  );
+  expect(screen.queryByRole("button", { name: "Create Plan" })).not.toBeInTheDocument();
 });
-
-it.each(["Primary", "Secondary"])(
-  "locks only %s after its joining plan exists and allows changing the other vessel",
-  async (role) => {
-    allocation.primary_joining_plan_id = role === "Primary" ? "plan-1" : null;
-    allocation.secondary_joining_plan_id =
-      role === "Secondary" ? "plan-2" : null;
-    const editableRole = role === "Primary" ? "Secondary" : "Primary";
-    vessels.push({
-      ...vessels[0],
-      id: "vessel-3",
-      name: "Replacement Vessel",
-      total_seats: 0,
-      available_seats: 0,
-    });
-    cycle.rank_lists[0].status = "Finalized";
-    await openWorkflow();
-    expect(
-      screen.queryByRole("button", { name: `Change ${role}` }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /View Details|Joining Plan/ }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole("button", { name: `Change ${editableRole}` }),
-    );
-    const dialog = await screen.findByRole("dialog", {
-      name: /Vessel Allocation/,
-    });
-    expect(
-      within(dialog).queryByRole("checkbox", { name: "Available seats only" }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(dialog).getByRole("radio", { name: "Select Replacement Vessel" }),
-    ).toBeEnabled();
-    fireEvent.click(
-      within(dialog).getByRole("radio", { name: "Select Replacement Vessel" }),
-    );
-    fireEvent.click(
-      within(dialog).getByRole("button", {
-        name: `Save ${editableRole} Allocation`,
-      }),
-    );
-    await waitFor(() =>
-      expect(api.put).toHaveBeenCalledWith(
-        "/allocations/candidate-allocations/allocation-1/vessel",
-        {
-          vessel_type_id: "type-1",
-          vessel_id: role === "Primary" ? "vessel-1" : "vessel-3",
-          allocation_status: "Allocated",
-          secondary_vessel_type_id: "type-1",
-          secondary_vessel_id: role === "Secondary" ? "vessel-2" : "vessel-3",
-          secondary_allocation_status: "Allocated",
-          admin_remarks: "Existing vessel remarks",
-        },
-      ),
-    );
-    await expectReload();
-  },
-);
-
-it("hides vessel actions when both plans exist, even when a plan requires review", async () => {
-  allocation.secondary_joining_plan_requires_refresh = 1;
-  await openWorkflow();
-  expect(
-    screen.queryByRole("button", {
-      name: /Change Primary|Change Secondary|View Details|Joining Plan/,
-    }),
-  ).not.toBeInTheDocument();
-});
-
-it("allows allocating an unassigned secondary vessel after a primary plan exists", async () => {
-  allocation.secondary_joining_plan_id = null;
-  allocation.secondary_vessel_id = null;
-  allocation.secondary_vessel_name = null;
-  allocation.secondary_allocation_status = "Pending";
-  await openWorkflow();
-  fireEvent.click(screen.getByRole("button", { name: "Allocate Secondary" }));
-  const dialog = await screen.findByRole("dialog", {
-    name: /Secondary Vessel Allocation/,
-  });
-  expect(
-    within(dialog).getByRole("radio", { name: "Select Secondary Vessel" }),
-  ).toBeEnabled();
-});
-
 it("keeps vessel editing unavailable after onboarding", async () => {
-  allocation.primary_joining_plan_id = null;
-  allocation.secondary_joining_plan_id = null;
   allocation.onboarding_status = "Onboarded";
   await openWorkflow();
   expect(
-    screen.queryByRole("button", {
-      name: /Change Primary|Change Secondary|View Details/,
-    }),
+    screen.queryByRole("button", { name: /Change Primary|Change Secondary/ }),
   ).not.toBeInTheDocument();
-});
-
-it("validates the joining plan, preserves its payload, and opens communication after creation", async () => {
-  cycle.rank_lists[0].status = "Finalized";
-  allocation.primary_joining_plan_id = null;
-  await openWorkflow();
-  fireEvent.click(screen.getByRole("button", { name: "Joining & Intimation" }));
-  fireEvent.click(screen.getByRole("button", { name: "Create Plan" }));
-  const dialog = await screen.findByRole("dialog", {
-    name: "Create Primary Joining Plan",
-  });
-  const create = within(dialog).getByRole("button", {
-    name: "Create & Record Communication",
-  });
-  fireEvent.click(create);
-  expect(
-    screen.getByText("Select the candidate joining date."),
-  ).toBeInTheDocument();
-  expect(api.post).not.toHaveBeenCalled();
-  fireEvent.change(within(dialog).getByLabelText(/Joining Date/), {
-    target: { value: "2027-01-10" },
-  });
-  fireEvent.change(within(dialog).getByLabelText(/Reporting Port/), {
-    target: { value: "Mumbai" },
-  });
-  fireEvent.change(within(dialog).getByLabelText(/Contact Person/), {
-    target: { value: "Port Agent" },
-  });
-  fireEvent.change(within(dialog).getByLabelText(/Required Documents/), {
-    target: { value: "Passport, Medical\nCDC" },
-  });
-  fireEvent.click(create);
-  await waitFor(() =>
-    expect(api.post).toHaveBeenCalledWith(
-      "/allocations/candidate-allocations/allocation-1/joining-plan",
-      {
-        joining_date: "2027-01-10",
-        location: "",
-        voyage_ref: "",
-        reporting_port: "Mumbai",
-        contact_person_name: "Port Agent",
-        contact_person_email: "",
-        contact_person_phone: "",
-        vessel_role: "Primary",
-        required_documents: ["Passport", "Medical", "CDC"],
-      },
-    ),
-  );
-  expect(
-    await screen.findByRole("dialog", {
-      name: "Record Communication — Example Cadet",
-    }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: "Email", pressed: true }),
-  ).toBeInTheDocument();
-  await expectReload();
 });

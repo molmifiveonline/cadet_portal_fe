@@ -80,6 +80,7 @@ const formatDate = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleDateString([], {
+    timeZone: "Asia/Kolkata",
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -91,6 +92,7 @@ const formatDateTime = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleString([], {
+    timeZone: "Asia/Kolkata",
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -278,7 +280,7 @@ const Onboarding = () => {
     <div className="py-6">
       <PageHeader
         title="Cadet Onboarding"
-        subtitle="Complete final checks for CTV Assigned cadets"
+        subtitle="Complete final checks for cadets admitted to onboarding"
         icon={ClipboardCheck}
       >
       </PageHeader>
@@ -298,7 +300,7 @@ const Onboarding = () => {
           </span>
         </div>
         <p className="mt-2 text-xs text-slate-600">
-          Cadets enter this queue automatically after their finalized CTV vessel assignment. Complete the first four checks, then approve Final Clearance.
+          Cadets enter this queue when a vessel is Allocated. Sending a joining email is optional. Complete the first four checks, then approve Final Clearance with an Allocated vessel.
         </p>
       </section>
 

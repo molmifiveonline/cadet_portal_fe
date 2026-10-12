@@ -34,9 +34,10 @@ const BrandedSelectContent = ({ children }) => (
   </SelectContent>
 );
 
-const BrandedSelectItem = ({ value, children }) => (
+const BrandedSelectItem = ({ value, children, disabled }) => (
   <SelectItem
     value={value}
+    disabled={disabled}
     className="focus:bg-[#3a5f9e]/10 focus:text-[#3a5f9e] data-[state=checked]:font-semibold data-[state=checked]:text-[#3a5f9e]"
   >
     {children}

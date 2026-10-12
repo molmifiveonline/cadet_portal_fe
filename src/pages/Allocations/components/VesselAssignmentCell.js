@@ -1,10 +1,9 @@
 import { Status } from "./AllocationPrimitives";
 import { Anchor } from "lucide-react";
 import React from "react";
-import { hasJoiningPlan } from "../allocationUtils";
 
 const VesselAssignmentCell = ({ allocation, role, locked, openVessel }) => {
-  const readOnly = locked || hasJoiningPlan(allocation, role);
+  const readOnly = locked;
   const secondary = role === "Secondary";
   const vesselName = secondary
     ? allocation.secondary_vessel_name
