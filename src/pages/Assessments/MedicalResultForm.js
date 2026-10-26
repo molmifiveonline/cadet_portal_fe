@@ -224,7 +224,7 @@ const MedicalResultForm = () => {
     return true;
   };
 
-  const handleViewMedicalReport = (file) => {
+  const handleViewMedicalReport = async (file) => {
     if (file instanceof File) {
       const fileUrl = URL.createObjectURL(file);
       window.open(fileUrl, '_blank');
@@ -232,8 +232,33 @@ const MedicalResultForm = () => {
       return;
     }
 
-    const fileUrl = `${process.env.REACT_APP_API_URL?.replace('/api', '') || ''}${file.file_path}`;
-    window.open(fileUrl, '_blank');
+    // Open immediately so the browser treats this as a user-initiated tab.
+    const reportWindow = window.open('about:blank', '_blank');
+    if (reportWindow) reportWindow.opener = null;
+    try {
+      const response = await api.get(`/medical-results/${cadet_id}/files/${file.id}`, {
+        responseType: 'blob',
+      });
+      const fileUrl = URL.createObjectURL(response.data);
+      if (reportWindow) {
+        reportWindow.location.href = fileUrl;
+      } else {
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = file.file_name || 'medical-report';
+        link.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(fileUrl), 60000);
+    } catch (error) {
+      reportWindow?.close();
+      let message = error.response?.data?.message;
+      if (error.response?.data instanceof Blob) {
+        try {
+          message = JSON.parse(await error.response.data.text()).message;
+        } catch (parseError) {}
+      }
+      toast.error(message || 'Failed to open medical report');
+    }
   };
 
   const handleDeleteMedicalReport = async () => {
