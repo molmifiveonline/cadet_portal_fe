@@ -16,6 +16,8 @@ jest.mock('../RecruitmentDrives/StageInviteModal', () => () => null);
 
 beforeEach(() => {
   jest.clearAllMocks();
+  URL.createObjectURL = jest.fn(() => 'blob:medical-report');
+  URL.revokeObjectURL = jest.fn();
   api.get.mockImplementation(async (url) => ({ data: { success: true, data:
     url === '/cadets/cadet-1' ? { name_as_in_indos_cert: 'Cadet One' } :
     url === '/medical-results/cadet-1' ? { files: [
@@ -23,6 +25,35 @@ beforeEach(() => {
       { id: 'file-2', file_name: 'other.pdf' },
     ] } : [],
   } }));
+});
+
+it('views saved reports through the authenticated API', async () => {
+  const reportWindow = { location: {}, close: jest.fn() };
+  jest.spyOn(window, 'open').mockReturnValue(reportWindow);
+  render(<MedicalResultForm />);
+  await screen.findByText('report.pdf');
+  api.get.mockResolvedValueOnce({ data: new Blob(['report'], { type: 'application/pdf' }) });
+  fireEvent.click(screen.getByRole('button', { name: 'View report.pdf' }));
+  await waitFor(() => expect(reportWindow.location.href).toBe('blob:medical-report'));
+  expect(api.get).toHaveBeenCalledWith('/medical-results/cadet-1/files/file-1', { responseType: 'blob' });
+  expect(reportWindow.opener).toBeNull();
+  window.open.mockRestore();
+});
+
+it('explains a missing file and closes the empty report tab', async () => {
+  const reportWindow = { location: {}, close: jest.fn() };
+  jest.spyOn(window, 'open').mockReturnValue(reportWindow);
+  render(<MedicalResultForm />);
+  await screen.findByText('report.pdf');
+  const message = 'This report file is no longer available. Please upload it again.';
+  const errorBody = new Blob([], { type: 'application/json' });
+  errorBody.text = async () => JSON.stringify({ message });
+  api.get.mockRejectedValueOnce({ response: { data: errorBody, status: 404 } });
+  fireEvent.click(screen.getByRole('button', { name: 'View report.pdf' }));
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message));
+  expect(reportWindow.close).toHaveBeenCalled();
+  expect(screen.getByText('report.pdf')).toBeInTheDocument();
+  window.open.mockRestore();
 });
 
 it('confirms deletion and removes only the selected saved report', async () => {
