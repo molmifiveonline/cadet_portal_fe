@@ -40,6 +40,22 @@ it('views saved reports through the authenticated API', async () => {
   window.open.mockRestore();
 });
 
+it('shows the original filename when a generated storage name is also returned', async () => {
+  const storageName = '310c5396-59cd-4ffb-971f-c63a6d71d7f6.pdf';
+  const originalName = 'Cadet Medical Fitness Report.pdf';
+  const getDefault = api.get.getMockImplementation();
+  api.get.mockImplementation(async (url) => url === '/medical-results/cadet-1'
+    ? { data: { success: true, data: { files: [{
+      id: 'file-1', file_name: storageName, original_name: originalName,
+    }] } } }
+    : getDefault(url));
+  render(<MedicalResultForm />);
+  expect(await screen.findByText(originalName)).toBeInTheDocument();
+  expect(screen.queryByText(storageName)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: `Delete ${originalName}` }));
+  expect(screen.getByText(`Are you sure you want to delete ${originalName}? This action cannot be undone.`)).toBeInTheDocument();
+});
+
 it('explains a missing file and closes the empty report tab', async () => {
   const reportWindow = { location: {}, close: jest.fn() };
   jest.spyOn(window, 'open').mockReturnValue(reportWindow);

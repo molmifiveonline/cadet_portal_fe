@@ -26,6 +26,8 @@ import {
 import StageInviteModal from '../RecruitmentDrives/StageInviteModal';
 import FileUploadPanel from '../../components/common/FileUploadPanel';
 
+const getMedicalReportFileName = (file) =>
+  file.original_name || file.original_filename || file.name || file.file_name || 'Medical report';
 
 const MultiSelectDropdown = ({ options, value, onChange, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -245,7 +247,7 @@ const MedicalResultForm = () => {
       } else {
         const link = document.createElement('a');
         link.href = fileUrl;
-        link.download = file.file_name || 'medical-report';
+        link.download = getMedicalReportFileName(file);
         link.click();
       }
       setTimeout(() => URL.revokeObjectURL(fileUrl), 60000);
@@ -377,7 +379,7 @@ const MedicalResultForm = () => {
         onClose={() => setReportToDelete(null)}
         onConfirm={handleDeleteMedicalReport}
         title='Delete Medical Report'
-        message={`Are you sure you want to delete ${reportToDelete?.file_name || 'this medical report'}? This action cannot be undone.`}
+        message={`Are you sure you want to delete ${reportToDelete ? getMedicalReportFileName(reportToDelete) : 'this medical report'}? This action cannot be undone.`}
         confirmText='Delete'
         confirmButtonClass='bg-red-600 hover:bg-red-700 shadow-red-600/20'
         isLoading={deletingReport}
@@ -599,9 +601,7 @@ const MedicalResultForm = () => {
                 ? `${file.name}-${file.lastModified}-${index}`
                 : file.id || file.file_path || index
             }
-            getFileName={(file) =>
-              file instanceof File ? file.name : file.file_name
-            }
+            getFileName={getMedicalReportFileName}
             getFileMetadata={(file) =>
               file instanceof File
                 ? `New | ${(file.size / 1024 / 1024).toFixed(2)} MB`
