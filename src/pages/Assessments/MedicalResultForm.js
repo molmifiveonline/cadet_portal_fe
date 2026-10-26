@@ -105,6 +105,8 @@ const MedicalResultForm = () => {
   const [assignedReports, setAssignedReports] = useState([]);
   const [reportFiles, setReportFiles] = useState([]);
   const [existingFiles, setExistingFiles] = useState([]);
+  const [reportToDelete, setReportToDelete] = useState(null);
+  const [deletingReport, setDeletingReport] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showRetestModal, setShowRetestModal] = useState(false);
   const [sendingRetest, setSendingRetest] = useState(false);
@@ -234,6 +236,24 @@ const MedicalResultForm = () => {
     window.open(fileUrl, '_blank');
   };
 
+  const handleDeleteMedicalReport = async () => {
+    if (!reportToDelete || deletingReport) return;
+
+    setDeletingReport(true);
+    try {
+      await api.delete(`/medical-results/${cadet_id}/files/${reportToDelete.id}`);
+      setExistingFiles((current) =>
+        current.filter((file) => file.id !== reportToDelete.id),
+      );
+      setReportToDelete(null);
+      toast.success('Medical report deleted successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete medical report');
+    } finally {
+      setDeletingReport(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.appointments.some(a => !a.medical_date || !a.medical_time || !a.medical_center_id)) {
@@ -327,6 +347,16 @@ const MedicalResultForm = () => {
 
   return (
     <div className='py-6'>
+      <ConfirmationModal
+        isOpen={Boolean(reportToDelete)}
+        onClose={() => setReportToDelete(null)}
+        onConfirm={handleDeleteMedicalReport}
+        title='Delete Medical Report'
+        message={`Are you sure you want to delete ${reportToDelete?.file_name || 'this medical report'}? This action cannot be undone.`}
+        confirmText='Delete'
+        confirmButtonClass='bg-red-600 hover:bg-red-700 shadow-red-600/20'
+        isLoading={deletingReport}
+      />
       <PageHeader
         title="Medical Examination Result"
         subtitle={`Record outcome for ${cadet?.name_as_in_indos_cert}`}
@@ -529,12 +559,16 @@ const MedicalResultForm = () => {
             uploadButtonLabel='Upload Reports'
             onUpload={handleMedicalReportSelection}
             onView={handleViewMedicalReport}
-            canDelete={(file) => file instanceof File}
-            onDelete={(file) =>
-              setReportFiles((current) =>
-                current.filter((currentFile) => currentFile !== file),
-              )
-            }
+            canDelete={!deletingReport}
+            onDelete={(file) => {
+              if (file instanceof File) {
+                setReportFiles((current) =>
+                  current.filter((currentFile) => currentFile !== file),
+                );
+              } else {
+                setReportToDelete(file);
+              }
+            }}
             getFileKey={(file, index) =>
               file instanceof File
                 ? `${file.name}-${file.lastModified}-${index}`
