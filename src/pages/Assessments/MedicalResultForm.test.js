@@ -10,7 +10,7 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => jest.fn(),
   useLocation: () => ({}),
 }), { virtual: true });
-jest.mock('../../lib/utils/apiConfig', () => ({ get: jest.fn(), delete: jest.fn() }));
+jest.mock('../../lib/utils/apiConfig', () => ({ get: jest.fn(), delete: jest.fn(), post: jest.fn() }));
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 jest.mock('../RecruitmentDrives/StageInviteModal', () => () => null);
 
@@ -94,6 +94,25 @@ it('keeps the report visible when deletion fails', async () => {
   await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Unable to delete report'));
   expect(screen.getByText('report.pdf')).toBeInTheDocument();
   expect(toast.success).not.toHaveBeenCalled();
+});
+
+it('displays the server upload error when saving fails', async () => {
+  const getDefault = api.get.getMockImplementation();
+  api.get.mockImplementation(async (url) => {
+    const response = await getDefault(url);
+    if (url === '/cadets/cadet-1') response.data.data.institute_detail_filled = 1;
+    if (url === '/medical-results/cadet-1') response.data.data.appointments = [{
+      medical_date: '2026-10-26', medical_time: '09:00', medical_center_id: 'center-1', medical_reports: [],
+    }];
+    return response;
+  });
+  const message = 'Each medical report must be 10MB or smaller.';
+  api.post.mockRejectedValue({ response: { data: { message } } });
+  render(<MedicalResultForm />);
+  const saveButton = await screen.findByRole('button', { name: 'Save Medical Result' });
+  fireEvent.submit(saveButton.closest('form'));
+  await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message));
+  expect(api.post).toHaveBeenCalled();
 });
 
 it('removes a newly selected file without calling the delete API', async () => {

@@ -358,7 +358,7 @@ const MedicalResultForm = () => {
       toast.success('Medical result recorded successfully');
       handleBack();
     } catch (error) {
-      toast.error('Failed to save medical result');
+      toast.error(error.response?.data?.message || 'Failed to save medical result');
     } finally {
       setSaving(false);
     }
